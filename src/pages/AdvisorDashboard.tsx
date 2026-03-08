@@ -197,23 +197,50 @@ export default function AdvisorDashboard() {
         )}
 
         {tab === 'subscribers' && (
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead><tr className="border-b text-left"><th className="p-2">User</th><th className="p-2">Group</th><th className="p-2">Start</th><th className="p-2">End</th><th className="p-2">Amount</th><th className="p-2">Status</th></tr></thead>
-              <tbody>
-                {subscribers.map((s: any) => (
-                  <tr key={s.id} className="border-b">
-                    <td className="p-2">{s.profiles?.full_name || s.profiles?.email}</td>
-                    <td className="p-2">{s.groups?.name}</td>
-                    <td className="p-2">{s.start_date ? new Date(s.start_date).toLocaleDateString('en-IN') : '-'}</td>
-                    <td className="p-2">{s.end_date ? new Date(s.end_date).toLocaleDateString('en-IN') : '-'}</td>
-                    <td className="p-2">₹{s.amount_paid || 0}</td>
-                    <td className="p-2"><Badge variant={s.status === 'active' ? 'default' : 'secondary'}>{s.status}</Badge></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {subscribers.length === 0 && <p className="mt-4 text-center text-muted-foreground">No subscribers yet</p>}
+          <div>
+            {/* Per-group subscriber breakdown */}
+            {groups.map(g => {
+              const groupSubs = subscribers.filter(s => s.group_id === g.id);
+              const activeSubs = groupSubs.filter(s => s.status === 'active');
+              const groupRevenue = groupSubs.reduce((sum, s) => sum + (s.amount_paid || 0), 0);
+              return (
+                <div key={g.id} className="mb-6">
+                  <div className="flex items-center gap-3 mb-3">
+                    <h3 className="font-semibold text-lg">{g.name}</h3>
+                    <Badge variant="secondary">{activeSubs.length} active</Badge>
+                    <span className="text-sm text-muted-foreground">• ₹{groupRevenue.toLocaleString('en-IN')} revenue</span>
+                  </div>
+                  <div className="rounded-xl border bg-card shadow-sm overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead><tr className="border-b bg-muted/50 text-left">
+                        <th className="p-3 font-medium">User Name</th>
+                        <th className="p-3 font-medium">Email</th>
+                        <th className="p-3 font-medium">Start Date</th>
+                        <th className="p-3 font-medium">End Date</th>
+                        <th className="p-3 font-medium">Payment</th>
+                        <th className="p-3 font-medium">Payment ID</th>
+                        <th className="p-3 font-medium">Status</th>
+                      </tr></thead>
+                      <tbody>
+                        {groupSubs.length === 0 && <tr><td colSpan={7} className="p-4 text-center text-muted-foreground">No subscribers in this group yet</td></tr>}
+                        {groupSubs.map((s: any) => (
+                          <tr key={s.id} className="border-b last:border-0">
+                            <td className="p-3 font-medium">{s.profiles?.full_name || '-'}</td>
+                            <td className="p-3 text-muted-foreground">{s.profiles?.email || '-'}</td>
+                            <td className="p-3">{s.start_date ? new Date(s.start_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</td>
+                            <td className="p-3">{s.end_date ? new Date(s.end_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</td>
+                            <td className="p-3 font-medium">₹{(s.amount_paid || 0).toLocaleString('en-IN')}</td>
+                            <td className="p-3 font-mono text-xs">{s.razorpay_payment_id || '-'}</td>
+                            <td className="p-3"><Badge variant={s.status === 'active' ? 'default' : 'secondary'} className="capitalize">{s.status}</Badge></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              );
+            })}
+            {groups.length === 0 && <p className="text-center text-muted-foreground py-8">Create a group first to see subscribers</p>}
           </div>
         )}
 

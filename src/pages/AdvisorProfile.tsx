@@ -127,6 +127,12 @@ export default function AdvisorProfile() {
             {/* Groups */}
             <div className="mt-4 space-y-3">
               <h3 className="font-semibold">Signal Groups</h3>
+              {groups.length === 0 && (
+                <div className="rounded-lg border border-dashed bg-muted/30 p-4 text-center">
+                  <p className="text-sm text-muted-foreground">This advisor hasn't created any signal groups yet.</p>
+                  <p className="text-xs text-muted-foreground mt-1">Check back later for subscription options.</p>
+                </div>
+              )}
               {groups.map(group => (
                 <div key={group.id} className="rounded-lg border bg-card p-4">
                   <div className="flex items-center gap-3">
@@ -140,11 +146,12 @@ export default function AdvisorProfile() {
                       <p className="text-sm text-muted-foreground">{group.subCount} subscribers</p>
                     </div>
                   </div>
+                  {group.description && <p className="mt-2 text-xs text-muted-foreground">{group.description}</p>}
                   <p className="mt-2 text-lg font-bold">₹{group.monthly_price}/month</p>
                   {subscribedGroupIds.includes(group.id) ? (
-                    <Badge className="mt-2 bg-primary text-primary-foreground">Subscribed</Badge>
+                    <Badge className="mt-2 bg-primary text-primary-foreground">✓ Subscribed</Badge>
                   ) : (
-                    <Button className="mt-2 w-full" size="sm" onClick={() => handleSubscribe(group)}>Subscribe Now</Button>
+                    <Button className="mt-2 w-full" size="sm" onClick={() => handleSubscribe(group)}>Subscribe Now — ₹{group.monthly_price}/mo</Button>
                   )}
                 </div>
               ))}
