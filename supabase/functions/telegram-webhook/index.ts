@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json();
-    
+
     // Setup webhook endpoint
     if (body?.setup_webhook) {
       const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN')!;
@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
 
     const chatId = message.chat?.id;
     const text = message.text || '';
-    const username = message.from?.username || '';
+    const tgUsername = message.from?.username || '';
 
     if (!chatId) {
       return new Response(JSON.stringify({ ok: true }), { headers: corsHeaders });
@@ -43,33 +43,110 @@ Deno.serve(async (req) => {
     );
 
     if (text.startsWith('/start')) {
-      // Find user by telegram_username (with or without @)
-      const cleanUsername = username.toLowerCase();
+      // Extract user_id from deep link if present: /start USER_ID
+      const parts = text.split(' ');
+      const deepLinkUserId = parts.length > 1 ? parts[1].trim() : null;
+      const cleanTgUsername = tgUsername.toLowerCase().replace(/^@/, '');
 
-      // Search telegram_settings for matching username
-      const { data: settings } = await supabase
-        .from('telegram_settings')
-        .select('id, user_id, group_id, telegram_username')
-        .or(`telegram_username.ilike.${cleanUsername},telegram_username.ilike.@${cleanUsername}`);
+      let userId: string | null = null;
 
-      if (settings && settings.length > 0) {
-        // Update all matching rows with chat_id and bot_started
-        for (const setting of settings) {
-          await supabase
+      if (deepLinkUserId) {
+        // Verify that the saved telegram_username in profile matches the Telegram user who pressed START
+        const { data: prof } = await supabase
+          .from('profiles')
+          .select('id, telegram_username')
+          .eq('id', deepLinkUserId)
+          .single();
+
+        if (prof) {
+          const savedUsername = (prof.telegram_username || '').toLowerCase().replace(/^@/, '');
+          
+          if (!savedUsername) {
+            // No username saved yet — reject, user must save username first
+            await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                chat_id: chatId,
+                text: `⚠️ <b>Setup Incomplete</b>\n\nPlease go to your TradeCircle dashboard first, enter your Telegram username, and then click the bot link again.\n\nYour Telegram: @${tgUsername || 'unknown'}`,
+                parse_mode: 'HTML',
+              }),
+            });
+            return new Response(JSON.stringify({ ok: true }), { status: 200, headers: corsHeaders });
+          }
+
+          if (savedUsername !== cleanTgUsername) {
+            // Username mismatch — reject
+            await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                chat_id: chatId,
+                text: `❌ <b>Username Mismatch</b>\n\nYou saved <b>@${savedUsername}</b> on TradeCircle but opened this bot as <b>@${tgUsername}</b>.\n\nPlease go back to the dashboard, update your username to <b>@${tgUsername}</b>, then click the bot link again.`,
+                parse_mode: 'HTML',
+              }),
+            });
+            return new Response(JSON.stringify({ ok: true }), { status: 200, headers: corsHeaders });
+          }
+
+          // Check that no OTHER user already has this chat_id (one user = one telegram)
+          const { data: existingChat } = await supabase
             .from('telegram_settings')
-            .update({ telegram_chat_id: String(chatId), bot_started: true })
-            .eq('id', setting.id);
+            .select('user_id')
+            .eq('telegram_chat_id', String(chatId))
+            .neq('user_id', prof.id)
+            .limit(1);
+
+          if (existingChat && existingChat.length > 0) {
+            await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                chat_id: chatId,
+                text: `⚠️ <b>Already Linked</b>\n\nThis Telegram account is already linked to another TradeCircle user. Each Telegram account can only be linked to one TradeCircle account.\n\nIf this is a mistake, contact support.`,
+                parse_mode: 'HTML',
+              }),
+            });
+            return new Response(JSON.stringify({ ok: true }), { status: 200, headers: corsHeaders });
+          }
+
+          userId = prof.id;
+        }
+      }
+
+      if (!userId) {
+        // Fallback: try matching by telegram_username in profiles
+        const { data: profileMatch } = await supabase
+          .from('profiles')
+          .select('id')
+          .or(`telegram_username.ilike.${cleanTgUsername},telegram_username.ilike.@${cleanTgUsername}`)
+          .limit(1);
+
+        if (profileMatch && profileMatch.length > 0) {
+          userId = profileMatch[0].id;
+        }
+      }
+
+      if (userId) {
+        // Update all telegram_settings for this user
+        const { data: settings } = await supabase
+          .from('telegram_settings')
+          .select('id')
+          .eq('user_id', userId);
+
+        if (settings && settings.length > 0) {
+          for (const setting of settings) {
+            await supabase
+              .from('telegram_settings')
+              .update({ telegram_chat_id: String(chatId), bot_started: true, telegram_username: tgUsername })
+              .eq('id', setting.id);
+          }
         }
 
-        // Also update any future settings for this user
-        // by updating the profile telegram_username for consistency
-        const userId = settings[0].user_id;
-        await supabase
-          .from('profiles')
-          .update({ telegram_username: username })
-          .eq('id', userId);
+        // Also update profile
+        await supabase.from('profiles').update({ telegram_username: tgUsername }).eq('id', userId);
 
-        // Send welcome message
+        // Send welcome
         await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -80,13 +157,12 @@ Deno.serve(async (req) => {
           }),
         });
       } else {
-        // Username not found - tell user to set it up on the website first
         await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             chat_id: chatId,
-            text: `⚠️ <b>Username not found</b>\n\nPlease make sure you've entered your Telegram username on the TradeCircle dashboard first, then come back and press /start again.\n\nYour Telegram username: @${username || 'unknown'}`,
+            text: `⚠️ <b>Account not found</b>\n\nPlease go to your TradeCircle dashboard first, enter your Telegram username, save it, and then click the bot link from the dashboard.\n\nYour Telegram: @${tgUsername || 'unknown'}`,
             parse_mode: 'HTML',
           }),
         });

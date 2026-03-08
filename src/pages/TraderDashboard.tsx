@@ -4,10 +4,11 @@ import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { SignalCard } from '@/components/SignalCard';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
-import { Bell, BellOff, Send, BarChart3, ExternalLink, CheckCircle2, AlertTriangle, RotateCcw, Shield, User } from 'lucide-react';
+import { Bell, BellOff, Send, BarChart3, ExternalLink, CheckCircle2, AlertTriangle, RotateCcw, Shield, User, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { Tables } from '@/integrations/supabase/types';
 
@@ -39,6 +40,9 @@ export default function TraderDashboard() {
   const [telegramSettings, setTelegramSettings] = useState<Record<string, TelegramSetting>>({});
   const [telegramConnected, setTelegramConnected] = useState(false);
   const [telegramUsername, setTelegramUsername] = useState('');
+  const [usernameInput, setUsernameInput] = useState('');
+  const [usernameSaved, setUsernameSaved] = useState(false);
+  const [checking, setChecking] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const botLink = user ? `https://t.me/${BOT_USERNAME}?start=${user.id}` : `https://t.me/${BOT_USERNAME}`;
@@ -96,18 +100,33 @@ export default function TraderDashboard() {
     });
     setTelegramSettings(tMap);
 
-    // Check if bot is connected globally (any setting has bot_started)
     const anyConnected = (tSettings || []).some((t: any) => t.bot_started && t.telegram_chat_id);
     setTelegramConnected(anyConnected);
     const savedUsername = (tSettings || []).find((t: any) => t.telegram_username)?.telegram_username || profile?.telegram_username || '';
     setTelegramUsername(savedUsername);
+    setUsernameInput(savedUsername.replace(/^@/, ''));
+    setUsernameSaved(!!savedUsername);
 
     setLoading(false);
   };
 
+  const saveUsername = async () => {
+    const clean = usernameInput.trim().replace(/^@/, '');
+    if (!clean || clean.length < 3) {
+      toast.error('Please enter a valid Telegram username (at least 3 characters)');
+      return;
+    }
+    // Save to profile
+    await supabase.from('profiles').update({ telegram_username: clean }).eq('id', user!.id);
+    // Also save to all existing telegram_settings rows
+    await supabase.from('telegram_settings').update({ telegram_username: clean }).eq('user_id', user!.id);
+    setTelegramUsername(clean);
+    setUsernameSaved(true);
+    toast.success(`Username @${clean} saved!`);
+  };
+
   const toggleTelegram = async (groupId: string, active: boolean) => {
     const existing = telegramSettings[groupId];
-    // Get chat_id from any connected setting
     const chatId = existing?.telegram_chat_id || Object.values(telegramSettings).find(t => t.telegram_chat_id)?.telegram_chat_id || null;
     const username = existing?.telegram_username || telegramUsername || '';
 
@@ -135,35 +154,46 @@ export default function TraderDashboard() {
     toast.success(active ? 'Telegram alerts activated!' : 'Telegram alerts deactivated');
   };
 
-  const refreshBotStatus = async () => {
-    const { data: tSettings } = await supabase.from('telegram_settings').select('*').eq('user_id', user!.id);
-    const anyConnected = (tSettings || []).some((t: any) => t.bot_started && t.telegram_chat_id);
-    setTelegramConnected(anyConnected);
+  const checkBotStatus = async () => {
+    setChecking(true);
+    try {
+      const { data: tSettings } = await supabase.from('telegram_settings').select('*').eq('user_id', user!.id);
+      const anyConnected = (tSettings || []).some((t: any) => t.bot_started && t.telegram_chat_id);
+      
+      if (anyConnected) {
+        // Verify the username matches what we saved
+        const connectedSetting = (tSettings || []).find((t: any) => t.bot_started && t.telegram_chat_id);
+        const savedClean = telegramUsername.replace(/^@/, '').toLowerCase();
+        const botClean = (connectedSetting?.telegram_username || '').replace(/^@/, '').toLowerCase();
+        
+        if (botClean && savedClean && botClean !== savedClean) {
+          toast.error(`Username mismatch! You saved @${savedClean} but started the bot as @${botClean}. Please reset and try again.`);
+          setChecking(false);
+          return;
+        }
 
-    if (anyConnected) {
-      // Update local state
-      const tMap: Record<string, TelegramSetting> = {};
-      (tSettings || []).forEach((t: any) => {
-        tMap[t.group_id] = {
-          is_active: t.is_active || false,
-          telegram_username: t.telegram_username || '',
-          bot_started: t.bot_started || false,
-          telegram_chat_id: t.telegram_chat_id || null,
-        };
-      });
-      setTelegramSettings(tMap);
-      const uname = (tSettings || []).find((t: any) => t.telegram_username)?.telegram_username || '';
-      setTelegramUsername(uname);
-      toast.success('✅ Bot connected successfully!');
-    } else {
-      // Also check profile for telegram_username (webhook may have saved it there)
-      const { data: prof } = await supabase.from('profiles').select('telegram_username').eq('id', user!.id).single();
-      if (prof?.telegram_username) {
-        setTelegramUsername(prof.telegram_username);
-        toast.info('Username captured! Now enable alerts for your groups below.');
+        setTelegramConnected(true);
+        const tMap: Record<string, TelegramSetting> = {};
+        (tSettings || []).forEach((t: any) => {
+          tMap[t.group_id] = {
+            is_active: t.is_active || false,
+            telegram_username: t.telegram_username || '',
+            bot_started: t.bot_started || false,
+            telegram_chat_id: t.telegram_chat_id || null,
+          };
+        });
+        setTelegramSettings(tMap);
+        toast.success('✅ Bot connected successfully!');
       } else {
-        toast.info('Bot not started yet. Click the link and press START in Telegram.');
+        // Check profile too
+        const { data: prof } = await supabase.from('profiles').select('telegram_username').eq('id', user!.id).single();
+        if (prof?.telegram_username && !telegramUsername) {
+          setTelegramUsername(prof.telegram_username);
+        }
+        toast.info('Bot not started yet. Open the link above and press START in Telegram.');
       }
+    } finally {
+      setChecking(false);
     }
   };
 
@@ -172,6 +202,8 @@ export default function TraderDashboard() {
     await supabase.from('profiles').update({ telegram_username: null }).eq('id', user!.id);
     setTelegramConnected(false);
     setTelegramUsername('');
+    setUsernameInput('');
+    setUsernameSaved(false);
     setTelegramSettings({});
     toast.success('Telegram disconnected. You can reconnect anytime.');
   };
@@ -241,37 +273,76 @@ export default function TraderDashboard() {
               </div>
             ) : (
               <div className="space-y-5">
-                {/* Global Bot Connection Card */}
-                {!telegramConnected ? (
-                  <div className="tc-card p-4 md:p-6 border-l-4 border-l-amber-500">
-                    <div className="flex items-center gap-2 mb-3">
-                      <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
-                      <h3 className="text-sm md:text-base font-semibold text-amber-700 dark:text-amber-400">Connect Telegram to Get Alerts</h3>
-                    </div>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      Click the button below to open our bot in Telegram. Press <strong>START</strong> — that's it! We'll automatically link your account.
-                    </p>
-                    <a href={botLink} target="_blank" rel="noopener noreferrer">
-                      <Button className="w-full gap-2 tc-btn-click min-h-[44px] bg-[#0088cc] hover:bg-[#006699] text-white">
-                        <ExternalLink className="h-4 w-4" /> Open @{BOT_USERNAME} in Telegram
-                      </Button>
-                    </a>
-                    <Button variant="ghost" size="sm" className="mt-3 w-full text-xs" onClick={refreshBotStatus}>
-                      🔄 I've started the bot — check status
-                    </Button>
-                  </div>
-                ) : (
+                {/* Connected state */}
+                {telegramConnected ? (
                   <div className="tc-card p-4 md:p-5 border-l-4 border-l-green-500">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="h-5 w-5 text-green-600" />
                         <div>
                           <p className="text-sm font-semibold text-green-700 dark:text-green-400">Telegram Connected</p>
-                          {telegramUsername && <p className="text-xs text-muted-foreground">@{telegramUsername}</p>}
+                          <p className="text-xs text-muted-foreground">@{telegramUsername.replace(/^@/, '')}</p>
                         </div>
                       </div>
-                      <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1" onClick={resetTelegram}>
+                      <Button variant="ghost" size="sm" className="text-xs text-destructive gap-1" onClick={resetTelegram}>
                         <RotateCcw className="h-3 w-3" /> Reset
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  /* Step-by-step setup */
+                  <div className="tc-card p-4 md:p-6 border-l-4 border-l-amber-500">
+                    <div className="flex items-center gap-2 mb-4">
+                      <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
+                      <h3 className="text-sm md:text-base font-semibold text-amber-700 dark:text-amber-400">Setup Telegram Alerts</h3>
+                    </div>
+
+                    {/* Step 1: Enter username */}
+                    <div className="mb-4">
+                      <p className="text-xs font-semibold text-muted-foreground mb-1">STEP 1 — Enter your Telegram username</p>
+                      <div className="flex gap-2">
+                        <div className="relative flex-1">
+                          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">@</span>
+                          <Input
+                            placeholder="yourusername"
+                            value={usernameInput}
+                            onChange={(e) => {
+                              setUsernameInput(e.target.value.replace(/^@/, ''));
+                              setUsernameSaved(false);
+                            }}
+                            className="pl-8"
+                            disabled={usernameSaved}
+                          />
+                        </div>
+                        {!usernameSaved ? (
+                          <Button size="sm" className="min-h-[40px] shrink-0" onClick={saveUsername}>Save</Button>
+                        ) : (
+                          <Button size="sm" variant="outline" className="min-h-[40px] shrink-0 text-green-600 border-green-300">
+                            <CheckCircle2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
+                      {usernameSaved && (
+                        <p className="text-xs text-green-600 mt-1">✓ Username saved as @{usernameInput}</p>
+                      )}
+                    </div>
+
+                    {/* Step 2: Open bot link */}
+                    <div className={`mb-4 ${!usernameSaved ? 'opacity-40 pointer-events-none' : ''}`}>
+                      <p className="text-xs font-semibold text-muted-foreground mb-1">STEP 2 — Open bot & press START</p>
+                      <a href={botLink} target="_blank" rel="noopener noreferrer">
+                        <Button className="w-full gap-2 tc-btn-click min-h-[44px] bg-[#0088cc] hover:bg-[#006699] text-white" disabled={!usernameSaved}>
+                          <ExternalLink className="h-4 w-4" /> Open @{BOT_USERNAME} in Telegram
+                        </Button>
+                      </a>
+                      <p className="text-[11px] text-muted-foreground mt-1">Make sure you're logged in as <strong>@{usernameInput || '...'}</strong> on Telegram</p>
+                    </div>
+
+                    {/* Step 3: Verify */}
+                    <div className={`${!usernameSaved ? 'opacity-40 pointer-events-none' : ''}`}>
+                      <p className="text-xs font-semibold text-muted-foreground mb-1">STEP 3 — Verify connection</p>
+                      <Button variant="outline" className="w-full gap-2 tc-btn-click min-h-[44px]" onClick={checkBotStatus} disabled={!usernameSaved || checking}>
+                        {checking ? <Loader2 className="h-4 w-4 animate-spin" /> : '🔄'} I've started the bot — check status
                       </Button>
                     </div>
                   </div>
