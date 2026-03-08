@@ -11,14 +11,16 @@ import { useAuth } from '@/lib/auth';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Advisor = Tables<'advisors'>;
+type AdvisorWithStats = Advisor & { groups: { monthly_price: number }[]; subCount: number; signalStats: { total_signals: number; win_count: number; loss_count: number; resolved_count: number } };
 
 export default function Landing() {
   const { user } = useAuth();
-  const [advisors, setAdvisors] = useState<(Advisor & { groups: { monthly_price: number }[]; subCount: number })[]>([]);
+  const [advisors, setAdvisors] = useState<AdvisorWithStats[]>([]);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('All');
   const [loading, setLoading] = useState(true);
   const [subscribedGroups, setSubscribedGroups] = useState<any[]>([]);
+  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => { fetchAdvisors(); }, []);
   useEffect(() => { if (user) fetchSubscribedGroups(); }, [user]);
