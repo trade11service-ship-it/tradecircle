@@ -47,7 +47,14 @@ export default function AdvisorProfile() {
     setTodaySignals(todaySigs || []);
     if (user) {
       const { data: subs } = await supabase.from('subscriptions').select('group_id').eq('user_id', user.id).eq('status', 'active');
-      setSubscribedGroupIds((subs || []).map(s => s.group_id));
+      const subIds = (subs || []).map(s => s.group_id);
+      // If user is the advisor, grant free access to all their groups
+      if (adv && adv.user_id === user.id) {
+        const allGroupIds = (grps || []).map(g => g.id);
+        setSubscribedGroupIds([...new Set([...subIds, ...allGroupIds])]);
+      } else {
+        setSubscribedGroupIds(subIds);
+      }
     }
     setLoading(false);
   };
@@ -72,6 +79,7 @@ export default function AdvisorProfile() {
   if (loading) return <div className="min-h-screen bg-off-white"><Navbar /><div className="flex items-center justify-center py-20"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div></div>;
   if (!advisor) return <div className="min-h-screen bg-off-white"><Navbar /><div className="py-20 text-center text-muted-foreground">Advisor not found</div></div>;
 
+  const isOwner = user && advisor && advisor.user_id === user.id;
   const isSubscribedToAny = groups.some(g => subscribedGroupIds.includes(g.id));
 
   return (
@@ -134,7 +142,7 @@ export default function AdvisorProfile() {
                   {group.description && <p className="mt-2 tc-small">{group.description}</p>}
                   <p className="mt-3 text-xl tc-amount">₹{group.monthly_price}/month</p>
                   {subscribedGroupIds.includes(group.id) ? (
-                    <span className="tc-badge-active mt-3 inline-block">✓ Subscribed</span>
+                    <span className="tc-badge-active mt-3 inline-block">{isOwner ? '👤 Your Group' : '✓ Subscribed'}</span>
                   ) : (
                     <Button className="mt-3 w-full font-semibold tc-btn-click" size="sm" onClick={() => handleSubscribe(group)} disabled={subscribing === group.id}>
                       {subscribing === group.id ? 'Processing...' : `Subscribe ₹${group.monthly_price}/mo`}
