@@ -52,6 +52,9 @@
     --small-text: 220 9% 64%;
     --warning: 45 100% 51%;
     --warning-foreground: 240 25% 14%;
+
+    --admin-dark: 240 25% 14%;
+    --admin-accent: 153 100% 68%;
   }
 
   .dark {
