@@ -188,6 +188,68 @@ export type Database = {
         }
         Relationships: []
       }
+      signal_deliveries: {
+        Row: {
+          advisor_id: string
+          delivered_at: string
+          delivery_method: string
+          group_id: string
+          id: string
+          signal_id: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          advisor_id: string
+          delivered_at?: string
+          delivery_method?: string
+          group_id: string
+          id?: string
+          signal_id: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          advisor_id?: string
+          delivered_at?: string
+          delivery_method?: string
+          group_id?: string
+          id?: string
+          signal_id?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "signal_deliveries_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "advisors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signal_deliveries_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signal_deliveries_signal_id_fkey"
+            columns: ["signal_id"]
+            isOneToOne: false
+            referencedRelation: "signals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "signal_deliveries_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       signals: {
         Row: {
           advisor_id: string
