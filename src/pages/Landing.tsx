@@ -5,7 +5,7 @@ import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Star, Search, Shield, ShieldCheck, FileCheck, Lock, CreditCard, Bell, ArrowRight, BarChart2, Eye, Users, IndianRupee, RefreshCw } from 'lucide-react';
+import { Star, Search, Shield, ShieldCheck, FileCheck, Lock, CreditCard, Bell, ArrowRight, BarChart2, Eye, Users, IndianRupee, RefreshCw, MessageCircle, Plus, Minus } from 'lucide-react';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { useAuth } from '@/lib/auth';
 import type { Tables } from '@/integrations/supabase/types';
@@ -526,29 +526,62 @@ export default function Landing() {
       </section>
 
       {/* FAQ */}
-      <section className="px-4 py-12 md:py-20">
-        <div className="container mx-auto max-w-3xl text-center">
-          <h2 className="tc-section-title text-xl md:text-[28px]">Frequently Asked Questions</h2>
-          <p className="mt-2 text-sm text-muted-foreground">Got questions? We've got answers.</p>
-          <div className="mt-8 md:mt-10 text-left">
-            <Accordion type="single" collapsible className="space-y-3">
+      <section className="bg-muted px-5 py-13 md:py-16">
+        <div className="container mx-auto max-w-2xl">
+          {/* Header */}
+          <div className="mb-7">
+            <span className="text-[11px] font-bold text-primary uppercase tracking-[3px]">QUICK ANSWERS</span>
+            <h2 className="mt-1.5 text-[28px] font-extrabold leading-[1.2] tracking-tight text-foreground">
+              Questions?<br />We're <span className="text-secondary">Straight</span><br />With You.
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground">No corporate answers. Just honest replies.</p>
+          </div>
+
+          {/* FAQ Accordion */}
+          <div className="overflow-hidden rounded-2xl border-[1.5px] border-border bg-card shadow-[0_2px_12px_rgba(0,0,0,0.05)]">
+            <Accordion type="single" collapsible defaultValue="faq-0">
               {[
-                { q: 'Is TradeCircle an investment advisor?', a: 'No. TradeCircle is a technology platform that connects traders with independently SEBI-registered investment advisors. We do not provide any investment advice or trading recommendations.' },
-                { q: 'How are advisors verified?', a: 'Every advisor on TradeCircle is manually verified for a valid SEBI registration number before being listed. We check their credentials against official SEBI records.' },
-                { q: 'How do I receive trading signals?', a: 'Once you subscribe to an advisor\'s group, you receive real-time trading signals directly on Telegram. Just link your Telegram username in your dashboard settings.' },
-                { q: 'Can I cancel my subscription?', a: 'Subscriptions are billed monthly and are non-refundable. However, you can choose not to renew at the end of your billing period.' },
-                { q: 'Is my payment secure?', a: 'Yes! All payments are processed securely through Razorpay, a trusted payment gateway used by millions of Indians.' },
+                { q: 'Is TradeCircle a SEBI registered investment advisor?', a: "No — and that's intentional. TradeCircle is a technology marketplace operated by STREZONIC PRIVATE LIMITED. We list and verify SEBI-registered advisors, but we don't give any advice ourselves. Every signal you receive is from that advisor — not from us." },
+                { q: 'How do you verify advisors?', a: "Every advisor submits their SEBI registration number, Aadhaar, PAN, and documents during signup. Our team manually checks their license on SEBI's official database before approving. No shortcuts. No exceptions." },
+                { q: 'What if the advisor gives a wrong call and I lose money?', a: "Advisors are SEBI registered and legally accountable for their advice — not us. Before subscribing, you can see their full WIN/LOSS history publicly. You choose based on real track records, not just claims." },
+                { q: 'How do I get the trading signals?', a: 'Two ways — on our platform feed and directly on your personal Telegram. The moment your advisor posts a signal, it hits your Telegram in under 3 seconds. You never miss a trade.' },
+                { q: 'Can I cancel my subscription?', a: 'Yes. Cancel anytime from your dashboard in one click. No questions, no lock-in period, no annual contracts. Monthly subscriptions only.' },
+                { q: 'Is my payment secure?', a: "All payments are processed by Razorpay — India's most trusted payment gateway used by Zomato, Swiggy, CRED. We never store your card details." },
+                { q: 'Can I subscribe to multiple advisors?', a: 'Absolutely. Subscribe to as many advisor groups as you want. Each subscription is independent and managed separately in your dashboard.' },
+                { q: 'How is TradeCircle different from a Telegram channel?', a: "Three big differences: Every advisor is SEBI verified (accountable by law). Every signal is permanently recorded — WIN or LOSS, nothing gets deleted. And you get signals on Telegram anyway — plus a full professional platform." },
               ].map((faq, i) => (
-                <AccordionItem key={i} value={`faq-${i}`} className="tc-card px-4 md:px-6 border rounded-xl">
-                  <AccordionTrigger className="text-left text-sm md:text-base font-semibold text-foreground hover:no-underline">
-                    {faq.q}
+                <AccordionItem
+                  key={i}
+                  value={`faq-${i}`}
+                  className={`border-b border-[hsl(220,13%,96%)] last:border-b-0 ${i === 0 ? 'border-l-[3px] border-l-primary' : ''}`}
+                >
+                  <AccordionTrigger className="px-5 py-4 text-left text-sm font-semibold text-foreground leading-snug hover:no-underline [&[data-state=open]>div]:bg-light-green [&[data-state=open]>div>svg:first-child]:hidden [&[data-state=open]>div>svg:last-child]:block [&[data-state=closed]>div>svg:first-child]:block [&[data-state=closed]>div>svg:last-child]:hidden [&>svg]:hidden">
+                    <span className="flex-1 pr-3">{faq.q}</span>
+                    <div className="flex h-7 w-7 min-w-[28px] items-center justify-center rounded-full bg-muted transition-all duration-200">
+                      <Plus className="h-4 w-4 text-muted-foreground" />
+                      <Minus className="hidden h-4 w-4 text-primary" />
+                    </div>
                   </AccordionTrigger>
-                  <AccordionContent className="text-sm text-muted-foreground">
+                  <AccordionContent className="px-5 pb-4 text-[13px] leading-relaxed text-muted-foreground">
                     {faq.a}
                   </AccordionContent>
                 </AccordionItem>
               ))}
             </Accordion>
+          </div>
+
+          {/* Contact strip */}
+          <div className="mt-5 flex items-center gap-3 rounded-xl border-[1.5px] border-border bg-card p-4">
+            <div className="flex h-10 w-10 min-w-[40px] items-center justify-center rounded-[10px] bg-light-green">
+              <MessageCircle className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <p className="text-[13px] font-semibold text-foreground">Still have questions?</p>
+              <p className="text-[12px] text-muted-foreground">
+                Email us at{' '}
+                <a href="mailto:trade11.service@gmail.com" className="text-secondary hover:underline">trade11.service@gmail.com</a>
+              </p>
+            </div>
           </div>
         </div>
       </section>
