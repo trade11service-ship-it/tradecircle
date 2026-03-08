@@ -376,26 +376,32 @@ export type Database = {
       }
       telegram_settings: {
         Row: {
+          bot_started: boolean | null
           created_at: string | null
           group_id: string
           id: string
           is_active: boolean | null
+          telegram_chat_id: string | null
           telegram_username: string | null
           user_id: string
         }
         Insert: {
+          bot_started?: boolean | null
           created_at?: string | null
           group_id: string
           id?: string
           is_active?: boolean | null
+          telegram_chat_id?: string | null
           telegram_username?: string | null
           user_id: string
         }
         Update: {
+          bot_started?: boolean | null
           created_at?: string | null
           group_id?: string
           id?: string
           is_active?: boolean | null
+          telegram_chat_id?: string | null
           telegram_username?: string | null
           user_id?: string
         }

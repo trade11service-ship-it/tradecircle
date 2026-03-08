@@ -1,0 +1,1 @@
+ALTER TABLE public.telegram_settings ADD COLUMN IF NOT EXISTS telegram_chat_id text, ADD COLUMN IF NOT EXISTS bot_started boolean DEFAULT false;
