@@ -23,7 +23,7 @@ export default function AdvisorDashboard() {
   const [loading, setLoading] = useState(true);
 
   // Group form
-  const [groupForm, setGroupForm] = useState({ name: '', description: '', monthlyPrice: '', razorpayLink: '' });
+  const [groupForm, setGroupForm] = useState({ name: '', description: '', monthlyPrice: '' });
   const [groupDp, setGroupDp] = useState<File | null>(null);
   const [showGroupForm, setShowGroupForm] = useState(false);
 
@@ -55,16 +55,40 @@ export default function AdvisorDashboard() {
       const { data } = await supabase.storage.from('kyc-documents').upload(`groups/${advisor.id}/${Date.now()}.${groupDp.name.split('.').pop()}`, groupDp);
       if (data) dpUrl = supabase.storage.from('kyc-documents').getPublicUrl(data.path).data.publicUrl;
     }
-    const { error } = await supabase.from('groups').insert({
+    const { data: newGroup, error } = await supabase.from('groups').insert({
       advisor_id: advisor.id,
       name: groupForm.name,
       description: groupForm.description,
       monthly_price: parseInt(groupForm.monthlyPrice),
-      razorpay_payment_link: groupForm.razorpayLink,
       dp_url: dpUrl,
+    }).select().single();
+    if (error) { toast.error(error.message); return; }
+
+    // Auto-create Razorpay payment link
+    toast.info('Creating payment link...');
+    const { data: session } = await supabase.auth.getSession();
+    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-payment-link`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session?.session?.access_token}`,
+      },
+      body: JSON.stringify({
+        group_id: newGroup.id,
+        group_name: groupForm.name,
+        amount: parseInt(groupForm.monthlyPrice),
+      }),
     });
-    if (error) toast.error(error.message);
-    else { toast.success('Group created!'); setShowGroupForm(false); setGroupForm({ name: '', description: '', monthlyPrice: '', razorpayLink: '' }); fetchData(); }
+    const result = await res.json();
+    if (res.ok) {
+      toast.success('Group created with payment link!');
+    } else {
+      toast.warning('Group created but payment link generation failed: ' + (result.error || 'Unknown error'));
+    }
+
+    setShowGroupForm(false);
+    setGroupForm({ name: '', description: '', monthlyPrice: '' });
+    fetchData();
   };
 
   const postSignal = async () => {
@@ -141,7 +165,6 @@ export default function AdvisorDashboard() {
                 <div><Label>Description</Label><Textarea value={groupForm.description} onChange={e => setGroupForm({ ...groupForm, description: e.target.value })} /></div>
                 <div><Label>Monthly Price (₹)</Label><Input type="number" value={groupForm.monthlyPrice} onChange={e => setGroupForm({ ...groupForm, monthlyPrice: e.target.value })} /></div>
                 <div><Label>Group Photo</Label><Input type="file" accept="image/*" onChange={e => setGroupDp(e.target.files?.[0] || null)} /></div>
-                <div><Label>Razorpay Payment Link</Label><Input placeholder="Paste your Razorpay payment link" value={groupForm.razorpayLink} onChange={e => setGroupForm({ ...groupForm, razorpayLink: e.target.value })} /></div>
                 <Button onClick={createGroup}>Create Group</Button>
               </div>
             )}
