@@ -5,7 +5,7 @@ import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Star, Search, Shield, ShieldCheck, FileCheck, Lock, CreditCard, Bell, ArrowRight, BarChart2, Eye, Users, IndianRupee, RefreshCw, MessageCircle, Plus, Minus } from 'lucide-react';
+import { Star, Search, Shield, ShieldCheck, FileCheck, Lock, CreditCard, Bell, ArrowRight, BarChart2, Eye, Users, IndianRupee, RefreshCw, MessageCircle, Plus, Minus, AlertCircle, CheckCircle, HelpCircle, ChevronDown } from 'lucide-react';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { useAuth } from '@/lib/auth';
 import type { Tables } from '@/integrations/supabase/types';
@@ -498,84 +498,93 @@ export default function Landing() {
       </section>
 
       {/* Pain Point */}
-      <section className="bg-background px-5 py-13 md:py-16">
+      <section className="bg-background px-5 py-[52px]">
         <div className="container mx-auto max-w-2xl">
           {/* Header */}
-          <div className="text-center mb-7">
-            <span className="text-[11px] font-bold text-destructive uppercase tracking-[3px]">SOUNDS FAMILIAR?</span>
-            <h2 className="mt-2 text-[28px] font-extrabold leading-[1.2] tracking-tight text-foreground">
-              You've Paid For<br />Advice That <span className="text-destructive">Hurt</span><br />Your Portfolio.
+          <div className="text-center mb-9">
+            <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-[3px]">THE PROBLEM WE SOLVE</span>
+            <h2 className="mt-2.5 text-[28px] font-extrabold leading-[1.2] tracking-tight text-foreground">
+              Most Trading Advice<br />in India Has a<br /><span className="text-secondary">Trust</span> Problem.
             </h2>
-          </div>
-
-          {/* Pain Cards */}
-          <div className="space-y-3">
-            {/* Card 1 — Fake Telegram tip */}
-            <div className="rounded-[14px] border-[1.5px] border-[hsl(0,70%,88%)] border-l-4 border-l-destructive bg-[hsl(0,100%,98%)] p-4">
-              <span className="inline-block rounded-full bg-[hsl(0,80%,95%)] px-2.5 py-0.5 text-[10px] font-bold tracking-wider text-destructive">SCENARIO 1</span>
-              <div className="mt-3 max-w-[85%] rounded-xl rounded-bl-none bg-muted px-3 py-2.5 text-[13px] text-foreground">
-                🔥 BUY RELIANCE NOW<br />Target 2800 🚀🚀🚀
-              </div>
-              <p className="mt-1.5 text-[10px] text-[hsl(var(--small-text))]">Telegram Guru • No SEBI • Disappeared next day</p>
-              <span className="mt-2 inline-block rounded-md bg-[hsl(0,80%,95%)] px-2.5 py-1 text-[12px] font-bold text-destructive">📉 Lost ₹12,000</span>
-            </div>
-
-            {/* Card 2 — Fake receipt */}
-            <div className="rounded-[14px] border-[1.5px] border-[hsl(0,70%,88%)] border-l-4 border-l-destructive bg-[hsl(0,100%,98%)] p-4">
-              <span className="inline-block rounded-full bg-[hsl(0,80%,95%)] px-2.5 py-0.5 text-[10px] font-bold tracking-wider text-destructive">SCENARIO 2</span>
-              <div className="mt-3 rounded-lg border border-dashed border-border bg-card p-3">
-                <p className="text-[13px] font-bold text-foreground">Premium Tips Group</p>
-                <p className="text-[12px] text-muted-foreground">₹2,499/month paid</p>
-                <div className="my-2 border-t border-dashed border-border" />
-                <p className="text-[11px] text-muted-foreground">Win rate disclosed: 95%</p>
-                <p className="text-[11px] font-bold text-destructive">Actual win rate: ???</p>
-                <p className="text-[11px] italic text-[hsl(var(--small-text))]">No history shown. Ever.</p>
-              </div>
-              <span className="mt-2 inline-block rounded-md bg-[hsl(0,80%,95%)] px-2.5 py-1 text-[12px] font-bold text-destructive">🕳️ Zero Transparency</span>
-            </div>
-
-            {/* Card 3 — Timeline */}
-            <div className="rounded-[14px] border-[1.5px] border-[hsl(0,70%,88%)] border-l-4 border-l-destructive bg-[hsl(0,100%,98%)] p-4">
-              <span className="inline-block rounded-full bg-[hsl(0,80%,95%)] px-2.5 py-0.5 text-[10px] font-bold tracking-wider text-destructive">SCENARIO 3</span>
-              <div className="mt-3 space-y-2">
-                <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-primary" /><span className="text-[12px] text-muted-foreground">January: Joined group</span></div>
-                <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-destructive" /><span className="text-[12px] text-destructive">February: 3 bad calls</span></div>
-                <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-destructive" /><span className="text-[12px] text-destructive">March: Group deleted</span></div>
-                <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-[hsl(var(--small-text))]" /><span className="text-[12px] italic text-[hsl(var(--small-text))]">April: New group, same guy</span></div>
-              </div>
-              <span className="mt-2 inline-block rounded-md bg-[hsl(0,80%,95%)] px-2.5 py-1 text-[12px] font-bold text-destructive">👻 Advisor Vanished</span>
-            </div>
-          </div>
-
-          {/* Divider */}
-          <div className="my-6 flex items-center gap-3">
-            <div className="h-px flex-1 bg-border" />
-            <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-primary bg-light-green">
-              <ShieldCheck className="h-5 w-5 text-primary" />
-            </div>
-            <div className="h-px flex-1 bg-border" />
-          </div>
-
-          {/* Solution strip */}
-          <div className="rounded-[14px] border-[1.5px] border-[hsl(120,40%,75%)] bg-light-green p-5">
-            <div className="space-y-3">
-              {[
-                'Every advisor has SEBI license we verified ourselves',
-                'Full WIN/LOSS history shown before you pay anything',
-                'Advisor legally bound by SEBI. Can\'t just disappear.',
-              ].map((text, i) => (
-                <div key={i} className="flex items-center gap-3">
-                  <div className="flex h-7 w-7 min-w-[28px] items-center justify-center rounded-full bg-primary">
-                    <ShieldCheck className="h-3.5 w-3.5 text-primary-foreground" />
-                  </div>
-                  <span className="text-sm font-semibold text-foreground">{text}</span>
-                </div>
-              ))}
-            </div>
-            <div className="mt-4 border-t border-[hsl(120,30%,80%)]" />
-            <p className="mt-3 text-center text-[13px] italic text-muted-foreground">
-              TradeCircle was built because we were tired of this too.
+            <p className="mt-2.5 mx-auto max-w-[300px] text-sm text-muted-foreground leading-relaxed">
+              Not because all advisors are bad. Because there's no way to verify the good ones from the rest.
             </p>
+          </div>
+
+          {/* Card 1 — Stat Style */}
+          <div className="rounded-2xl border-[1.5px] border-border bg-muted p-5">
+            <p className="text-4xl font-black tracking-tight text-foreground" style={{ letterSpacing: '-1px' }}>₹47,000 Cr+</p>
+            <p className="mt-1 text-[13px] text-muted-foreground leading-normal">
+              lost by Indian retail traders<br />to unverified advice annually
+            </p>
+            <div className="mt-4 flex items-center gap-2">
+              <div className="flex h-8 w-8 min-w-[32px] items-center justify-center rounded-lg bg-[hsl(45,100%,94%)]">
+                <AlertCircle className="h-4 w-4 text-[hsl(36,90%,50%)]" />
+              </div>
+              <span className="text-[11px] text-[hsl(var(--small-text))] leading-snug">
+                SEBI reports this as India's biggest investor protection issue
+              </span>
+            </div>
+          </div>
+
+          {/* Card 2 — Comparison Style */}
+          <div className="mt-4 overflow-hidden rounded-2xl border-[1.5px] border-border bg-card">
+            <div className="border-b border-border bg-muted px-4 py-2.5">
+              <span className="text-[11px] font-semibold text-muted-foreground tracking-wider">WHAT YOU'RE PROMISED vs REALITY</span>
+            </div>
+            <div className="grid grid-cols-2 gap-3 p-4">
+              {/* Promised */}
+              <div>
+                <span className="text-[10px] font-semibold text-[hsl(var(--small-text))] uppercase tracking-wider">What They Claim</span>
+                <div className="mt-2.5 space-y-2">
+                  {['95% accuracy', '₹10,000+ profit/month', 'SEBI registered'].map((t, i) => (
+                    <div key={i} className="flex items-center gap-1.5">
+                      <CheckCircle className="h-3.5 w-3.5 text-[hsl(var(--small-text))]" />
+                      <span className="text-xs text-muted-foreground">{t}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              {/* Divider */}
+              <div className="relative">
+                <div className="absolute left-0 top-0 bottom-0 w-px bg-border" />
+                <div className="pl-3">
+                  <span className="text-[10px] font-semibold text-[hsl(var(--small-text))] uppercase tracking-wider">What You Get</span>
+                  <div className="mt-2.5 space-y-2">
+                    {['No history shown', 'No track record', 'No way to verify'].map((t, i) => (
+                      <div key={i} className="flex items-center gap-1.5">
+                        <HelpCircle className="h-3.5 w-3.5 text-[hsl(var(--small-text))]" />
+                        <span className="text-xs text-muted-foreground">{t}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 3 — Quote Style */}
+          <div className="mt-4 rounded-2xl border-[1.5px] border-border bg-muted p-5">
+            <span className="block font-serif text-[72px] font-black leading-none text-border" style={{ marginBottom: '-8px' }}>"</span>
+            <p className="text-[15px] italic text-muted-foreground leading-relaxed">
+              I paid ₹3,000/month for 6 months. When I asked for their track record, the group was deleted.
+            </p>
+            <div className="mt-3.5 flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[hsl(210,80%,94%)] to-[hsl(210,70%,84%)]">
+                <span className="text-xs font-bold text-secondary">R</span>
+              </div>
+              <div className="flex-1">
+                <p className="text-[13px] font-semibold text-foreground">Rahul M.</p>
+                <p className="text-[11px] text-[hsl(var(--small-text))]">Retail trader, Mumbai</p>
+              </div>
+              <span className="text-[10px] italic text-[hsl(var(--small-text))]">One of many</span>
+            </div>
+          </div>
+
+          {/* Transition */}
+          <div className="mt-8 flex flex-col items-center">
+            <p className="text-[22px] font-extrabold tracking-tight text-foreground" style={{ letterSpacing: '-0.3px' }}>There's a better way.</p>
+            <ChevronDown className="mt-2 h-7 w-7 text-primary animate-bounce" style={{ animationDuration: '1.5s' }} />
           </div>
         </div>
       </section>
