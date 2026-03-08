@@ -254,47 +254,56 @@ export type Database = {
         Row: {
           advisor_id: string
           created_at: string | null
-          entry_price: number
+          entry_price: number | null
           group_id: string
           id: string
-          instrument: string
+          image_url: string | null
+          instrument: string | null
+          message_text: string | null
           notes: string | null
+          post_type: string
           result: string | null
           signal_date: string | null
-          signal_type: string
-          stop_loss: number
-          target_price: number
-          timeframe: string
+          signal_type: string | null
+          stop_loss: number | null
+          target_price: number | null
+          timeframe: string | null
         }
         Insert: {
           advisor_id: string
           created_at?: string | null
-          entry_price: number
+          entry_price?: number | null
           group_id: string
           id?: string
-          instrument: string
+          image_url?: string | null
+          instrument?: string | null
+          message_text?: string | null
           notes?: string | null
+          post_type?: string
           result?: string | null
           signal_date?: string | null
-          signal_type: string
-          stop_loss: number
-          target_price: number
-          timeframe: string
+          signal_type?: string | null
+          stop_loss?: number | null
+          target_price?: number | null
+          timeframe?: string | null
         }
         Update: {
           advisor_id?: string
           created_at?: string | null
-          entry_price?: number
+          entry_price?: number | null
           group_id?: string
           id?: string
-          instrument?: string
+          image_url?: string | null
+          instrument?: string | null
+          message_text?: string | null
           notes?: string | null
+          post_type?: string
           result?: string | null
           signal_date?: string | null
-          signal_type?: string
-          stop_loss?: number
-          target_price?: number
-          timeframe?: string
+          signal_type?: string | null
+          stop_loss?: number | null
+          target_price?: number | null
+          timeframe?: string | null
         }
         Relationships: [
           {
