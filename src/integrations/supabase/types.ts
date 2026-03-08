@@ -150,6 +150,54 @@ export type Database = {
           },
         ]
       }
+      deletion_requests: {
+        Row: {
+          admin_notes: string | null
+          advisor_name: string | null
+          created_at: string
+          email: string | null
+          group_id: string | null
+          group_name: string | null
+          id: string
+          reason: string | null
+          request_type: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          advisor_name?: string | null
+          created_at?: string
+          email?: string | null
+          group_id?: string | null
+          group_name?: string | null
+          id?: string
+          reason?: string | null
+          request_type: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          admin_notes?: string | null
+          advisor_name?: string | null
+          created_at?: string
+          email?: string | null
+          group_id?: string | null
+          group_name?: string | null
+          id?: string
+          reason?: string | null
+          request_type?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       groups: {
         Row: {
           advisor_id: string

@@ -15,7 +15,7 @@ type Advisor = Tables<'advisors'>;
 export default function AdminDashboard() {
   const { user, profile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<'pending' | 'advisors' | 'users' | 'payments' | 'legal'>('pending');
+  const [tab, setTab] = useState<'pending' | 'advisors' | 'users' | 'payments' | 'legal' | 'requests'>('pending');
   const [pendingAdvisors, setPendingAdvisors] = useState<Advisor[]>([]);
   const [allAdvisors, setAllAdvisors] = useState<Advisor[]>([]);
   const [users, setUsers] = useState<any[]>([]);
@@ -31,6 +31,7 @@ export default function AdminDashboard() {
   const [advisorLegal, setAdvisorLegal] = useState<any[]>([]);
   const [userLegal, setUserLegal] = useState<any[]>([]);
   const [legalSearch, setLegalSearch] = useState('');
+  const [deletionRequests, setDeletionRequests] = useState<any[]>([]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -61,6 +62,9 @@ export default function AdminDashboard() {
     ]);
     setAdvisorLegal(advLegal.data || []);
     setUserLegal(usrLegal.data || []);
+
+    const { data: delReqs } = await supabase.from('deletion_requests').select('*').order('created_at', { ascending: false });
+    setDeletionRequests(delReqs || []);
 
     setLoading(false);
   };
@@ -123,6 +127,7 @@ export default function AdminDashboard() {
     { key: 'users' as const, label: 'All Users' },
     { key: 'payments' as const, label: 'Payments' },
     { key: 'legal' as const, label: 'Legal Records' },
+    { key: 'requests' as const, label: `Requests (${deletionRequests.filter(r => r.status === 'pending').length})` },
   ];
 
   const filteredAdvisorLegal = advisorLegal.filter((r: any) =>
@@ -337,6 +342,49 @@ export default function AdminDashboard() {
                 </table>
               </div>
             )}
+          </div>
+        )}
+
+        {/* DELETION REQUESTS TAB */}
+        {tab === 'requests' && (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="tc-section-title text-xl">Deletion / Removal Requests</h2>
+              <Button variant="outline" size="sm" className="gap-2" onClick={() => exportCsv(deletionRequests, 'deletion-requests')}>
+                <Download className="h-4 w-4" /> Export CSV
+              </Button>
+            </div>
+            <div className="tc-card-static overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead><tr className="border-b bg-off-white text-left">
+                  <th className="p-3 font-medium text-muted-foreground">Type</th>
+                  <th className="p-3 font-medium text-muted-foreground">Name</th>
+                  <th className="p-3 font-medium text-muted-foreground">Email</th>
+                  <th className="p-3 font-medium text-muted-foreground">Group</th>
+                  <th className="p-3 font-medium text-muted-foreground">Status</th>
+                  <th className="p-3 font-medium text-muted-foreground">Date</th>
+                  <th className="p-3 font-medium text-muted-foreground">Actions</th>
+                </tr></thead>
+                <tbody>
+                  {deletionRequests.length === 0 && <tr><td colSpan={7} className="p-12 text-center text-muted-foreground">No requests</td></tr>}
+                  {deletionRequests.map((r: any, i: number) => (
+                    <tr key={r.id} className={`border-b last:border-0 ${i % 2 === 1 ? 'bg-off-white' : ''}`}>
+                      <td className="p-3"><span className="tc-badge-strategy capitalize">{r.request_type?.replace(/_/g, ' ')}</span></td>
+                      <td className="p-3 font-medium">{r.advisor_name || '-'}</td>
+                      <td className="p-3 text-muted-foreground">{r.email || '-'}</td>
+                      <td className="p-3">{r.group_name || '-'}</td>
+                      <td className="p-3"><span className={`text-xs font-medium px-2 py-0.5 rounded-full ${r.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : r.status === 'approved' ? 'tc-badge-active' : 'tc-badge-rejected'}`}>{r.status}</span></td>
+                      <td className="p-3">{r.created_at ? new Date(r.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</td>
+                      <td className="p-3">
+                        <Button variant="outline" size="sm" onClick={() => { const el = document.createElement('textarea'); el.value = r.reason || ''; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); toast.success('Reason copied to clipboard'); }}>
+                          View Reason
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
       </div>

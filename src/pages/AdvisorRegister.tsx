@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Navbar } from '@/components/Navbar';
@@ -23,9 +23,22 @@ export default function AdvisorRegister() {
   const [check1, setCheck1] = useState(false);
   const [check2, setCheck2] = useState(false);
   const [showCheckError, setShowCheckError] = useState(false);
+  const [existingAdvisor, setExistingAdvisor] = useState<any>(null);
+  const [checkingAdvisor, setCheckingAdvisor] = useState(false);
   const update = (key: string, value: string) => setForm({ ...form, [key]: value });
 
-  if (authLoading) return <div className="flex min-h-screen items-center justify-center bg-off-white"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>;
+  // Check if user is already registered as advisor
+  useEffect(() => {
+    if (user) {
+      setCheckingAdvisor(true);
+      supabase.from('advisors').select('*').eq('user_id', user.id).single().then(({ data }) => {
+        if (data) setExistingAdvisor(data);
+        setCheckingAdvisor(false);
+      });
+    }
+  }, [user]);
+
+  if (authLoading || checkingAdvisor) return <div className="flex min-h-screen items-center justify-center bg-off-white"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>;
 
   if (!user) return (
     <div className="min-h-screen flex flex-col bg-off-white"><Navbar />
@@ -37,6 +50,30 @@ export default function AdvisorRegister() {
           <div className="mt-6 flex gap-3 justify-center">
             <Button onClick={() => navigate('/login')} className="tc-btn-click">Sign In</Button>
             <Button variant="outline" onClick={() => navigate('/register')} className="tc-btn-click">Create Account</Button>
+          </div>
+        </div>
+      </div>
+      <Footer />
+    </div>
+  );
+
+  if (existingAdvisor) return (
+    <div className="min-h-screen flex flex-col bg-off-white"><Navbar />
+      <div className="flex-1 flex items-center justify-center px-4">
+        <div className="tc-card-static p-8 text-center max-w-md">
+          <CheckCircle className="mx-auto h-16 w-16 text-primary" />
+          <h2 className="mt-4 text-xl font-bold">Already Registered</h2>
+          <p className="mt-3 text-sm text-muted-foreground">
+            You are already registered as an advisor on TradeCircle. 
+            {existingAdvisor.status === 'pending' && ' Your application is currently under review.'}
+            {existingAdvisor.status === 'approved' && ' Your account is active.'}
+            {existingAdvisor.status === 'rejected' && ` Your application was rejected${existingAdvisor.rejection_reason ? ': ' + existingAdvisor.rejection_reason : '.'}`}
+          </p>
+          <div className="mt-6 flex gap-3 justify-center">
+            {existingAdvisor.status === 'approved' && (
+              <Button onClick={() => navigate('/advisor/dashboard')} className="tc-btn-click">Go to Dashboard</Button>
+            )}
+            <Button variant="outline" onClick={() => navigate('/')} className="tc-btn-click">Back to Home</Button>
           </div>
         </div>
       </div>
