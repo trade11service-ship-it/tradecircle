@@ -1,8 +1,8 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Menu, X, User, LogOut, ChevronDown } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +14,15 @@ import {
 export function Navbar() {
   const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 10);
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   const getDashboardLink = () => {
     if (profile?.role === 'admin') return '/admin';
@@ -22,18 +30,23 @@ export function Navbar() {
     return '/dashboard';
   };
 
+  const isActive = (path: string) => location.pathname === path;
+
+  const linkClass = (path: string) =>
+    `text-sm transition-colors ${isActive(path) ? 'font-semibold text-primary' : 'text-muted-foreground hover:text-foreground'}`;
+
   return (
-    <nav className="sticky top-0 z-50 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
-      <div className="container mx-auto flex items-center justify-between px-4 py-3">
-        <Link to="/" className="text-xl font-bold text-secondary">TradeCircle</Link>
+    <nav className={`sticky top-0 z-50 h-16 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 transition-shadow ${scrolled ? 'shadow-md' : ''}`}>
+      <div className="container mx-auto flex h-full items-center justify-between px-4">
+        <Link to="/" className="text-xl font-extrabold text-secondary">TradeCircle</Link>
 
         {/* Desktop nav */}
         <div className="hidden items-center gap-6 md:flex">
-          <Link to="/" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Home</Link>
+          <Link to="/" className={linkClass('/')}>Home</Link>
           <Link to="/#advisors" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Browse Advisors</Link>
           {user ? (
             <>
-              <Link to={getDashboardLink()} className="text-sm text-muted-foreground transition-colors hover:text-foreground">Dashboard</Link>
+              <Link to={getDashboardLink()} className={linkClass(getDashboardLink())}>Dashboard</Link>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="sm" className="gap-2">
@@ -57,8 +70,8 @@ export function Navbar() {
             </>
           ) : (
             <div className="flex items-center gap-2">
-              <Link to="/login"><Button variant="outline" size="sm">Sign In</Button></Link>
-              <Link to="/register"><Button size="sm">Sign Up</Button></Link>
+              <Link to="/login"><Button variant="outline" size="sm" className="border-2 border-primary text-primary hover:bg-light-green tc-btn-click">Sign In</Button></Link>
+              <Link to="/register"><Button size="sm" className="tc-btn-click">Sign Up</Button></Link>
             </div>
           )}
         </div>
@@ -71,7 +84,7 @@ export function Navbar() {
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div className="border-t px-4 py-4 md:hidden">
+        <div className="border-t bg-card px-4 py-4 md:hidden">
           <div className="flex flex-col gap-3">
             <Link to="/" className="text-sm font-medium" onClick={() => setMenuOpen(false)}>Home</Link>
             <Link to="/#advisors" className="text-sm font-medium" onClick={() => setMenuOpen(false)}>Browse Advisors</Link>
@@ -79,14 +92,14 @@ export function Navbar() {
               <>
                 <Link to={getDashboardLink()} className="text-sm font-medium" onClick={() => setMenuOpen(false)}>Dashboard</Link>
                 <Link to="/profile" className="text-sm font-medium" onClick={() => setMenuOpen(false)}>My Profile</Link>
-                <Button variant="outline" size="sm" onClick={() => { signOut(); navigate('/'); setMenuOpen(false); }}>
+                <Button variant="outline" size="sm" className="min-h-[44px]" onClick={() => { signOut(); navigate('/'); setMenuOpen(false); }}>
                   <LogOut className="mr-2 h-4 w-4" /> Logout
                 </Button>
               </>
             ) : (
               <div className="flex gap-2">
-                <Link to="/login" className="flex-1" onClick={() => setMenuOpen(false)}><Button variant="outline" size="sm" className="w-full">Sign In</Button></Link>
-                <Link to="/register" className="flex-1" onClick={() => setMenuOpen(false)}><Button size="sm" className="w-full">Sign Up</Button></Link>
+                <Link to="/login" className="flex-1" onClick={() => setMenuOpen(false)}><Button variant="outline" size="sm" className="w-full min-h-[44px] border-2 border-primary text-primary">Sign In</Button></Link>
+                <Link to="/register" className="flex-1" onClick={() => setMenuOpen(false)}><Button size="sm" className="w-full min-h-[44px]">Sign Up</Button></Link>
               </div>
             )}
           </div>
