@@ -835,6 +835,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_advisor_signal_stats: { Args: { _advisor_id: string }; Returns: Json }
       get_advisor_subscriber_count: {
         Args: { _advisor_id: string }
         Returns: number

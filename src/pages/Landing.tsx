@@ -11,14 +11,16 @@ import { useAuth } from '@/lib/auth';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Advisor = Tables<'advisors'>;
+type AdvisorWithStats = Advisor & { groups: { monthly_price: number }[]; subCount: number; signalStats: { total_signals: number; win_count: number; loss_count: number; resolved_count: number } };
 
 export default function Landing() {
   const { user } = useAuth();
-  const [advisors, setAdvisors] = useState<(Advisor & { groups: { monthly_price: number }[]; subCount: number })[]>([]);
+  const [advisors, setAdvisors] = useState<AdvisorWithStats[]>([]);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('All');
   const [loading, setLoading] = useState(true);
   const [subscribedGroups, setSubscribedGroups] = useState<any[]>([]);
+  const [showAll, setShowAll] = useState(false);
 
   useEffect(() => { fetchAdvisors(); }, []);
   useEffect(() => { if (user) fetchSubscribedGroups(); }, [user]);
@@ -30,9 +32,15 @@ export default function Landing() {
       .eq('status', 'approved');
     if (advisorsData) {
       const withSubs = await Promise.all(advisorsData.map(async (a) => {
-        // Use security definer function for public subscriber count
-        const { data: countData } = await supabase.rpc('get_advisor_subscriber_count', { _advisor_id: a.id });
-        return { ...a, subCount: (countData as number) || 0 };
+        const [{ data: countData }, { data: statsData }] = await Promise.all([
+          supabase.rpc('get_advisor_subscriber_count', { _advisor_id: a.id }),
+          supabase.rpc('get_advisor_signal_stats', { _advisor_id: a.id }),
+        ]);
+        return {
+          ...a,
+          subCount: (countData as number) || 0,
+          signalStats: (statsData as any) || { total_signals: 0, win_count: 0, loss_count: 0, resolved_count: 0 },
+        };
       }));
       setAdvisors(withSubs as any);
     }
@@ -62,7 +70,8 @@ export default function Landing() {
     return matchSearch && matchFilter;
   });
 
-  const filters = ['All', 'Options', 'Equity', 'Futures'];
+  const filters = ['All', 'Options', 'Equity', 'Futures', 'Intraday', 'Swing'];
+  const displayedAdvisors = showAll ? filtered : filtered.slice(0, 4);
 
   const trustItems = [
     '🛡️ SEBI Verified Only',
@@ -268,73 +277,180 @@ export default function Landing() {
       </section>
 
       {/* Top Advisors */}
-      <section id="advisors" className="tc-section-alt px-4">
+      <section id="advisors" className="bg-background px-5 py-13 md:py-16">
         <div className="container mx-auto">
-          <div className="mb-6 md:mb-8 text-center">
-            <h2 className="tc-section-title text-xl md:text-[28px]">Top Advisors</h2>
-            <p className="mt-2 text-sm text-muted-foreground">Subscribe to get real-time trading signals</p>
+          {/* Header */}
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between mb-5">
+            <div>
+              <span className="text-[11px] font-bold text-primary uppercase tracking-[2px]">VERIFIED ADVISORS</span>
+              <h2 className="mt-1 text-[28px] font-extrabold text-foreground tracking-tight">Top Advisors</h2>
+            </div>
+            <span className="mt-1 md:mt-0 text-[13px] text-muted-foreground flex items-center gap-1.5">
+              <span className="h-2 w-2 rounded-full bg-primary" /> Updated daily
+            </span>
           </div>
 
-          <div className="mb-6 md:mb-8 flex flex-col gap-3 md:gap-4 md:flex-row md:items-center md:justify-center">
-            <div className="relative max-w-sm flex-1 w-full">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input placeholder="Search by name or strategy..." value={search} onChange={e => setSearch(e.target.value)} className="pl-10 tc-input-focus" />
-            </div>
-            <div className="flex gap-2 overflow-x-auto pb-1">
-              {filters.map(f => (
-                <Button key={f} variant={filter === f ? 'default' : 'outline'} size="sm" onClick={() => setFilter(f)} className="tc-btn-click min-h-[44px] whitespace-nowrap">{f}</Button>
-              ))}
-            </div>
+          {/* Search */}
+          <div className="relative mb-3">
+            <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[hsl(var(--small-text))]" />
+            <Input
+              placeholder="Search advisors, strategies..."
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              className="h-12 rounded-xl border-[1.5px] border-border bg-muted pl-11 text-sm focus:border-primary focus:bg-card focus:ring-2 focus:ring-primary/10"
+            />
           </div>
 
+          {/* Filter Pills */}
+          <div className="flex gap-2 overflow-x-auto pb-1 mb-5 no-scrollbar">
+            {filters.map(f => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`h-9 shrink-0 rounded-full border-[1.5px] px-4 text-[13px] font-semibold transition-all duration-200 ${
+                  filter === f
+                    ? 'border-foreground bg-foreground text-background shadow-[0_2px_8px_rgba(0,0,0,0.15)]'
+                    : 'border-border bg-card text-muted-foreground hover:border-foreground/30'
+                }`}
+              >
+                {f}
+              </button>
+            ))}
+          </div>
+
+          {/* Cards */}
           {loading ? (
             <div className="py-16 text-center text-muted-foreground">
               <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
               Loading advisors...
             </div>
           ) : filtered.length === 0 ? (
-            <div className="tc-card-static py-16 text-center">
+            <div className="rounded-2xl border border-border bg-card py-16 text-center">
               <p className="text-lg text-muted-foreground">No advisors found</p>
-              <p className="mt-1 tc-small">Try a different search or filter</p>
+              <p className="mt-1 text-[13px] text-[hsl(var(--small-text))]">Try a different search or filter</p>
             </div>
           ) : (
-            <div className="grid gap-4 md:gap-6 sm:grid-cols-2 lg:grid-cols-3">
-              {filtered.map((advisor, i) => {
-                const minPrice = advisor.groups?.length > 0 ? Math.min(...advisor.groups.map((g: any) => g.monthly_price)) : null;
-                return (
-                  <div key={advisor.id} className="tc-card p-4 md:p-6 animate-fade-in" style={{ animationDelay: `${i * 50}ms` }}>
-                    <div className="flex items-center gap-3 md:gap-4">
-                      <div className="flex h-12 w-12 md:h-14 md:w-14 shrink-0 items-center justify-center rounded-full bg-primary text-base md:text-lg font-bold text-primary-foreground overflow-hidden">
-                        {advisor.profile_photo_url ? (
-                          <img src={advisor.profile_photo_url} alt={advisor.full_name} className="h-full w-full rounded-full object-cover" />
-                        ) : (
-                          advisor.full_name.charAt(0).toUpperCase()
-                        )}
+            <>
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {displayedAdvisors.map((advisor, i) => {
+                  const minPrice = advisor.groups?.length > 0 ? Math.min(...advisor.groups.map((g: any) => g.monthly_price)) : null;
+                  const { total_signals, resolved_count, win_count } = advisor.signalStats;
+                  const winRate = resolved_count > 0 ? Math.round((win_count / resolved_count) * 100) : null;
+                  const sebiShort = advisor.sebi_reg_no.length > 12 ? advisor.sebi_reg_no.slice(0, 12) + '…' : advisor.sebi_reg_no;
+
+                  return (
+                    <div
+                      key={advisor.id}
+                      className="group overflow-hidden rounded-2xl border-[1.5px] border-border bg-card shadow-[0_4px_16px_rgba(0,0,0,0.06)] transition-all duration-200 hover:border-primary hover:shadow-[0_8px_24px_rgba(27,94,32,0.12)] hover:-translate-y-0.5 animate-fade-in"
+                      style={{ animationDelay: `${i * 50}ms` }}
+                    >
+                      {/* Top gradient bar */}
+                      <div className="h-1" style={{ background: 'linear-gradient(to right, hsl(var(--primary)), hsl(var(--secondary)))' }} />
+
+                      <div className="p-4">
+                        {/* Row 1: Identity */}
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-full border-2 border-card text-xl font-bold text-primary-foreground shadow-[0_2px_8px_rgba(0,0,0,0.15)] overflow-hidden" style={{ background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)))' }}>
+                            {advisor.profile_photo_url ? (
+                              <img src={advisor.profile_photo_url} alt={advisor.full_name} className="h-full w-full object-cover" />
+                            ) : (
+                              advisor.full_name.charAt(0).toUpperCase()
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-base font-bold text-foreground">{advisor.full_name}</p>
+                            <span className="inline-flex items-center gap-1 rounded-full border border-primary bg-light-green px-2 py-0.5 text-[10px] font-semibold text-primary">
+                              ✓ SEBI {sebiShort}
+                            </span>
+                          </div>
+                          {advisor.strategy_type && (
+                            <span className="shrink-0 rounded-md bg-light-blue px-2.5 py-1 text-[11px] font-semibold text-secondary">
+                              {advisor.strategy_type}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Row 2: Stats */}
+                        <div className="mt-3.5 grid grid-cols-3 rounded-[10px] bg-muted p-2.5">
+                          <div className="text-center">
+                            <p className="text-base font-extrabold text-primary">{winRate !== null ? `${winRate}%` : '—'}</p>
+                            <p className="text-[10px] text-[hsl(var(--small-text))]">Win Rate</p>
+                          </div>
+                          <div className="border-x border-border text-center">
+                            <p className="text-base font-extrabold text-foreground">{total_signals || '—'}</p>
+                            <p className="text-[10px] text-[hsl(var(--small-text))]">Signals</p>
+                          </div>
+                          <div className="text-center">
+                            <p className="text-base font-extrabold text-secondary">{advisor.subCount}</p>
+                            <p className="text-[10px] text-[hsl(var(--small-text))]">Members</p>
+                          </div>
+                        </div>
+
+                        {/* Row 3: Price + Rating */}
+                        <div className="mt-3 flex items-center justify-between">
+                          {minPrice ? (
+                            <p className="text-[15px] font-bold text-foreground">From ₹{minPrice}/mo</p>
+                          ) : (
+                            <p className="text-[13px] text-[hsl(var(--small-text))]">Price on profile</p>
+                          )}
+                          <div className="flex items-center gap-1 text-[13px]">
+                            <Star className="h-3.5 w-3.5 fill-current text-warning" />
+                            <span className="font-semibold text-foreground">4.5</span>
+                          </div>
+                        </div>
+
+                        {/* FOMO pill */}
+                        <div className="mt-3 text-center">
+                          {advisor.subCount > 0 ? (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-warning bg-[hsl(45,100%,94%)] px-2.5 py-1 text-[11px] font-medium text-[hsl(30,80%,30%)]">
+                              🔥 {advisor.subCount} traders joined
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full border border-secondary bg-light-blue px-2.5 py-1 text-[11px] font-medium text-secondary">
+                              🆕 Be the first subscriber
+                            </span>
+                          )}
+                        </div>
+
+                        {/* CTA */}
+                        <Link to={`/advisor/${advisor.id}`}>
+                          <Button className="mt-3 w-full h-[46px] rounded-[10px] bg-primary text-[15px] font-bold hover:bg-primary/90 hover:shadow-[0_4px_12px_rgba(27,94,32,0.3)] transition-all tc-btn-click">
+                            View Profile & Subscribe <ArrowRight className="ml-1 h-4 w-4" />
+                          </Button>
+                        </Link>
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate tc-card-title text-sm md:text-base">{advisor.full_name}</p>
-                        <span className="tc-badge-sebi mt-1 text-xs">
-                          <Shield className="h-3 w-3" /> SEBI: {advisor.sebi_reg_no}
-                        </span>
+
+                      {/* Verified footer */}
+                      <div className="flex h-8 items-center justify-center gap-1.5 border-t border-border bg-muted">
+                        <Shield className="h-3 w-3 text-primary" />
+                        <span className="text-[10px] font-medium text-muted-foreground">SEBI Verified · Manually Approved</span>
                       </div>
                     </div>
-                    <div className="mt-3 md:mt-4 flex items-center gap-2">
-                      <span className="tc-badge-strategy text-xs">{advisor.strategy_type}</span>
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Star className="h-3.5 w-3.5 fill-current text-[hsl(45,93%,47%)]" /> 4.5
-                      </div>
-                    </div>
-                    <p className="mt-2 md:mt-3 tc-small">{advisor.subCount} subscribers</p>
-                    {minPrice && <p className="mt-1 text-sm md:text-base tc-amount">Starting from ₹{minPrice}/month</p>}
-                    <Link to={`/advisor/${advisor.id}`}>
-                      <Button className="mt-3 md:mt-4 w-full border-2 border-primary text-primary hover:bg-light-green tc-btn-click min-h-[44px]" variant="outline" size="sm">
-                        View Profile <ArrowRight className="ml-1 h-3 w-3" />
-                      </Button>
-                    </Link>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+
+              {/* Load More */}
+              {!showAll && filtered.length > 4 && (
+                <button
+                  onClick={() => setShowAll(true)}
+                  className="mt-4 w-full rounded-[10px] border-[1.5px] border-border bg-card py-3 text-sm text-muted-foreground hover:border-foreground/30 transition-colors"
+                >
+                  Load More Advisors
+                </button>
+              )}
+
+              {/* Bottom CTA banner */}
+              <div className="mt-4 rounded-2xl p-5 text-center" style={{ background: 'linear-gradient(135deg, hsl(120,52%,93%), hsl(213,100%,94%))' }}>
+                <p className="text-[15px] font-bold text-foreground">Are you a SEBI registered advisor?</p>
+                <p className="mt-1 text-[13px] text-muted-foreground">Join 50+ advisors already growing their subscriber base</p>
+                <Link to="/advisor-register">
+                  <Button className="mt-3 rounded-lg bg-secondary px-6 text-sm font-semibold hover:bg-secondary/90 tc-btn-click">
+                    Apply as Advisor <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                  </Button>
+                </Link>
+              </div>
+            </>
           )}
         </div>
       </section>
