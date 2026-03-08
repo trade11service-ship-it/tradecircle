@@ -157,26 +157,26 @@ export default function AdvisorRegister() {
             </div>
 
             {/* Legal Checkboxes */}
-            <div className="space-y-3 mt-4">
-              <div className="flex items-start gap-3 rounded-lg border p-3 bg-muted/30">
+            <div className="space-y-2 mt-3">
+              <div className="flex items-start gap-2 rounded border p-2 bg-muted/20">
                 <Checkbox
                   id="check1"
                   checked={check1}
                   onCheckedChange={(checked) => { setCheck1(checked === true); setShowCheckError(false); }}
-                  className="mt-0.5"
+                  className="mt-0.5 shrink-0"
                 />
-                <label htmlFor="check1" className="text-xs leading-relaxed text-muted-foreground cursor-pointer">
+                <label htmlFor="check1" className="text-[11px] leading-snug text-muted-foreground cursor-pointer">
                   {ADVISOR_CHECKBOX_1_TEXT}
                 </label>
               </div>
-              <div className="flex items-start gap-3 rounded-lg border p-3 bg-muted/30">
+              <div className="flex items-start gap-2 rounded border p-2 bg-muted/20">
                 <Checkbox
                   id="check2"
                   checked={check2}
                   onCheckedChange={(checked) => { setCheck2(checked === true); setShowCheckError(false); }}
-                  className="mt-0.5"
+                  className="mt-0.5 shrink-0"
                 />
-                <label htmlFor="check2" className="text-xs leading-relaxed text-muted-foreground cursor-pointer">
+                <label htmlFor="check2" className="text-[11px] leading-snug text-muted-foreground cursor-pointer">
                   {ADVISOR_CHECKBOX_2_TEXT}
                 </label>
               </div>
