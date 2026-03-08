@@ -1,14 +1,15 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Navbar } from '@/components/Navbar';
+import { Footer } from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
+import { BarChart3, Radio, Users, UserCircle, IndianRupee } from 'lucide-react';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Advisor = Tables<'advisors'>;
@@ -21,39 +22,25 @@ export default function AdvisorDashboard() {
   const [subscribers, setSubscribers] = useState<any[]>([]);
   const [tab, setTab] = useState<'groups' | 'signal' | 'subscribers' | 'profile'>('groups');
   const [loading, setLoading] = useState(true);
-
-  // Group form
   const [groupForm, setGroupForm] = useState({ name: '', description: '', monthlyPrice: '' });
   const [groupDp, setGroupDp] = useState<File | null>(null);
   const [showGroupForm, setShowGroupForm] = useState(false);
-
-  // Signal form
   const [signalForm, setSignalForm] = useState({ groupId: '', instrument: '', signalType: 'BUY', entryPrice: '', targetPrice: '', stopLoss: '', timeframe: 'Intraday', notes: '' });
 
-  useEffect(() => {
-    if (user) fetchData();
-  }, [user]);
+  useEffect(() => { if (user) fetchData(); }, [user]);
 
-  // Realtime: refresh when new subscription comes in
   useEffect(() => {
     if (!advisor) return;
-    const channel = supabase.channel('advisor-subs-realtime')
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'subscriptions', filter: `advisor_id=eq.${advisor.id}` }, () => {
-        toast.info('New subscriber joined!');
-        fetchData();
-      })
-      .subscribe();
+    const channel = supabase.channel('advisor-subs-realtime').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'subscriptions', filter: `advisor_id=eq.${advisor.id}` }, () => { toast.info('New subscriber joined!'); fetchData(); }).subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [advisor]);
 
   const fetchData = async () => {
     const { data: adv } = await supabase.from('advisors').select('*').eq('user_id', user!.id).single();
     setAdvisor(adv);
-
     if (adv) {
       const { data: grps } = await supabase.from('groups').select('*').eq('advisor_id', adv.id);
       setGroups(grps || []);
-
       const { data: subs } = await supabase.from('subscriptions').select('*, profiles!inner(full_name, email), groups!inner(name)').eq('advisor_id', adv.id).order('created_at', { ascending: false });
       setSubscribers(subs || []);
     }
@@ -67,37 +54,14 @@ export default function AdvisorDashboard() {
       const { data } = await supabase.storage.from('kyc-documents').upload(`groups/${advisor.id}/${Date.now()}.${groupDp.name.split('.').pop()}`, groupDp);
       if (data) dpUrl = supabase.storage.from('kyc-documents').getPublicUrl(data.path).data.publicUrl;
     }
-    const { data: newGroup, error } = await supabase.from('groups').insert({
-      advisor_id: advisor.id,
-      name: groupForm.name,
-      description: groupForm.description,
-      monthly_price: parseInt(groupForm.monthlyPrice),
-      dp_url: dpUrl,
-    }).select().single();
+    const { data: newGroup, error } = await supabase.from('groups').insert({ advisor_id: advisor.id, name: groupForm.name, description: groupForm.description, monthly_price: parseInt(groupForm.monthlyPrice), dp_url: dpUrl }).select().single();
     if (error) { toast.error(error.message); return; }
-
-    // Auto-create Razorpay payment link
     toast.info('Creating payment link...');
     const { data: session } = await supabase.auth.getSession();
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-payment-link`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${session?.session?.access_token}`,
-      },
-      body: JSON.stringify({
-        group_id: newGroup.id,
-        group_name: groupForm.name,
-        amount: parseInt(groupForm.monthlyPrice),
-      }),
-    });
+    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-payment-link`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.session?.access_token}` }, body: JSON.stringify({ group_id: newGroup.id, group_name: groupForm.name, amount: parseInt(groupForm.monthlyPrice) }) });
     const result = await res.json();
-    if (res.ok) {
-      toast.success('Group created with payment link!');
-    } else {
-      toast.warning('Group created but payment link generation failed: ' + (result.error || 'Unknown error'));
-    }
-
+    if (res.ok) toast.success('Group created with payment link!');
+    else toast.warning('Group created but payment link generation failed: ' + (result.error || 'Unknown error'));
     setShowGroupForm(false);
     setGroupForm({ name: '', description: '', monthlyPrice: '' });
     fetchData();
@@ -105,79 +69,92 @@ export default function AdvisorDashboard() {
 
   const postSignal = async () => {
     if (!advisor) return;
-    const { error } = await supabase.from('signals').insert({
-      group_id: signalForm.groupId,
-      advisor_id: advisor.id,
-      instrument: signalForm.instrument,
-      signal_type: signalForm.signalType,
-      entry_price: parseFloat(signalForm.entryPrice),
-      target_price: parseFloat(signalForm.targetPrice),
-      stop_loss: parseFloat(signalForm.stopLoss),
-      timeframe: signalForm.timeframe,
-      notes: signalForm.notes,
-    });
+    const { error } = await supabase.from('signals').insert({ group_id: signalForm.groupId, advisor_id: advisor.id, instrument: signalForm.instrument, signal_type: signalForm.signalType, entry_price: parseFloat(signalForm.entryPrice), target_price: parseFloat(signalForm.targetPrice), stop_loss: parseFloat(signalForm.stopLoss), timeframe: signalForm.timeframe, notes: signalForm.notes });
     if (error) { toast.error(error.message); return; }
-
-    // Check telegram settings for this group
     const { data: tSettings } = await supabase.from('telegram_settings').select('*').eq('group_id', signalForm.groupId).eq('is_active', true);
-    const telegramCount = tSettings?.length || 0;
-
-    toast.success(`Signal posted! ${telegramCount > 0 ? `Telegram alerts queued for ${telegramCount} users` : ''}`);
+    toast.success(`Signal posted! ${(tSettings?.length || 0) > 0 ? `Telegram alerts queued for ${tSettings!.length} users` : ''}`);
     setSignalForm({ groupId: '', instrument: '', signalType: 'BUY', entryPrice: '', targetPrice: '', stopLoss: '', timeframe: 'Intraday', notes: '' });
   };
 
-  if (loading) return <div className="min-h-screen bg-background"><Navbar /><div className="p-8 text-center">Loading...</div></div>;
-
-  if (!advisor) return <div className="min-h-screen bg-background"><Navbar /><div className="p-8 text-center">No advisor profile found.</div></div>;
+  if (loading) return <div className="min-h-screen bg-off-white"><Navbar /><div className="flex items-center justify-center py-20"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div></div>;
+  if (!advisor) return <div className="min-h-screen bg-off-white"><Navbar /><div className="py-20 text-center text-muted-foreground">No advisor profile found.</div><Footer /></div>;
 
   if (advisor.status === 'pending') return (
-    <div className="min-h-screen bg-background"><Navbar />
-      <div className="container mx-auto max-w-md px-4 py-12 text-center">
-        <Badge variant="secondary" className="mb-4">Pending Review</Badge>
-        <h2 className="text-xl font-bold">Your application is under review</h2>
-        <p className="mt-2 text-muted-foreground">We'll notify you once your SEBI verification is complete.</p>
+    <div className="min-h-screen flex flex-col bg-off-white"><Navbar />
+      <div className="flex-1 flex items-center justify-center px-4">
+        <div className="tc-card-static p-8 text-center max-w-md">
+          <span className="tc-badge-pending">Pending Review</span>
+          <h2 className="mt-4 text-xl font-bold">Your application is under review</h2>
+          <p className="mt-2 text-muted-foreground">We'll notify you once your SEBI verification is complete.</p>
+        </div>
       </div>
+      <Footer />
     </div>
   );
 
   if (advisor.status === 'rejected') return (
-    <div className="min-h-screen bg-background"><Navbar />
-      <div className="container mx-auto max-w-md px-4 py-12 text-center">
-        <Badge variant="destructive" className="mb-4">Rejected</Badge>
-        <h2 className="text-xl font-bold">Application Rejected</h2>
-        {advisor.rejection_reason && <p className="mt-2 text-muted-foreground">Reason: {advisor.rejection_reason}</p>}
+    <div className="min-h-screen flex flex-col bg-off-white"><Navbar />
+      <div className="flex-1 flex items-center justify-center px-4">
+        <div className="tc-card-static p-8 text-center max-w-md">
+          <span className="tc-badge-rejected">Rejected</span>
+          <h2 className="mt-4 text-xl font-bold">Application Rejected</h2>
+          {advisor.rejection_reason && <p className="mt-2 text-muted-foreground">Reason: {advisor.rejection_reason}</p>}
+        </div>
       </div>
+      <Footer />
     </div>
   );
 
+  const totalSubs = subscribers.filter(s => s.status === 'active').length;
+  const thisMonthRevenue = subscribers.filter(s => { const d = new Date(s.created_at); const now = new Date(); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); }).reduce((sum, s) => sum + (s.amount_paid || 0), 0);
+
   const tabs = [
-    { key: 'groups', label: 'My Groups' },
-    { key: 'signal', label: 'Post Signal' },
-    { key: 'subscribers', label: 'Subscribers' },
-    { key: 'profile', label: 'My Profile' },
-  ] as const;
+    { key: 'groups' as const, label: 'My Groups', icon: BarChart3 },
+    { key: 'signal' as const, label: 'Post Signal', icon: Radio },
+    { key: 'subscribers' as const, label: 'Subscribers', icon: Users },
+    { key: 'profile' as const, label: 'My Profile', icon: UserCircle },
+  ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen flex flex-col bg-off-white">
       <Navbar />
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="mb-6 text-2xl font-bold">Advisor Dashboard</h1>
+      <div className="container mx-auto px-4 py-8 flex-1">
+        <h1 className="tc-page-title text-3xl mb-6">Advisor Dashboard</h1>
+
+        {/* Stats */}
+        <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
+          {[
+            { label: 'Total Subscribers', value: totalSubs, color: 'text-foreground' },
+            { label: 'Active Groups', value: groups.length, color: 'text-foreground' },
+            { label: 'This Month Revenue', value: `₹${thisMonthRevenue.toLocaleString('en-IN')}`, color: 'text-primary' },
+            { label: 'Signals Posted', value: subscribers.length, color: 'text-foreground' },
+          ].map((stat, i) => (
+            <div key={i} className="tc-card-static p-5">
+              <p className="tc-small">{stat.label}</p>
+              <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Tabs */}
         <div className="mb-6 flex gap-2 overflow-x-auto">
           {tabs.map(t => (
-            <Button key={t.key} variant={tab === t.key ? 'default' : 'outline'} size="sm" onClick={() => setTab(t.key)}>{t.label}</Button>
+            <Button key={t.key} variant={tab === t.key ? 'default' : 'outline'} size="sm" className="gap-2 tc-btn-click min-h-[44px]" onClick={() => setTab(t.key)}>
+              <t.icon className="h-4 w-4" /> {t.label}
+            </Button>
           ))}
         </div>
 
         {tab === 'groups' && (
           <div>
-            <Button className="mb-4" onClick={() => setShowGroupForm(!showGroupForm)}>+ Create New Group</Button>
+            <Button className="mb-4 tc-btn-click font-semibold" onClick={() => setShowGroupForm(!showGroupForm)}>+ Create New Group</Button>
             {showGroupForm && (
-              <div className="mb-6 rounded-lg border bg-card p-4 space-y-3">
-                <div><Label>Group Name</Label><Input value={groupForm.name} onChange={e => setGroupForm({ ...groupForm, name: e.target.value })} /></div>
+              <div className="mb-6 tc-card-static p-6 space-y-4">
+                <div><Label>Group Name</Label><Input value={groupForm.name} onChange={e => setGroupForm({ ...groupForm, name: e.target.value })} className="tc-input-focus" /></div>
                 <div><Label>Description</Label><Textarea value={groupForm.description} onChange={e => setGroupForm({ ...groupForm, description: e.target.value })} /></div>
-                <div><Label>Monthly Price (₹)</Label><Input type="number" value={groupForm.monthlyPrice} onChange={e => setGroupForm({ ...groupForm, monthlyPrice: e.target.value })} /></div>
+                <div><Label>Monthly Price (₹)</Label><Input type="number" value={groupForm.monthlyPrice} onChange={e => setGroupForm({ ...groupForm, monthlyPrice: e.target.value })} className="tc-input-focus" /></div>
                 <div><Label>Group Photo</Label><Input type="file" accept="image/*" onChange={e => setGroupDp(e.target.files?.[0] || null)} /></div>
-                <Button onClick={createGroup}>Create Group</Button>
+                <Button onClick={createGroup} className="tc-btn-click font-semibold">Create Group</Button>
               </div>
             )}
             <div className="grid gap-4 sm:grid-cols-2">
@@ -185,10 +162,10 @@ export default function AdvisorDashboard() {
                 const subCount = subscribers.filter(s => s.group_id === g.id && s.status === 'active').length;
                 const revenue = subscribers.filter(s => s.group_id === g.id).reduce((sum, s) => sum + (s.amount_paid || 0), 0);
                 return (
-                  <div key={g.id} className="rounded-lg border bg-card p-4">
-                    <p className="font-semibold">{g.name}</p>
-                    <p className="text-sm text-muted-foreground">₹{g.monthly_price}/month</p>
-                    <p className="text-sm">{subCount} subscribers • ₹{revenue} total revenue</p>
+                  <div key={g.id} className="tc-card p-5">
+                    <p className="tc-card-title">{g.name}</p>
+                    <p className="tc-amount mt-1">₹{g.monthly_price}/month</p>
+                    <p className="tc-small mt-2">{subCount} subscribers • <span className="tc-amount">₹{revenue.toLocaleString('en-IN')}</span> total revenue</p>
                   </div>
                 );
               })}
@@ -197,76 +174,105 @@ export default function AdvisorDashboard() {
         )}
 
         {tab === 'signal' && (
-          <div className="max-w-lg space-y-4">
-            <div>
-              <Label>Select Group</Label>
-              <Select value={signalForm.groupId} onValueChange={v => setSignalForm({ ...signalForm, groupId: v })}>
-                <SelectTrigger><SelectValue placeholder="Choose group" /></SelectTrigger>
-                <SelectContent>{groups.map(g => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div><Label>Instrument</Label><Input placeholder="NIFTY / BANKNIFTY / RELIANCE..." value={signalForm.instrument} onChange={e => setSignalForm({ ...signalForm, instrument: e.target.value })} /></div>
-            <div>
-              <Label>Signal Type</Label>
-              <div className="flex gap-2 mt-1">
-                <Button variant={signalForm.signalType === 'BUY' ? 'default' : 'outline'} onClick={() => setSignalForm({ ...signalForm, signalType: 'BUY' })}>BUY</Button>
-                <Button variant={signalForm.signalType === 'SELL' ? 'destructive' : 'outline'} onClick={() => setSignalForm({ ...signalForm, signalType: 'SELL' })}>SELL</Button>
+          <div className="max-w-lg">
+            <div className="tc-card-static p-6 space-y-4">
+              <h2 className="tc-card-title">Post New Signal</h2>
+              <div>
+                <Label>Select Group</Label>
+                <Select value={signalForm.groupId} onValueChange={v => setSignalForm({ ...signalForm, groupId: v })}>
+                  <SelectTrigger className="tc-input-focus"><SelectValue placeholder="Choose group" /></SelectTrigger>
+                  <SelectContent>{groups.map(g => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}</SelectContent>
+                </Select>
               </div>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              <div><Label>Entry Price</Label><Input type="number" value={signalForm.entryPrice} onChange={e => setSignalForm({ ...signalForm, entryPrice: e.target.value })} /></div>
-              <div><Label>Target Price</Label><Input type="number" value={signalForm.targetPrice} onChange={e => setSignalForm({ ...signalForm, targetPrice: e.target.value })} /></div>
-              <div><Label>Stop Loss</Label><Input type="number" value={signalForm.stopLoss} onChange={e => setSignalForm({ ...signalForm, stopLoss: e.target.value })} /></div>
-            </div>
-            <div>
-              <Label>Timeframe</Label>
-              <div className="flex gap-2 mt-1">
-                {['Intraday', 'Swing', 'Positional'].map(t => (
-                  <Button key={t} variant={signalForm.timeframe === t ? 'default' : 'outline'} size="sm" onClick={() => setSignalForm({ ...signalForm, timeframe: t })}>{t}</Button>
-                ))}
+              <div><Label>Instrument</Label><Input placeholder="NIFTY / BANKNIFTY / RELIANCE..." value={signalForm.instrument} onChange={e => setSignalForm({ ...signalForm, instrument: e.target.value })} className="tc-input-focus" /></div>
+              <div>
+                <Label>Signal Type</Label>
+                <div className="flex gap-2 mt-1">
+                  <Button className={`flex-1 tc-btn-click font-semibold ${signalForm.signalType === 'BUY' ? '' : ''}`} variant={signalForm.signalType === 'BUY' ? 'default' : 'outline'} onClick={() => setSignalForm({ ...signalForm, signalType: 'BUY' })}>BUY</Button>
+                  <Button className="flex-1 tc-btn-click font-semibold" variant={signalForm.signalType === 'SELL' ? 'destructive' : 'outline'} onClick={() => setSignalForm({ ...signalForm, signalType: 'SELL' })}>SELL</Button>
+                </div>
               </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><Label>Entry Price</Label><Input type="number" value={signalForm.entryPrice} onChange={e => setSignalForm({ ...signalForm, entryPrice: e.target.value })} className="tc-input-focus" /></div>
+                <div><Label>Target Price</Label><Input type="number" value={signalForm.targetPrice} onChange={e => setSignalForm({ ...signalForm, targetPrice: e.target.value })} className="tc-input-focus" /></div>
+                <div><Label>Stop Loss</Label><Input type="number" value={signalForm.stopLoss} onChange={e => setSignalForm({ ...signalForm, stopLoss: e.target.value })} className="tc-input-focus" /></div>
+                <div>
+                  <Label>Timeframe</Label>
+                  <Select value={signalForm.timeframe} onValueChange={v => setSignalForm({ ...signalForm, timeframe: v })}>
+                    <SelectTrigger className="tc-input-focus"><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Intraday">Intraday</SelectItem>
+                      <SelectItem value="Swing">Swing</SelectItem>
+                      <SelectItem value="Positional">Positional</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div><Label>Notes</Label><Textarea value={signalForm.notes} onChange={e => setSignalForm({ ...signalForm, notes: e.target.value })} /></div>
+              <Button className="w-full tc-btn-click font-semibold" onClick={postSignal} disabled={!signalForm.groupId || !signalForm.instrument || !signalForm.entryPrice}>Post Signal</Button>
             </div>
-            <div><Label>Notes</Label><Textarea value={signalForm.notes} onChange={e => setSignalForm({ ...signalForm, notes: e.target.value })} /></div>
-            <Button onClick={postSignal} disabled={!signalForm.groupId || !signalForm.instrument || !signalForm.entryPrice}>Post Signal</Button>
+
+            {/* Preview */}
+            {signalForm.instrument && (
+              <div className="mt-6">
+                <p className="tc-small mb-2">Signal Preview</p>
+                <div className="tc-card-static p-4 overflow-hidden">
+                  <div className="flex">
+                    <div className={`w-1 rounded-full mr-3 self-stretch ${signalForm.signalType === 'BUY' ? 'bg-primary' : 'bg-destructive'}`} />
+                    <div className="flex-1">
+                      <div className="flex items-center justify-between">
+                        <p className="tc-card-title">{signalForm.instrument}</p>
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold ${signalForm.signalType === 'BUY' ? 'bg-light-green text-primary' : 'bg-[hsl(0,100%,95%)] text-destructive'}`}>{signalForm.signalType}</span>
+                      </div>
+                      <div className="mt-2 grid grid-cols-3 gap-2 text-sm">
+                        <div><span className="text-muted-foreground">Entry:</span> <span className="tc-amount">₹{signalForm.entryPrice || '—'}</span></div>
+                        <div><span className="text-muted-foreground">Target:</span> <span className="tc-amount">₹{signalForm.targetPrice || '—'}</span></div>
+                        <div><span className="text-muted-foreground">SL:</span> <span className="font-bold text-destructive">₹{signalForm.stopLoss || '—'}</span></div>
+                      </div>
+                      <div className="mt-2"><span className="tc-badge-strategy">{signalForm.timeframe}</span></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
         {tab === 'subscribers' && (
           <div>
-            {/* Per-group subscriber breakdown */}
             {groups.map(g => {
               const groupSubs = subscribers.filter(s => s.group_id === g.id);
               const activeSubs = groupSubs.filter(s => s.status === 'active');
               const groupRevenue = groupSubs.reduce((sum, s) => sum + (s.amount_paid || 0), 0);
               return (
-                <div key={g.id} className="mb-6">
+                <div key={g.id} className="mb-8">
                   <div className="flex items-center gap-3 mb-3">
-                    <h3 className="font-semibold text-lg">{g.name}</h3>
-                    <Badge variant="secondary">{activeSubs.length} active</Badge>
-                    <span className="text-sm text-muted-foreground">• ₹{groupRevenue.toLocaleString('en-IN')} revenue</span>
+                    <h3 className="tc-card-title text-lg">{g.name}</h3>
+                    <span className="tc-badge-active">{activeSubs.length} active</span>
+                    <span className="tc-small">• <span className="tc-amount">₹{groupRevenue.toLocaleString('en-IN')}</span> revenue</span>
                   </div>
-                  <div className="rounded-xl border bg-card shadow-sm overflow-x-auto">
+                  <div className="tc-card-static overflow-x-auto">
                     <table className="w-full text-sm">
-                      <thead><tr className="border-b bg-muted/50 text-left">
-                        <th className="p-3 font-medium">User Name</th>
-                        <th className="p-3 font-medium">Email</th>
-                        <th className="p-3 font-medium">Start Date</th>
-                        <th className="p-3 font-medium">End Date</th>
-                        <th className="p-3 font-medium">Payment</th>
-                        <th className="p-3 font-medium">Payment ID</th>
-                        <th className="p-3 font-medium">Status</th>
+                      <thead><tr className="border-b bg-off-white text-left">
+                        <th className="p-3 font-medium text-muted-foreground">User Name</th>
+                        <th className="p-3 font-medium text-muted-foreground">Email</th>
+                        <th className="p-3 font-medium text-muted-foreground">Start Date</th>
+                        <th className="p-3 font-medium text-muted-foreground">End Date</th>
+                        <th className="p-3 font-medium text-muted-foreground">Payment</th>
+                        <th className="p-3 font-medium text-muted-foreground">Payment ID</th>
+                        <th className="p-3 font-medium text-muted-foreground">Status</th>
                       </tr></thead>
                       <tbody>
-                        {groupSubs.length === 0 && <tr><td colSpan={7} className="p-4 text-center text-muted-foreground">No subscribers in this group yet</td></tr>}
-                        {groupSubs.map((s: any) => (
-                          <tr key={s.id} className="border-b last:border-0">
+                        {groupSubs.length === 0 && <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">No subscribers in this group yet</td></tr>}
+                        {groupSubs.map((s: any, i: number) => (
+                          <tr key={s.id} className={`border-b last:border-0 ${i % 2 === 1 ? 'bg-off-white' : ''}`}>
                             <td className="p-3 font-medium">{s.profiles?.full_name || '-'}</td>
                             <td className="p-3 text-muted-foreground">{s.profiles?.email || '-'}</td>
                             <td className="p-3">{s.start_date ? new Date(s.start_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</td>
                             <td className="p-3">{s.end_date ? new Date(s.end_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</td>
-                            <td className="p-3 font-medium">₹{(s.amount_paid || 0).toLocaleString('en-IN')}</td>
-                            <td className="p-3 font-mono text-xs">{s.razorpay_payment_id || '-'}</td>
-                            <td className="p-3"><Badge variant={s.status === 'active' ? 'default' : 'secondary'} className="capitalize">{s.status}</Badge></td>
+                            <td className="p-3 tc-amount">₹{(s.amount_paid || 0).toLocaleString('en-IN')}</td>
+                            <td className="p-3 font-mono text-xs text-muted-foreground">{s.razorpay_payment_id || '-'}</td>
+                            <td className="p-3"><span className={s.status === 'active' ? 'tc-badge-active' : 'tc-badge-pending'}>{s.status}</span></td>
                           </tr>
                         ))}
                       </tbody>
@@ -275,22 +281,33 @@ export default function AdvisorDashboard() {
                 </div>
               );
             })}
-            {groups.length === 0 && <p className="text-center text-muted-foreground py-8">Create a group first to see subscribers</p>}
+            {groups.length === 0 && <div className="tc-card-static p-12 text-center"><p className="text-muted-foreground">Create a group first to see subscribers</p></div>}
           </div>
         )}
 
         {tab === 'profile' && (
-          <div className="max-w-lg space-y-4">
-            <div className="rounded-lg border bg-card p-4">
-              <p><strong>Name:</strong> {advisor.full_name}</p>
-              <p><strong>SEBI Reg No:</strong> {advisor.sebi_reg_no}</p>
-              <p><strong>Strategy:</strong> {advisor.strategy_type}</p>
-              <p><strong>Status:</strong> <Badge>{advisor.status}</Badge></p>
-              <p className="mt-2"><strong>Bio:</strong> {advisor.bio}</p>
+          <div className="max-w-lg">
+            <div className="tc-card-static p-6 space-y-3">
+              <div className="flex items-center gap-4 mb-4">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-2xl font-bold text-primary-foreground">
+                  {advisor.full_name.charAt(0)}
+                </div>
+                <div>
+                  <h2 className="tc-card-title text-xl">{advisor.full_name}</h2>
+                  <span className="tc-badge-active mt-1">{advisor.status}</span>
+                </div>
+              </div>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between rounded-lg bg-off-white p-3"><span className="text-muted-foreground">SEBI Reg No</span><span className="font-medium">{advisor.sebi_reg_no}</span></div>
+                <div className="flex justify-between rounded-lg bg-off-white p-3"><span className="text-muted-foreground">Strategy</span><span className="tc-badge-strategy">{advisor.strategy_type}</span></div>
+                <div className="flex justify-between rounded-lg bg-off-white p-3"><span className="text-muted-foreground">Email</span><span className="font-medium">{advisor.email}</span></div>
+              </div>
+              {advisor.bio && <div className="rounded-lg bg-off-white p-3"><p className="tc-small">Bio</p><p className="text-sm mt-1">{advisor.bio}</p></div>}
             </div>
           </div>
         )}
       </div>
+      <Footer />
     </div>
   );
 }

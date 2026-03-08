@@ -1,8 +1,11 @@
 import { useEffect, useState } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Navbar } from '@/components/Navbar';
+import { Footer } from '@/components/Footer';
+import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth';
+import { CheckCircle, XCircle } from 'lucide-react';
 
 export default function PaymentSuccess() {
   const [searchParams] = useSearchParams();
@@ -14,80 +17,51 @@ export default function PaymentSuccess() {
     const groupId = searchParams.get('group_id');
     const paymentId = searchParams.get('payment_id');
     const paymentStatus = searchParams.get('status');
-
-    if (groupId && user && paymentStatus === 'paid') {
-      createSubscription(groupId, paymentId || '');
-    } else if (paymentStatus && paymentStatus !== 'paid') {
-      setStatus('error');
-    }
+    if (groupId && user && paymentStatus === 'paid') createSubscription(groupId, paymentId || '');
+    else if (paymentStatus && paymentStatus !== 'paid') setStatus('error');
   }, [user, searchParams]);
 
   const createSubscription = async (groupId: string, paymentId: string) => {
-    // Check if already subscribed (payment might have been processed by webhook)
-    const { data: existing } = await supabase.from('subscriptions')
-      .select('id')
-      .eq('user_id', user!.id)
-      .eq('group_id', groupId)
-      .eq('status', 'active')
-      .maybeSingle();
-
-    if (existing) {
-      setStatus('success');
-      setTimeout(() => navigate('/dashboard'), 2000);
-      return;
-    }
-
+    const { data: existing } = await supabase.from('subscriptions').select('id').eq('user_id', user!.id).eq('group_id', groupId).eq('status', 'active').maybeSingle();
+    if (existing) { setStatus('success'); setTimeout(() => navigate('/dashboard'), 2000); return; }
     const { data: group } = await supabase.from('groups').select('*').eq('id', groupId).single();
     if (!group) { setStatus('error'); return; }
-
-    const endDate = new Date();
-    endDate.setDate(endDate.getDate() + 30);
-
-    const { error } = await supabase.from('subscriptions').insert({
-      user_id: user!.id,
-      group_id: groupId,
-      advisor_id: group.advisor_id,
-      end_date: endDate.toISOString(),
-      amount_paid: group.monthly_price,
-      status: 'active',
-      razorpay_payment_id: paymentId,
-    });
-
-    if (error) {
-      console.error('Subscription error:', error);
-      setStatus('error');
-    } else {
-      setStatus('success');
-      setTimeout(() => navigate('/dashboard'), 2000);
-    }
+    const endDate = new Date(); endDate.setDate(endDate.getDate() + 30);
+    const { error } = await supabase.from('subscriptions').insert({ user_id: user!.id, group_id: groupId, advisor_id: group.advisor_id, end_date: endDate.toISOString(), amount_paid: group.monthly_price, status: 'active', razorpay_payment_id: paymentId });
+    if (error) { console.error('Subscription error:', error); setStatus('error'); }
+    else { setStatus('success'); setTimeout(() => navigate('/dashboard'), 2000); }
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen flex flex-col bg-off-white">
       <Navbar />
-      <div className="container mx-auto max-w-md px-4 py-16 text-center">
-        {status === 'verifying' && (
-          <>
-            <div className="h-8 w-8 mx-auto animate-spin rounded-full border-4 border-primary border-t-transparent mb-4" />
-            <h1 className="text-2xl font-bold">Verifying Payment...</h1>
-            <p className="mt-2 text-muted-foreground">Please wait while we confirm your payment.</p>
-          </>
-        )}
-        {status === 'success' && (
-          <>
-            <div className="text-5xl mb-4">✅</div>
-            <h1 className="text-2xl font-bold">Payment Successful!</h1>
-            <p className="mt-2 text-muted-foreground">Your subscription is now active. Redirecting to dashboard...</p>
-          </>
-        )}
-        {status === 'error' && (
-          <>
-            <div className="text-5xl mb-4">❌</div>
-            <h1 className="text-2xl font-bold">Payment Issue</h1>
-            <p className="mt-2 text-muted-foreground">Something went wrong. Please contact support if money was deducted.</p>
-          </>
-        )}
+      <div className="flex-1 flex items-center justify-center px-4">
+        <div className="tc-card-static p-8 text-center max-w-md">
+          {status === 'verifying' && (
+            <>
+              <div className="h-10 w-10 mx-auto animate-spin rounded-full border-4 border-primary border-t-transparent mb-4" />
+              <h1 className="text-2xl font-bold">Verifying Payment...</h1>
+              <p className="mt-2 text-muted-foreground">Please wait while we confirm your payment.</p>
+            </>
+          )}
+          {status === 'success' && (
+            <>
+              <CheckCircle className="mx-auto h-16 w-16 text-primary mb-4" />
+              <h1 className="text-2xl font-bold">Payment Successful!</h1>
+              <p className="mt-2 text-muted-foreground">Your subscription is now active. Redirecting to dashboard...</p>
+            </>
+          )}
+          {status === 'error' && (
+            <>
+              <XCircle className="mx-auto h-16 w-16 text-destructive mb-4" />
+              <h1 className="text-2xl font-bold">Payment Issue</h1>
+              <p className="mt-2 text-muted-foreground">Something went wrong. Please contact support if money was deducted.</p>
+              <Link to="/"><Button className="mt-4 tc-btn-click">Go Home</Button></Link>
+            </>
+          )}
+        </div>
       </div>
+      <Footer />
     </div>
   );
 }
