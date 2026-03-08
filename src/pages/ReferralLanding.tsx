@@ -92,6 +92,15 @@ export default function ReferralLanding() {
         .eq('status', 'active')
         .maybeSingle();
       if (existing) setAlreadySubscribed(true);
+
+      // Check if already accepted risk disclaimer
+      const { data: acceptance } = await supabase
+        .from('user_legal_acceptances')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('acceptance_type', 'subscription_risk')
+        .limit(1);
+      if (acceptance && acceptance.length > 0) setRiskAlreadyAccepted(true);
     }
 
     // Store cookie (30 days)
