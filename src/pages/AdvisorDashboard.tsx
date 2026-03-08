@@ -664,6 +664,11 @@ export default function AdvisorDashboard() {
           </div>
         )}
 
+        {/* REFERRALS TAB */}
+        {tab === 'referrals' && (
+          <ReferralStatsTab advisorId={advisor.id} />
+        )}
+
         {/* PROFILE TAB */}
         {tab === 'profile' && (
           <div className="max-w-lg">
