@@ -8,43 +8,85 @@ export default function PaymentSuccess() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [done, setDone] = useState(false);
+  const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying');
 
   useEffect(() => {
     const groupId = searchParams.get('group_id');
-    if (groupId && user && !done) {
-      createSubscription(groupId);
-    }
-  }, [user]);
+    const paymentId = searchParams.get('payment_id');
+    const paymentStatus = searchParams.get('status');
 
-  const createSubscription = async (groupId: string) => {
+    if (groupId && user && paymentStatus === 'paid') {
+      createSubscription(groupId, paymentId || '');
+    } else if (paymentStatus && paymentStatus !== 'paid') {
+      setStatus('error');
+    }
+  }, [user, searchParams]);
+
+  const createSubscription = async (groupId: string, paymentId: string) => {
+    // Check if already subscribed (payment might have been processed by webhook)
+    const { data: existing } = await supabase.from('subscriptions')
+      .select('id')
+      .eq('user_id', user!.id)
+      .eq('group_id', groupId)
+      .eq('status', 'active')
+      .maybeSingle();
+
+    if (existing) {
+      setStatus('success');
+      setTimeout(() => navigate('/dashboard'), 2000);
+      return;
+    }
+
     const { data: group } = await supabase.from('groups').select('*').eq('id', groupId).single();
-    if (!group) return;
+    if (!group) { setStatus('error'); return; }
 
     const endDate = new Date();
     endDate.setDate(endDate.getDate() + 30);
 
-    await supabase.from('subscriptions').insert({
+    const { error } = await supabase.from('subscriptions').insert({
       user_id: user!.id,
       group_id: groupId,
       advisor_id: group.advisor_id,
       end_date: endDate.toISOString(),
       amount_paid: group.monthly_price,
       status: 'active',
-      razorpay_payment_id: searchParams.get('payment_id') || 'placeholder',
+      razorpay_payment_id: paymentId,
     });
 
-    setDone(true);
-    setTimeout(() => navigate('/dashboard'), 3000);
+    if (error) {
+      console.error('Subscription error:', error);
+      setStatus('error');
+    } else {
+      setStatus('success');
+      setTimeout(() => navigate('/dashboard'), 2000);
+    }
   };
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="container mx-auto max-w-md px-4 py-16 text-center">
-        <div className="text-5xl mb-4">✅</div>
-        <h1 className="text-2xl font-bold">Payment Successful!</h1>
-        <p className="mt-2 text-muted-foreground">Your subscription is now active. Redirecting to dashboard...</p>
+        {status === 'verifying' && (
+          <>
+            <div className="h-8 w-8 mx-auto animate-spin rounded-full border-4 border-primary border-t-transparent mb-4" />
+            <h1 className="text-2xl font-bold">Verifying Payment...</h1>
+            <p className="mt-2 text-muted-foreground">Please wait while we confirm your payment.</p>
+          </>
+        )}
+        {status === 'success' && (
+          <>
+            <div className="text-5xl mb-4">✅</div>
+            <h1 className="text-2xl font-bold">Payment Successful!</h1>
+            <p className="mt-2 text-muted-foreground">Your subscription is now active. Redirecting to dashboard...</p>
+          </>
+        )}
+        {status === 'error' && (
+          <>
+            <div className="text-5xl mb-4">❌</div>
+            <h1 className="text-2xl font-bold">Payment Issue</h1>
+            <p className="mt-2 text-muted-foreground">Something went wrong. Please contact support if money was deducted.</p>
+          </>
+        )}
       </div>
     </div>
   );
