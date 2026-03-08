@@ -34,6 +34,23 @@ export function SignalCard({ signal, groupName, advisorName, locked }: SignalCar
   };
 
   const isBuy = signal.signal_type === 'BUY';
+  const isMessage = signal.post_type === 'message';
+
+  if (isMessage) {
+    return (
+      <div className="tc-card-static p-4 overflow-hidden">
+        <div className="flex-1">
+          {(groupName || advisorName) && (
+            <p className="mb-2 tc-small">{groupName} • {advisorName}</p>
+          )}
+          {signal.message_text && <p className="text-sm">{signal.message_text}</p>}
+          {signal.image_url && <img src={signal.image_url} alt="Post" className="mt-2 rounded-lg max-h-64 object-cover" />}
+          <p className="mt-2 tc-small">{formatDate(signal.signal_date)}</p>
+          <p className="mt-2 text-[11px] italic text-muted-foreground">Past performance ≠ future results. Trade at your own risk.</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="tc-card-static p-4 overflow-hidden">
@@ -66,6 +83,7 @@ export function SignalCard({ signal, groupName, advisorName, locked }: SignalCar
             <span className="ml-auto tc-small">{formatDate(signal.signal_date)}</span>
           </div>
           {signal.notes && <p className="mt-2 tc-small">{signal.notes}</p>}
+          <p className="mt-2 text-[11px] italic text-muted-foreground">Past performance ≠ future results. Trade at your own risk.</p>
         </div>
       </div>
     </div>

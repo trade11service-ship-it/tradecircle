@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
-import { ShieldAlert, Users, IndianRupee, Clock } from 'lucide-react';
+import { ShieldAlert, Users, IndianRupee, Clock, Download, Search } from 'lucide-react';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Advisor = Tables<'advisors'>;
@@ -15,7 +15,7 @@ type Advisor = Tables<'advisors'>;
 export default function AdminDashboard() {
   const { user, profile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<'pending' | 'advisors' | 'users' | 'payments'>('pending');
+  const [tab, setTab] = useState<'pending' | 'advisors' | 'users' | 'payments' | 'legal'>('pending');
   const [pendingAdvisors, setPendingAdvisors] = useState<Advisor[]>([]);
   const [allAdvisors, setAllAdvisors] = useState<Advisor[]>([]);
   const [users, setUsers] = useState<any[]>([]);
@@ -25,6 +25,12 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [isVerifiedAdmin, setIsVerifiedAdmin] = useState(false);
   const [verifying, setVerifying] = useState(true);
+
+  // Legal records state
+  const [legalTab, setLegalTab] = useState<'advisor' | 'user'>('advisor');
+  const [advisorLegal, setAdvisorLegal] = useState<any[]>([]);
+  const [userLegal, setUserLegal] = useState<any[]>([]);
+  const [legalSearch, setLegalSearch] = useState('');
 
   useEffect(() => {
     if (authLoading) return;
@@ -47,6 +53,15 @@ export default function AdminDashboard() {
       supabase.from('subscriptions').select('*, profiles!inner(full_name), advisors!inner(full_name), groups!inner(name)').order('created_at', { ascending: false }),
     ]);
     setPendingAdvisors(pending.data || []); setAllAdvisors(all.data || []); setUsers(usersData.data || []); setPayments(paymentsData.data || []);
+
+    // Fetch legal records
+    const [advLegal, usrLegal] = await Promise.all([
+      supabase.from('advisor_legal_acceptances').select('*').order('form_submitted_at', { ascending: false }),
+      supabase.from('user_legal_acceptances').select('*').order('accepted_at', { ascending: false }),
+    ]);
+    setAdvisorLegal(advLegal.data || []);
+    setUserLegal(usrLegal.data || []);
+
     setLoading(false);
   };
 
@@ -74,6 +89,17 @@ export default function AdminDashboard() {
     toast.success('Advisor suspended'); fetchData();
   };
 
+  const exportCsv = (data: any[], filename: string) => {
+    if (!data.length) return;
+    const headers = Object.keys(data[0]);
+    const csv = [headers.join(','), ...data.map(row => headers.map(h => `"${(row[h] ?? '').toString().replace(/"/g, '""')}"`).join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `${filename}.csv`; a.click();
+    URL.revokeObjectURL(url);
+  };
+
   if (authLoading || verifying) return <div className="flex min-h-screen items-center justify-center bg-off-white"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>;
 
   if (!isVerifiedAdmin) return (
@@ -96,7 +122,15 @@ export default function AdminDashboard() {
     { key: 'advisors' as const, label: 'All Advisors' },
     { key: 'users' as const, label: 'All Users' },
     { key: 'payments' as const, label: 'Payments' },
+    { key: 'legal' as const, label: 'Legal Records' },
   ];
+
+  const filteredAdvisorLegal = advisorLegal.filter((r: any) =>
+    !legalSearch || r.full_name?.toLowerCase().includes(legalSearch.toLowerCase()) || r.sebi_reg_no?.toLowerCase().includes(legalSearch.toLowerCase())
+  );
+  const filteredUserLegal = userLegal.filter((r: any) =>
+    !legalSearch || r.full_name?.toLowerCase().includes(legalSearch.toLowerCase()) || r.email?.toLowerCase().includes(legalSearch.toLowerCase())
+  );
 
   return (
     <div className="min-h-screen flex flex-col bg-off-white">
@@ -228,6 +262,81 @@ export default function AdminDashboard() {
                 ))}
               </tbody>
             </table>
+          </div>
+        )}
+
+        {tab === 'legal' && !loading && (
+          <div className="space-y-4">
+            <div className="flex flex-wrap gap-2 items-center">
+              <Button variant={legalTab === 'advisor' ? 'default' : 'outline'} size="sm" className="tc-btn-click" onClick={() => setLegalTab('advisor')}>Advisor Acceptances</Button>
+              <Button variant={legalTab === 'user' ? 'default' : 'outline'} size="sm" className="tc-btn-click" onClick={() => setLegalTab('user')}>User Acceptances</Button>
+              <div className="flex-1" />
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input placeholder="Search by name..." value={legalSearch} onChange={e => setLegalSearch(e.target.value)} className="pl-9 w-56 tc-input-focus" />
+              </div>
+              <Button variant="outline" size="sm" className="tc-btn-click gap-1" onClick={() => exportCsv(legalTab === 'advisor' ? filteredAdvisorLegal : filteredUserLegal, `${legalTab}-legal-records`)}>
+                <Download className="h-4 w-4" /> Export CSV
+              </Button>
+            </div>
+
+            {legalTab === 'advisor' && (
+              <div className="tc-card-static overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead><tr className="border-b bg-off-white text-left">
+                    <th className="p-3 font-medium text-muted-foreground">Name</th>
+                    <th className="p-3 font-medium text-muted-foreground">SEBI No</th>
+                    <th className="p-3 font-medium text-muted-foreground">CB 1 ✅</th>
+                    <th className="p-3 font-medium text-muted-foreground">CB 2 ✅</th>
+                    <th className="p-3 font-medium text-muted-foreground">IP Address</th>
+                    <th className="p-3 font-medium text-muted-foreground">Submitted At</th>
+                    <th className="p-3 font-medium text-muted-foreground">Status</th>
+                  </tr></thead>
+                  <tbody>
+                    {filteredAdvisorLegal.length === 0 && <tr><td colSpan={7} className="p-12 text-center text-muted-foreground">No records</td></tr>}
+                    {filteredAdvisorLegal.map((r: any, i: number) => (
+                      <tr key={r.id} className={`border-b last:border-0 ${i % 2 === 1 ? 'bg-off-white' : ''}`}>
+                        <td className="p-3 font-medium">{r.full_name}</td>
+                        <td className="p-3 font-mono text-xs">{r.sebi_reg_no}</td>
+                        <td className="p-3">{r.checkbox_1_sebi_responsibility ? '✅' : '❌'}</td>
+                        <td className="p-3">{r.checkbox_2_indemnity ? '✅' : '❌'}</td>
+                        <td className="p-3 font-mono text-xs">{r.ip_address || '-'}</td>
+                        <td className="p-3">{r.form_submitted_at ? new Date(r.form_submitted_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}</td>
+                        <td className="p-3"><span className={r.status === 'approved' ? 'tc-badge-active' : r.status === 'rejected' ? 'tc-badge-rejected' : 'tc-badge-pending'}>{r.status}</span></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {legalTab === 'user' && (
+              <div className="tc-card-static overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead><tr className="border-b bg-off-white text-left">
+                    <th className="p-3 font-medium text-muted-foreground">Name</th>
+                    <th className="p-3 font-medium text-muted-foreground">Email</th>
+                    <th className="p-3 font-medium text-muted-foreground">Type</th>
+                    <th className="p-3 font-medium text-muted-foreground">Page</th>
+                    <th className="p-3 font-medium text-muted-foreground">IP</th>
+                    <th className="p-3 font-medium text-muted-foreground">Accepted At</th>
+                  </tr></thead>
+                  <tbody>
+                    {filteredUserLegal.length === 0 && <tr><td colSpan={6} className="p-12 text-center text-muted-foreground">No records</td></tr>}
+                    {filteredUserLegal.map((r: any, i: number) => (
+                      <tr key={r.id} className={`border-b last:border-0 ${i % 2 === 1 ? 'bg-off-white' : ''}`}>
+                        <td className="p-3 font-medium">{r.full_name || '-'}</td>
+                        <td className="p-3 text-muted-foreground">{r.email || '-'}</td>
+                        <td className="p-3"><span className="tc-badge-strategy">{r.acceptance_type}</span></td>
+                        <td className="p-3 text-xs max-w-[200px] truncate">{r.page_url || '-'}</td>
+                        <td className="p-3 font-mono text-xs">{r.ip_address || '-'}</td>
+                        <td className="p-3">{r.accepted_at ? new Date(r.accepted_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         )}
       </div>

@@ -1,6 +1,12 @@
 import { Link } from 'react-router-dom';
+import { useMemo } from 'react';
+import { FOOTER_DISCLAIMERS } from '@/lib/legalTexts';
 
 export function Footer() {
+  const disclaimer = useMemo(() => {
+    return FOOTER_DISCLAIMERS[Math.floor(Math.random() * FOOTER_DISCLAIMERS.length)];
+  }, []);
+
   return (
     <footer className="bg-secondary text-secondary-foreground">
       <div className="container mx-auto px-4 py-16">
@@ -47,12 +53,12 @@ export function Footer() {
 
         <div className="mt-12 border-t border-secondary-foreground/20 pt-6">
           <p className="text-xs leading-relaxed opacity-60">
-            ⚠️ Important Disclaimer: TradeCircle is a technology platform that lists SEBI-registered investment advisors. We are NOT a SEBI registered investment advisor or research analyst. We do not provide investment advice or trading signals. All advisors on this platform are independently SEBI registered and solely responsible for their own advice. Investments are subject to market risks. Past performance is not indicative of future results. Please verify advisor credentials before subscribing.
+            {disclaimer}
           </p>
         </div>
 
         <div className="mt-4 text-center text-xs opacity-50">
-          © 2026 TradeCircle. All rights reserved. | Made with ❤️ for Indian Traders
+          © 2026 TradeCircle (STREZONIC PRIVATE LIMITED). All rights reserved. | Made with ❤️ for Indian Traders
         </div>
       </div>
     </footer>
