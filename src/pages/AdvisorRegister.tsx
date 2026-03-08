@@ -23,9 +23,22 @@ export default function AdvisorRegister() {
   const [check1, setCheck1] = useState(false);
   const [check2, setCheck2] = useState(false);
   const [showCheckError, setShowCheckError] = useState(false);
+  const [existingAdvisor, setExistingAdvisor] = useState<any>(null);
+  const [checkingAdvisor, setCheckingAdvisor] = useState(false);
   const update = (key: string, value: string) => setForm({ ...form, [key]: value });
 
-  if (authLoading) return <div className="flex min-h-screen items-center justify-center bg-off-white"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>;
+  // Check if user is already registered as advisor
+  useState(() => {
+    if (user) {
+      setCheckingAdvisor(true);
+      supabase.from('advisors').select('*').eq('user_id', user.id).single().then(({ data }) => {
+        if (data) setExistingAdvisor(data);
+        setCheckingAdvisor(false);
+      });
+    }
+  });
+
+  if (authLoading || checkingAdvisor) return <div className="flex min-h-screen items-center justify-center bg-off-white"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>;
 
   if (!user) return (
     <div className="min-h-screen flex flex-col bg-off-white"><Navbar />
