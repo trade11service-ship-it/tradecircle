@@ -9,9 +9,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
-import { BarChart3, Radio, Users, UserCircle, IndianRupee, TrendingUp, Clock, CheckCircle2, XCircle, AlertTriangle, MessageSquare, ImageIcon, X } from 'lucide-react';
+import { BarChart3, Radio, Users, UserCircle, IndianRupee, TrendingUp, Clock, CheckCircle2, XCircle, AlertTriangle, MessageSquare, ImageIcon, X, Globe, Lock } from 'lucide-react';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Advisor = Tables<'advisors'>;
@@ -400,6 +401,16 @@ export default function AdvisorDashboard() {
                     )}
                     {uploadProgress > 0 && uploadProgress < 100 && <Progress value={uploadProgress} className="mt-2 h-2" />}
                   </div>
+                  <div className="flex items-center justify-between rounded-lg border p-3 bg-muted/30">
+                    <div className="flex items-center gap-2">
+                      {messageForm.isPublic ? <Globe className="h-4 w-4 text-primary" /> : <Lock className="h-4 w-4 text-muted-foreground" />}
+                      <div>
+                        <p className="text-sm font-medium">{messageForm.isPublic ? 'Public' : 'Subscribers Only'}</p>
+                        <p className="text-[11px] text-muted-foreground">{messageForm.isPublic ? 'Visible to followers in their feed' : 'Only paid subscribers can see this'}</p>
+                      </div>
+                    </div>
+                    <Switch checked={messageForm.isPublic} onCheckedChange={v => setMessageForm({ ...messageForm, isPublic: v })} />
+                  </div>
                   <Button className="w-full font-semibold bg-secondary hover:bg-secondary/90 text-secondary-foreground" onClick={postMessage} disabled={posting || !messageForm.groupId || !messageForm.text.trim()}>
                     {posting ? 'Posting...' : '📝 Post Update'}
                   </Button>
@@ -446,6 +457,16 @@ export default function AdvisorDashboard() {
                     </div>
                   </div>
                   <div><Label>Notes (optional)</Label><Textarea value={signalForm.notes} onChange={e => setSignalForm({ ...signalForm, notes: e.target.value })} /></div>
+                  <div className="flex items-center justify-between rounded-lg border p-3 bg-muted/30">
+                    <div className="flex items-center gap-2">
+                      {signalForm.isPublic ? <Globe className="h-4 w-4 text-primary" /> : <Lock className="h-4 w-4 text-muted-foreground" />}
+                      <div>
+                        <p className="text-sm font-medium">{signalForm.isPublic ? 'Public' : 'Subscribers Only'}</p>
+                        <p className="text-[11px] text-muted-foreground">{signalForm.isPublic ? 'Visible to followers (blurred for non-subs)' : 'Only paid subscribers can see this'}</p>
+                      </div>
+                    </div>
+                    <Switch checked={signalForm.isPublic} onCheckedChange={v => setSignalForm({ ...signalForm, isPublic: v })} />
+                  </div>
                   <Button className="w-full font-semibold" onClick={postSignal} disabled={posting || !signalForm.groupId || !signalForm.instrument || !signalForm.entryPrice}>
                     {posting ? 'Posting...' : '📊 Post Signal'}
                   </Button>
