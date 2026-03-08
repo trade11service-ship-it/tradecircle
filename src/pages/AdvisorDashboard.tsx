@@ -313,7 +313,9 @@ export default function AdvisorDashboard() {
                         <p className="text-xs text-muted-foreground">Earnings</p>
                       </div>
                     </div>
-                    <ReferralLinkCard groupId={g.id} groupName={g.name} advisorId={advisor.id} advisorName={advisor.full_name} />
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <ReferralLinkCard groupId={g.id} groupName={g.name} advisorId={advisor.id} advisorName={advisor.full_name} />
+                    </div>
                   </div>
                 );
               })}
