@@ -69,10 +69,21 @@ export default function AdvisorDashboard() {
 
   const postSignal = async () => {
     if (!advisor) return;
-    const { error } = await supabase.from('signals').insert({ group_id: signalForm.groupId, advisor_id: advisor.id, instrument: signalForm.instrument, signal_type: signalForm.signalType, entry_price: parseFloat(signalForm.entryPrice), target_price: parseFloat(signalForm.targetPrice), stop_loss: parseFloat(signalForm.stopLoss), timeframe: signalForm.timeframe, notes: signalForm.notes });
+    const { data: newSignal, error } = await supabase.from('signals').insert({ group_id: signalForm.groupId, advisor_id: advisor.id, instrument: signalForm.instrument, signal_type: signalForm.signalType, entry_price: parseFloat(signalForm.entryPrice), target_price: parseFloat(signalForm.targetPrice), stop_loss: parseFloat(signalForm.stopLoss), timeframe: signalForm.timeframe, notes: signalForm.notes }).select().single();
     if (error) { toast.error(error.message); return; }
-    const { data: tSettings } = await supabase.from('telegram_settings').select('*').eq('group_id', signalForm.groupId).eq('is_active', true);
-    toast.success(`Signal posted! ${(tSettings?.length || 0) > 0 ? `Telegram alerts queued for ${tSettings!.length} users` : ''}`);
+    toast.success('Signal posted! Sending Telegram alerts...');
+    // Trigger telegram notifications
+    try {
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-telegram-signal`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}` },
+        body: JSON.stringify({ signal_id: newSignal.id }),
+      });
+      const result = await res.json();
+      if (result.sent > 0) toast.success(`Telegram sent to ${result.sent}/${result.total} users`);
+    } catch (err) {
+      console.error('Telegram send error:', err);
+    }
     setSignalForm({ groupId: '', instrument: '', signalType: 'BUY', entryPrice: '', targetPrice: '', stopLoss: '', timeframe: 'Intraday', notes: '' });
   };
 
