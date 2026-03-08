@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
+
 import { GroupFeed } from '@/components/GroupFeed';
 import { FollowFeed } from '@/components/FollowFeed';
 import { Button } from '@/components/ui/button';
@@ -443,7 +443,7 @@ export default function TraderDashboard() {
           </div>
         )}
       </div>
-      <Footer />
+      
     </div>
   );
 }

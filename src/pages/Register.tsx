@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable/index';
 import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -104,7 +104,6 @@ export default function Register() {
             <Button className="mt-6 tc-btn-click" variant="outline" onClick={() => navigate('/login')}>Go to Login</Button>
           </div>
         </div>
-        <Footer />
       </div>
     );
   }
@@ -188,7 +187,7 @@ export default function Register() {
           </p>
         </div>
       </div>
-      <Footer />
+      
     </div>
   );
 }

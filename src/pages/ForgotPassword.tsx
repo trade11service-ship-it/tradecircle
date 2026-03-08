@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -33,7 +33,6 @@ export default function ForgotPassword() {
           <Link to="/login"><Button className="mt-6 tc-btn-click" variant="outline">Back to Login</Button></Link>
         </div>
       </div>
-      <Footer />
     </div>
   );
 
@@ -56,7 +55,7 @@ export default function ForgotPassword() {
           <p className="mt-4 text-center text-sm text-muted-foreground"><Link to="/login" className="text-secondary hover:underline">Back to Login</Link></p>
         </div>
       </div>
-      <Footer />
+      
     </div>
   );
 }
