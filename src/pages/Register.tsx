@@ -81,7 +81,7 @@ export default function Register() {
     if (!termsAccepted) { toast.error('Please accept the terms to proceed'); return; }
     setGoogleLoading(true);
     const { error } = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin,
+      redirect_uri: window.location.origin + '/login',
     });
     if (error) {
       toast.error('Google sign-up failed');
