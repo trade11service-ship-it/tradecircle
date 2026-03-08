@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Navbar } from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
@@ -6,12 +7,14 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
+import { ShieldAlert } from 'lucide-react';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Advisor = Tables<'advisors'>;
 
 export default function AdminDashboard() {
-  const { profile } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [tab, setTab] = useState<'pending' | 'advisors' | 'users' | 'payments'>('pending');
   const [pendingAdvisors, setPendingAdvisors] = useState<Advisor[]>([]);
   const [allAdvisors, setAllAdvisors] = useState<Advisor[]>([]);
@@ -20,57 +23,119 @@ export default function AdminDashboard() {
   const [expandedAdvisor, setExpandedAdvisor] = useState<string | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [loading, setLoading] = useState(true);
+  const [isVerifiedAdmin, setIsVerifiedAdmin] = useState(false);
+  const [verifying, setVerifying] = useState(true);
+
+  // Server-side admin verification - don't trust client profile.role
+  useEffect(() => {
+    if (authLoading) return;
+    if (!user) { navigate('/login', { replace: true }); return; }
+
+    const verifyAdmin = async () => {
+      // Query the database directly to verify admin role
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      if (error || data?.role !== 'admin') {
+        setIsVerifiedAdmin(false);
+        setVerifying(false);
+        return;
+      }
+      setIsVerifiedAdmin(true);
+      setVerifying(false);
+    };
+
+    verifyAdmin();
+  }, [user, authLoading, navigate]);
 
   useEffect(() => {
-    fetchData();
-  }, []);
+    if (isVerifiedAdmin) fetchData();
+  }, [isVerifiedAdmin]);
 
   const fetchData = async () => {
-    const { data: pending } = await supabase.from('advisors').select('*').eq('status', 'pending').order('created_at', { ascending: false });
-    setPendingAdvisors(pending || []);
+    const [pending, all, usersData, paymentsData] = await Promise.all([
+      supabase.from('advisors').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
+      supabase.from('advisors').select('*').order('created_at', { ascending: false }),
+      supabase.from('profiles').select('*').order('created_at', { ascending: false }),
+      supabase.from('subscriptions').select('*, profiles!inner(full_name), advisors!inner(full_name), groups!inner(name)').order('created_at', { ascending: false }),
+    ]);
 
-    const { data: all } = await supabase.from('advisors').select('*').order('created_at', { ascending: false });
-    setAllAdvisors(all || []);
-
-    const { data: usersData } = await supabase.from('profiles').select('*').order('created_at', { ascending: false });
-    setUsers(usersData || []);
-
-    const { data: paymentsData } = await supabase.from('subscriptions').select('*, profiles!inner(full_name), advisors!inner(full_name), groups!inner(name)').order('created_at', { ascending: false });
-    setPayments(paymentsData || []);
-
+    setPendingAdvisors(pending.data || []);
+    setAllAdvisors(all.data || []);
+    setUsers(usersData.data || []);
+    setPayments(paymentsData.data || []);
     setLoading(false);
   };
 
-  const approveAdvisor = async (id: string) => {
-    await supabase.from('advisors').update({ status: 'approved' }).eq('id', id);
-    toast.success('Advisor approved');
+  const approveAdvisor = async (advisor: Advisor) => {
+    // Update advisor status AND the profile role to 'advisor'
+    const [advisorUpdate, profileUpdate] = await Promise.all([
+      supabase.from('advisors').update({ status: 'approved' }).eq('id', advisor.id),
+      supabase.from('profiles').update({ role: 'advisor' }).eq('id', advisor.user_id),
+    ]);
+    if (advisorUpdate.error || profileUpdate.error) {
+      toast.error('Failed to approve advisor');
+      return;
+    }
+    toast.success('Advisor approved successfully');
     fetchData();
   };
 
   const rejectAdvisor = async (id: string) => {
     if (!rejectReason.trim()) { toast.error('Please provide a rejection reason'); return; }
-    await supabase.from('advisors').update({ status: 'rejected', rejection_reason: rejectReason }).eq('id', id);
+    const { error } = await supabase.from('advisors').update({ status: 'rejected', rejection_reason: rejectReason }).eq('id', id);
+    if (error) { toast.error('Failed to reject'); return; }
     toast.success('Advisor rejected');
     setRejectReason('');
     fetchData();
   };
 
-  const suspendAdvisor = async (id: string) => {
-    await supabase.from('advisors').update({ status: 'suspended' }).eq('id', id);
+  const suspendAdvisor = async (advisor: Advisor) => {
+    await Promise.all([
+      supabase.from('advisors').update({ status: 'suspended' }).eq('id', advisor.id),
+      supabase.from('profiles').update({ role: 'trader' }).eq('id', advisor.user_id),
+    ]);
     toast.success('Advisor suspended');
     fetchData();
   };
 
-  if (profile?.role !== 'admin') {
-    return <div className="min-h-screen bg-background"><Navbar /><div className="p-8 text-center text-destructive">Access denied. Admin only.</div></div>;
+  // Loading states
+  if (authLoading || verifying) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  // Access denied
+  if (!isVerifiedAdmin) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <div className="container mx-auto flex max-w-md flex-col items-center px-4 py-16">
+          <div className="rounded-xl border border-destructive/30 bg-card p-8 text-center shadow-sm">
+            <ShieldAlert className="mx-auto h-16 w-16 text-destructive" />
+            <h2 className="mt-4 text-xl font-bold text-destructive">Access Denied</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              You do not have permission to access this page. Admin access is strictly restricted.
+            </p>
+            <Button className="mt-6" variant="outline" onClick={() => navigate('/')}>Go Home</Button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const totalRevenue = payments.reduce((sum, p) => sum + (p.amount_paid || 0), 0);
 
   const tabs = [
     { key: 'pending', label: `Pending (${pendingAdvisors.length})` },
-    { key: 'advisors', label: 'Advisors' },
-    { key: 'users', label: 'Users' },
+    { key: 'advisors', label: 'All Advisors' },
+    { key: 'users', label: 'All Users' },
     { key: 'payments', label: 'Payments' },
   ] as const;
 
@@ -78,51 +143,91 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="container mx-auto px-4 py-8">
-        <h1 className="mb-6 text-2xl font-bold">Admin Dashboard</h1>
-        <div className="mb-6 flex gap-2 overflow-x-auto">
+        <div className="mb-6 flex items-center gap-3">
+          <ShieldAlert className="h-6 w-6 text-primary" />
+          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
+          <Badge variant="destructive" className="text-xs">ADMIN ONLY</Badge>
+        </div>
+
+        {/* Stats row */}
+        <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+          <div className="rounded-lg border bg-card p-4">
+            <p className="text-xs text-muted-foreground">Pending Approvals</p>
+            <p className="text-2xl font-bold text-orange-500">{pendingAdvisors.length}</p>
+          </div>
+          <div className="rounded-lg border bg-card p-4">
+            <p className="text-xs text-muted-foreground">Total Advisors</p>
+            <p className="text-2xl font-bold">{allAdvisors.length}</p>
+          </div>
+          <div className="rounded-lg border bg-card p-4">
+            <p className="text-xs text-muted-foreground">Total Users</p>
+            <p className="text-2xl font-bold">{users.length}</p>
+          </div>
+          <div className="rounded-lg border bg-card p-4">
+            <p className="text-xs text-muted-foreground">Total Revenue</p>
+            <p className="text-2xl font-bold text-primary">₹{totalRevenue.toLocaleString('en-IN')}</p>
+          </div>
+        </div>
+
+        {/* Tabs */}
+        <div className="mb-6 flex gap-2 overflow-x-auto rounded-lg border bg-card p-1">
           {tabs.map(t => (
-            <Button key={t.key} variant={tab === t.key ? 'default' : 'outline'} size="sm" onClick={() => setTab(t.key)}>{t.label}</Button>
+            <Button key={t.key} variant={tab === t.key ? 'default' : 'ghost'} size="sm" onClick={() => setTab(t.key)}>{t.label}</Button>
           ))}
         </div>
 
-        {loading && <div className="text-center text-muted-foreground">Loading...</div>}
+        {loading && <div className="text-center text-muted-foreground py-8">Loading data...</div>}
 
-        {tab === 'pending' && (
+        {/* Pending Tab */}
+        {tab === 'pending' && !loading && (
           <div className="space-y-4">
-            {pendingAdvisors.length === 0 && <p className="text-muted-foreground">No pending applications</p>}
+            {pendingAdvisors.length === 0 && (
+              <div className="rounded-xl border bg-card p-8 text-center">
+                <p className="text-muted-foreground">No pending applications 🎉</p>
+              </div>
+            )}
             {pendingAdvisors.map(a => (
-              <div key={a.id} className="rounded-lg border bg-card p-4">
+              <div key={a.id} className="rounded-xl border bg-card p-5 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="font-semibold">{a.full_name}</p>
-                    <p className="text-sm text-muted-foreground">SEBI: {a.sebi_reg_no} • {new Date(a.created_at!).toLocaleDateString('en-IN')}</p>
+                    <p className="font-semibold text-lg">{a.full_name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      SEBI: {a.sebi_reg_no} • Applied: {new Date(a.created_at!).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </p>
                   </div>
                   <Button variant="outline" size="sm" onClick={() => setExpandedAdvisor(expandedAdvisor === a.id ? null : a.id)}>
-                    {expandedAdvisor === a.id ? 'Collapse' : 'View Details'}
+                    {expandedAdvisor === a.id ? 'Collapse' : 'Review'}
                   </Button>
                 </div>
                 {expandedAdvisor === a.id && (
-                  <div className="mt-4 space-y-3 border-t pt-4">
-                    <div className="grid gap-4 sm:grid-cols-2 text-sm">
-                      <div><strong>Email:</strong> {a.email}</div>
-                      <div><strong>Phone:</strong> {a.phone}</div>
-                      <div><strong>Aadhaar:</strong> {a.aadhaar_no}</div>
-                      <div><strong>PAN:</strong> {a.pan_no}</div>
-                      <div><strong>Strategy:</strong> {a.strategy_type}</div>
-                      <div><strong>Address:</strong> {a.address}</div>
+                  <div className="mt-4 space-y-4 border-t pt-4">
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      {[
+                        { label: 'Email', value: a.email },
+                        { label: 'Phone', value: a.phone || '-' },
+                        { label: 'Aadhaar No', value: a.aadhaar_no ? `••••••••${a.aadhaar_no.slice(-4)}` : '-' },
+                        { label: 'PAN No', value: a.pan_no || '-' },
+                        { label: 'Strategy', value: a.strategy_type || '-' },
+                        { label: 'Address', value: a.address || '-' },
+                      ].map(item => (
+                        <div key={item.label} className="rounded-lg bg-muted/50 p-3">
+                          <p className="text-xs text-muted-foreground">{item.label}</p>
+                          <p className="font-medium text-sm">{item.value}</p>
+                        </div>
+                      ))}
                     </div>
-                    <div><strong>Bio:</strong> {a.bio}</div>
-                    <div className="flex gap-4 flex-wrap">
-                      {a.profile_photo_url && <div><p className="text-xs text-muted-foreground mb-1">Profile Photo</p><img src={a.profile_photo_url} alt="Profile" className="h-32 rounded border object-cover" /></div>}
-                      {a.aadhaar_photo_url && <div><p className="text-xs text-muted-foreground mb-1">Aadhaar</p><img src={a.aadhaar_photo_url} alt="Aadhaar" className="h-32 rounded border object-cover" /></div>}
-                      {a.pan_photo_url && <div><p className="text-xs text-muted-foreground mb-1">PAN</p><img src={a.pan_photo_url} alt="PAN" className="h-32 rounded border object-cover" /></div>}
-                    </div>
-                    <div className="flex gap-2 items-end">
-                      <Button onClick={() => approveAdvisor(a.id)}>Approve</Button>
-                      <div className="flex-1">
-                        <Input placeholder="Rejection reason..." value={rejectReason} onChange={e => setRejectReason(e.target.value)} />
+                    {a.bio && (
+                      <div className="rounded-lg bg-muted/50 p-3">
+                        <p className="text-xs text-muted-foreground">Bio</p>
+                        <p className="text-sm">{a.bio}</p>
                       </div>
-                      <Button variant="destructive" onClick={() => rejectAdvisor(a.id)}>Reject</Button>
+                    )}
+                    <div className="flex gap-2 items-end flex-wrap">
+                      <Button onClick={() => approveAdvisor(a)} className="bg-primary hover:bg-primary/90">✓ Approve</Button>
+                      <div className="flex-1 min-w-[200px]">
+                        <Input placeholder="Rejection reason (required)..." value={rejectReason} onChange={e => setRejectReason(e.target.value)} />
+                      </div>
+                      <Button variant="destructive" onClick={() => rejectAdvisor(a.id)}>✕ Reject</Button>
                     </div>
                   </div>
                 )}
@@ -131,19 +236,26 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {tab === 'advisors' && (
-          <div className="overflow-x-auto">
+        {/* Advisors Tab */}
+        {tab === 'advisors' && !loading && (
+          <div className="rounded-xl border bg-card shadow-sm overflow-x-auto">
             <table className="w-full text-sm">
-              <thead><tr className="border-b text-left"><th className="p-2">Name</th><th className="p-2">SEBI No</th><th className="p-2">Strategy</th><th className="p-2">Status</th><th className="p-2">Actions</th></tr></thead>
+              <thead><tr className="border-b bg-muted/50 text-left"><th className="p-3 font-medium">Name</th><th className="p-3 font-medium">SEBI No</th><th className="p-3 font-medium">Strategy</th><th className="p-3 font-medium">Status</th><th className="p-3 font-medium">Actions</th></tr></thead>
               <tbody>
                 {allAdvisors.map(a => (
-                  <tr key={a.id} className="border-b">
-                    <td className="p-2">{a.full_name}</td>
-                    <td className="p-2">{a.sebi_reg_no}</td>
-                    <td className="p-2">{a.strategy_type}</td>
-                    <td className="p-2"><Badge variant={a.status === 'approved' ? 'default' : a.status === 'rejected' ? 'destructive' : 'secondary'}>{a.status}</Badge></td>
-                    <td className="p-2">
-                      {a.status === 'approved' && <Button variant="outline" size="sm" onClick={() => suspendAdvisor(a.id)}>Suspend</Button>}
+                  <tr key={a.id} className="border-b last:border-0">
+                    <td className="p-3">{a.full_name}</td>
+                    <td className="p-3 font-mono text-xs">{a.sebi_reg_no}</td>
+                    <td className="p-3">{a.strategy_type}</td>
+                    <td className="p-3">
+                      <Badge variant={a.status === 'approved' ? 'default' : a.status === 'rejected' ? 'destructive' : 'secondary'} className="capitalize">
+                        {a.status}
+                      </Badge>
+                    </td>
+                    <td className="p-3">
+                      {a.status === 'approved' && (
+                        <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10" onClick={() => suspendAdvisor(a)}>Suspend</Button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -152,17 +264,18 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {tab === 'users' && (
-          <div className="overflow-x-auto">
+        {/* Users Tab */}
+        {tab === 'users' && !loading && (
+          <div className="rounded-xl border bg-card shadow-sm overflow-x-auto">
             <table className="w-full text-sm">
-              <thead><tr className="border-b text-left"><th className="p-2">Name</th><th className="p-2">Email</th><th className="p-2">Role</th><th className="p-2">Joined</th></tr></thead>
+              <thead><tr className="border-b bg-muted/50 text-left"><th className="p-3 font-medium">Name</th><th className="p-3 font-medium">Email</th><th className="p-3 font-medium">Role</th><th className="p-3 font-medium">Joined</th></tr></thead>
               <tbody>
                 {users.map((u: any) => (
-                  <tr key={u.id} className="border-b">
-                    <td className="p-2">{u.full_name}</td>
-                    <td className="p-2">{u.email}</td>
-                    <td className="p-2"><Badge variant="secondary">{u.role}</Badge></td>
-                    <td className="p-2">{u.created_at ? new Date(u.created_at).toLocaleDateString('en-IN') : '-'}</td>
+                  <tr key={u.id} className="border-b last:border-0">
+                    <td className="p-3">{u.full_name || '-'}</td>
+                    <td className="p-3">{u.email}</td>
+                    <td className="p-3"><Badge variant={u.role === 'admin' ? 'destructive' : 'secondary'} className="capitalize">{u.role}</Badge></td>
+                    <td className="p-3">{u.created_at ? new Date(u.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</td>
                   </tr>
                 ))}
               </tbody>
@@ -170,29 +283,25 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {tab === 'payments' && (
-          <div>
-            <div className="mb-4 rounded-lg border bg-card p-4">
-              <p className="text-sm text-muted-foreground">Total Revenue</p>
-              <p className="text-2xl font-bold">₹{totalRevenue.toLocaleString('en-IN')}</p>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead><tr className="border-b text-left"><th className="p-2">User</th><th className="p-2">Advisor</th><th className="p-2">Group</th><th className="p-2">Amount</th><th className="p-2">Date</th><th className="p-2">Status</th></tr></thead>
-                <tbody>
-                  {payments.map((p: any) => (
-                    <tr key={p.id} className="border-b">
-                      <td className="p-2">{p.profiles?.full_name}</td>
-                      <td className="p-2">{p.advisors?.full_name}</td>
-                      <td className="p-2">{p.groups?.name}</td>
-                      <td className="p-2">₹{p.amount_paid || 0}</td>
-                      <td className="p-2">{p.created_at ? new Date(p.created_at).toLocaleDateString('en-IN') : '-'}</td>
-                      <td className="p-2"><Badge variant={p.status === 'active' ? 'default' : 'secondary'}>{p.status}</Badge></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+        {/* Payments Tab */}
+        {tab === 'payments' && !loading && (
+          <div className="rounded-xl border bg-card shadow-sm overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead><tr className="border-b bg-muted/50 text-left"><th className="p-3 font-medium">User</th><th className="p-3 font-medium">Advisor</th><th className="p-3 font-medium">Group</th><th className="p-3 font-medium">Amount</th><th className="p-3 font-medium">Date</th><th className="p-3 font-medium">Status</th></tr></thead>
+              <tbody>
+                {payments.length === 0 && <tr><td colSpan={6} className="p-8 text-center text-muted-foreground">No payments yet</td></tr>}
+                {payments.map((p: any) => (
+                  <tr key={p.id} className="border-b last:border-0">
+                    <td className="p-3">{p.profiles?.full_name}</td>
+                    <td className="p-3">{p.advisors?.full_name}</td>
+                    <td className="p-3">{p.groups?.name}</td>
+                    <td className="p-3 font-medium">₹{(p.amount_paid || 0).toLocaleString('en-IN')}</td>
+                    <td className="p-3">{p.created_at ? new Date(p.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</td>
+                    <td className="p-3"><Badge variant={p.status === 'active' ? 'default' : 'secondary'} className="capitalize">{p.status}</Badge></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         )}
       </div>
