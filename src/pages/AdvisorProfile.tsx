@@ -12,7 +12,7 @@ import type { Tables } from '@/integrations/supabase/types';
 import { SUBSCRIPTION_RISK_TEXT, getDeviceInfo, getIpAddress } from '@/lib/legalTexts';
 import { useFollow } from '@/hooks/useFollow';
 
-type Advisor = Tables<'advisors'>;
+type Advisor = Pick<Tables<'advisors'>, 'id' | 'full_name' | 'email' | 'phone' | 'bio' | 'sebi_reg_no' | 'strategy_type' | 'profile_photo_url' | 'status' | 'created_at' | 'user_id'>;
 type Group = Tables<'groups'>;
 type Signal = Tables<'signals'>;
 
