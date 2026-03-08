@@ -32,13 +32,13 @@ export default function AdvisorDashboard() {
 
   // Post forms
   const [postMode, setPostMode] = useState<'choose' | 'message' | 'signal'>('choose');
-  const [messageForm, setMessageForm] = useState({ groupId: '', text: '' });
+  const [messageForm, setMessageForm] = useState({ groupId: '', text: '', isPublic: false });
   const [messageImage, setMessageImage] = useState<File | null>(null);
   const [messageImagePreview, setMessageImagePreview] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [posting, setPosting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [signalForm, setSignalForm] = useState({ groupId: '', instrument: '', signalType: 'BUY', entryPrice: '', targetPrice: '', stopLoss: '', timeframe: 'Intraday', notes: '' });
+  const [signalForm, setSignalForm] = useState({ groupId: '', instrument: '', signalType: 'BUY', entryPrice: '', targetPrice: '', stopLoss: '', timeframe: 'Intraday', notes: '', isPublic: false });
 
   // Feed view
   const [feedGroupId, setFeedGroupId] = useState<string | null>(null);
