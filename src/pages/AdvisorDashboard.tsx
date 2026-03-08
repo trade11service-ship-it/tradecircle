@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
-import { BarChart3, Radio, Users, UserCircle, IndianRupee, TrendingUp, Clock, CheckCircle2, XCircle, AlertTriangle, MessageSquare, ImageIcon, X, Globe, Lock, Gift } from 'lucide-react';
+import { BarChart3, Radio, Users, UserCircle, IndianRupee, TrendingUp, Clock, CheckCircle2, XCircle, AlertTriangle, MessageSquare, ImageIcon, X, Globe, Lock, Gift, Plus, Shield } from 'lucide-react';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Advisor = Tables<'advisors'>;
@@ -233,82 +233,121 @@ export default function AdvisorDashboard() {
     { key: 'profile' as const, label: 'Profile', icon: UserCircle },
   ];
 
-  return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <Navbar />
-      <div className="container mx-auto px-4 py-8 flex-1">
-        <h1 className="text-3xl font-bold mb-6">Advisor Dashboard</h1>
+  const signalCount = signals.filter(s => (s as any).post_type !== 'message').length;
+  const greeting = new Date().getHours() < 12 ? 'Good morning' : new Date().getHours() < 17 ? 'Good afternoon' : 'Good evening';
 
-        {/* Quick Stats */}
-        <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-          {[
-            { label: 'Active Subscribers', value: totalSubs, icon: Users },
-            { label: 'Groups', value: groups.length, icon: BarChart3 },
-            { label: 'Signals Posted', value: signals.filter(s => (s as any).post_type !== 'message').length, icon: Radio },
-            { label: 'Your Earnings', value: `₹${Math.round(afterFees(totalRevenue)).toLocaleString('en-IN')}`, icon: IndianRupee, highlight: true },
-          ].map((stat, i) => (
-            <div key={i} className={`rounded-xl border p-5 ${stat.highlight ? 'bg-primary/5 border-primary/20' : 'bg-card'}`}>
-              <div className="flex items-center gap-2 mb-2">
-                <stat.icon className={`h-4 w-4 ${stat.highlight ? 'text-primary' : 'text-muted-foreground'}`} />
-                <p className="text-xs text-muted-foreground">{stat.label}</p>
-              </div>
-              <p className={`text-2xl font-bold ${stat.highlight ? 'text-primary' : 'text-foreground'}`}>{stat.value}</p>
+  return (
+    <div className="min-h-screen flex flex-col bg-[hsl(220,14%,96%)]">
+      <Navbar />
+      <div className="mx-auto w-full max-w-[1200px] px-5 py-6 flex-1">
+
+        {/* Welcome Bar */}
+        <div className="mb-5 flex items-center justify-between rounded-2xl border-[1.5px] border-border bg-card p-5 shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
+          <div>
+            <h1 className="text-[22px] font-extrabold text-foreground">{greeting}, {advisor.full_name.split(' ')[0]} 👋</h1>
+            <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+              <span className="h-2 w-2 rounded-full bg-primary" />
+              <Shield className="h-3 w-3" /> SEBI · {advisor.sebi_reg_no}
             </div>
-          ))}
+          </div>
+          <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-primary bg-light-green px-4 py-1.5 text-[13px] font-semibold text-primary">
+            ✓ Approved & Active
+          </span>
         </div>
 
-        {/* Tabs */}
-        <div className="mb-6 flex gap-2 overflow-x-auto pb-1">
+        {/* Stats Row */}
+        <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {/* Subscribers — green gradient */}
+          <div className="rounded-2xl bg-gradient-to-br from-primary to-[hsl(123,40%,35%)] p-5 text-primary-foreground">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20"><Users className="h-5 w-5" /></div>
+            <p className="mt-3 text-xs text-white/80">Active Subscribers</p>
+            <p className="text-4xl font-black tracking-tight">{totalSubs}</p>
+          </div>
+          {/* Groups */}
+          <div className="rounded-2xl border-[1.5px] border-border bg-card p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-light-blue"><BarChart3 className="h-5 w-5 text-secondary" /></div>
+            <p className="mt-3 text-xs text-[hsl(var(--small-text))]">Groups</p>
+            <p className="text-4xl font-black tracking-tight text-foreground">{groups.length}</p>
+          </div>
+          {/* Signals */}
+          <div className="rounded-2xl border-[1.5px] border-border bg-card p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[hsl(270,40%,94%)]"><Radio className="h-5 w-5 text-[hsl(270,50%,45%)]" /></div>
+            <p className="mt-3 text-xs text-[hsl(var(--small-text))]">Signals Posted</p>
+            <p className="text-4xl font-black tracking-tight text-foreground">{signalCount}</p>
+          </div>
+          {/* Earnings — navy gradient */}
+          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-secondary to-[hsl(214,70%,40%)] p-5 text-secondary-foreground">
+            <span className="pointer-events-none absolute -bottom-5 -right-2.5 text-[120px] font-black leading-none text-white/[0.06]">₹</span>
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20"><IndianRupee className="h-5 w-5" /></div>
+            <p className="mt-3 text-xs text-white/80">Your Earnings</p>
+            <p className="text-[32px] font-black tracking-tight">₹{Math.round(afterFees(totalRevenue)).toLocaleString('en-IN')}</p>
+            <p className="text-[11px] text-white/60">This month: ₹{Math.round(afterFees(thisMonthRevenue)).toLocaleString('en-IN')}</p>
+          </div>
+        </div>
+
+        {/* Navigation Tabs */}
+        <div className="mb-5 flex gap-1 overflow-x-auto rounded-xl border-[1.5px] border-border bg-card p-1.5 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
           {tabs.map(t => (
-            <Button key={t.key} variant={tab === t.key ? 'default' : 'outline'} size="sm" className="gap-2 min-h-[44px] whitespace-nowrap" onClick={() => { setTab(t.key); if (t.key === 'post') setPostMode('choose'); }}>
+            <button
+              key={t.key}
+              onClick={() => { setTab(t.key); if (t.key === 'post') setPostMode('choose'); }}
+              className={`flex h-10 items-center gap-1.5 whitespace-nowrap rounded-lg px-4 text-[13px] font-semibold transition-all ${
+                tab === t.key
+                  ? 'bg-foreground text-background shadow-[0_2px_6px_rgba(0,0,0,0.15)]'
+                  : 'text-muted-foreground hover:bg-muted'
+              }`}
+            >
               <t.icon className="h-4 w-4" /> {t.label}
-            </Button>
+            </button>
           ))}
         </div>
 
         {/* GROUPS TAB */}
         {tab === 'groups' && (
           <div>
-            <Button className="mb-4 font-semibold" onClick={() => setShowGroupForm(!showGroupForm)}>+ Create New Group</Button>
+            <button
+              onClick={() => setShowGroupForm(!showGroupForm)}
+              className="mb-4 flex items-center gap-2 rounded-[10px] bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground"
+            >
+              <Plus className="h-4 w-4" /> Create New Group
+            </button>
             {showGroupForm && (
-              <div className="mb-6 rounded-xl border bg-card p-6 space-y-4">
-                <div><Label>Group Name</Label><Input value={groupForm.name} onChange={e => setGroupForm({ ...groupForm, name: e.target.value })} /></div>
-                <div><Label>Description</Label><Textarea value={groupForm.description} onChange={e => setGroupForm({ ...groupForm, description: e.target.value })} /></div>
-                <div><Label>Monthly Price (₹)</Label><Input type="number" value={groupForm.monthlyPrice} onChange={e => setGroupForm({ ...groupForm, monthlyPrice: e.target.value })} /></div>
-                <div><Label>Group Photo</Label><Input type="file" accept="image/*" onChange={e => setGroupDp(e.target.files?.[0] || null)} /></div>
+              <div className="mb-6 rounded-2xl border-[1.5px] border-border bg-card p-6 space-y-4 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+                <div><Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Group Name</Label><Input value={groupForm.name} onChange={e => setGroupForm({ ...groupForm, name: e.target.value })} className="mt-1.5" /></div>
+                <div><Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Description</Label><Textarea value={groupForm.description} onChange={e => setGroupForm({ ...groupForm, description: e.target.value })} className="mt-1.5" /></div>
+                <div><Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Monthly Price (₹)</Label><Input type="number" value={groupForm.monthlyPrice} onChange={e => setGroupForm({ ...groupForm, monthlyPrice: e.target.value })} className="mt-1.5" /></div>
+                <div><Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Group Photo</Label><Input type="file" accept="image/*" onChange={e => setGroupDp(e.target.files?.[0] || null)} className="mt-1.5" /></div>
                 <Button onClick={createGroup} className="font-semibold">Create Group</Button>
               </div>
             )}
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-3 sm:grid-cols-2">
               {groups.map(g => {
                 const subCount = subscribers.filter(s => s.group_id === g.id && s.status === 'active').length;
                 const revenue = subscribers.filter(s => s.group_id === g.id).reduce((sum, s) => sum + (s.amount_paid || 0), 0);
                 const sigCount = signals.filter(s => s.group_id === g.id).length;
                 return (
-                  <div key={g.id} className="rounded-xl border bg-card p-5 hover:shadow-md transition-shadow cursor-pointer" onClick={() => { setFeedGroupId(g.id); setTab('post'); setPostMode('choose'); }}>
-                    <div className="flex items-center gap-3 mb-3">
-                      {g.dp_url ? (
-                        <img src={g.dp_url} alt={g.name} className="h-10 w-10 rounded-full object-cover" />
-                      ) : (
-                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold">{g.name.charAt(0)}</div>
-                      )}
-                      <div>
-                        <p className="font-bold text-foreground">{g.name}</p>
-                        <p className="text-sm text-primary font-semibold">₹{g.monthly_price}/mo</p>
+                  <div key={g.id} className="rounded-2xl border-[1.5px] border-border bg-card p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow cursor-pointer" onClick={() => { setFeedGroupId(g.id); setTab('post'); setPostMode('choose'); }}>
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-secondary text-lg font-bold text-primary-foreground overflow-hidden">
+                        {g.dp_url ? <img src={g.dp_url} alt={g.name} className="h-full w-full object-cover" /> : g.name.charAt(0)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-foreground truncate">{g.name}</p>
+                        <p className="text-sm font-semibold text-primary">₹{g.monthly_price}/mo</p>
                       </div>
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-center">
-                      <div className="rounded-lg bg-muted/50 p-2">
+                      <div className="rounded-xl bg-muted p-2.5">
                         <p className="text-lg font-bold text-foreground">{subCount}</p>
-                        <p className="text-xs text-muted-foreground">Subs</p>
+                        <p className="text-[10px] text-[hsl(var(--small-text))]">Subs</p>
                       </div>
-                      <div className="rounded-lg bg-muted/50 p-2">
+                      <div className="rounded-xl bg-muted p-2.5">
                         <p className="text-lg font-bold text-foreground">{sigCount}</p>
-                        <p className="text-xs text-muted-foreground">Posts</p>
+                        <p className="text-[10px] text-[hsl(var(--small-text))]">Signals</p>
                       </div>
-                      <div className="rounded-lg bg-primary/5 p-2">
+                      <div className="rounded-xl bg-light-green p-2.5">
                         <p className="text-lg font-bold text-primary">₹{Math.round(afterFees(revenue)).toLocaleString('en-IN')}</p>
-                        <p className="text-xs text-muted-foreground">Earnings</p>
+                        <p className="text-[10px] text-[hsl(var(--small-text))]">Earnings</p>
                       </div>
                     </div>
                     <div onClick={(e) => e.stopPropagation()}>
@@ -324,37 +363,32 @@ export default function AdvisorDashboard() {
         {/* POST TAB */}
         {tab === 'post' && (
           <div className="max-w-2xl">
-            {/* Post type chooser */}
             {postMode === 'choose' && (
               <div className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <button
-                    onClick={() => setPostMode('message')}
-                    className="rounded-xl border-2 border-secondary bg-card p-6 text-left hover:shadow-md transition-all hover:border-secondary/80 group"
-                  >
-                    <MessageSquare className="h-8 w-8 text-secondary mb-3" />
-                    <p className="font-bold text-foreground text-lg">📝 Post Update</p>
-                    <p className="text-xs text-muted-foreground mt-1">Share market analysis, chart screenshots, or info with your group</p>
-                    <p className="text-[10px] text-muted-foreground mt-2 border-t pt-2">No Telegram alert sent</p>
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                  {/* Post Update Card */}
+                  <button onClick={() => setPostMode('message')} className="rounded-2xl border-2 border-border bg-card p-6 text-left transition-all hover:shadow-md hover:border-secondary/60">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-light-blue"><MessageSquare className="h-5 w-5 text-secondary" /></div>
+                    <p className="mt-3 text-[17px] font-bold text-foreground">Post Update</p>
+                    <p className="mt-1 text-[13px] text-muted-foreground">Share analysis, chart images, or market commentary</p>
+                    <span className="mt-3 inline-block rounded-md bg-muted px-2.5 py-1 text-[11px] text-[hsl(var(--small-text))]">💬 No Telegram alert</span>
                   </button>
-                  <button
-                    onClick={() => setPostMode('signal')}
-                    className="rounded-xl border-2 border-primary bg-primary/5 p-6 text-left hover:shadow-md transition-all hover:border-primary/80 group"
-                  >
-                    <Radio className="h-8 w-8 text-primary mb-3" />
-                    <p className="font-bold text-foreground text-lg">📊 Post Signal</p>
-                    <p className="text-xs text-muted-foreground mt-1">Post a trading signal with entry, target, stop loss</p>
-                    <p className="text-[10px] text-primary mt-2 border-t pt-2 font-semibold">⚡ Sends Telegram alert</p>
+                  {/* Post Signal Card */}
+                  <button onClick={() => setPostMode('signal')} className="rounded-2xl border-2 border-[hsl(120,30%,75%)] bg-[hsl(120,60%,97%)] p-6 text-left transition-all hover:shadow-md hover:border-primary/60">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(120,35%,80%)]"><Radio className="h-5 w-5 text-primary" /></div>
+                    <p className="mt-3 text-[17px] font-bold text-foreground">Post Signal</p>
+                    <p className="mt-1 text-[13px] text-muted-foreground">Entry, target and stop loss sent to all your subscribers</p>
+                    <span className="mt-3 inline-block rounded-md bg-[hsl(120,35%,80%)] px-2.5 py-1 text-[11px] font-semibold text-primary">⚡ Sends Telegram alert</span>
                   </button>
                 </div>
 
-                {/* Group feed preview */}
+                {/* Group Feed */}
                 {groups.length > 0 && (
                   <div className="mt-6">
-                    <div className="flex items-center gap-2 mb-3">
-                      <h3 className="font-bold text-foreground">Group Feed</h3>
+                    <div className="flex items-center gap-3 mb-3">
+                      <h3 className="text-[17px] font-bold text-foreground">Group Feed</h3>
                       <Select value={feedGroupId || groups[0]?.id} onValueChange={v => setFeedGroupId(v)}>
-                        <SelectTrigger className="w-48 h-8 text-xs"><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="w-48 h-9 text-sm rounded-lg border-[1.5px]"><SelectValue /></SelectTrigger>
                         <SelectContent>{groups.map(g => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}</SelectContent>
                       </Select>
                     </div>
@@ -371,43 +405,43 @@ export default function AdvisorDashboard() {
             {/* MESSAGE FORM */}
             {postMode === 'message' && (
               <div>
-                <Button variant="ghost" size="sm" className="mb-4 gap-1" onClick={() => setPostMode('choose')}>← Back</Button>
-                <div className="rounded-xl border-2 border-secondary bg-card p-6 space-y-4">
+                <button onClick={() => setPostMode('choose')} className="mb-4 flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground">← Back</button>
+                <div className="rounded-2xl border-2 border-secondary/30 bg-card p-6 space-y-4">
                   <h2 className="text-lg font-bold flex items-center gap-2"><MessageSquare className="h-5 w-5 text-secondary" /> Post Update</h2>
                   <div>
-                    <Label>Select Group</Label>
+                    <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Select Group</Label>
                     <Select value={messageForm.groupId} onValueChange={v => setMessageForm({ ...messageForm, groupId: v })}>
-                      <SelectTrigger><SelectValue placeholder="Choose group" /></SelectTrigger>
+                      <SelectTrigger className="mt-1.5 border-[1.5px]"><SelectValue placeholder="Choose group" /></SelectTrigger>
                       <SelectContent>{groups.map(g => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <Label>Message</Label>
+                    <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Message</Label>
                     <Textarea
                       placeholder="Share market update, chart analysis, or any info with your group..."
                       value={messageForm.text}
                       onChange={e => { if (e.target.value.length <= 1000) setMessageForm({ ...messageForm, text: e.target.value }); }}
-                      className="min-h-[120px]"
+                      className="mt-1.5 min-h-[120px] border-[1.5px]"
                     />
-                    <p className="text-xs text-muted-foreground text-right mt-1">{messageForm.text.length}/1000</p>
+                    <p className="text-xs text-[hsl(var(--small-text))] text-right mt-1">{messageForm.text.length}/1000</p>
                   </div>
                   <div>
                     <input type="file" ref={fileInputRef} accept="image/jpeg,image/png,image/webp" onChange={handleImageSelect} className="hidden" />
                     {messageImagePreview ? (
                       <div className="relative">
-                        <img src={messageImagePreview} alt="Preview" className="w-full max-h-48 object-cover rounded-lg border" />
-                        <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-7 w-7" onClick={() => { setMessageImage(null); setMessageImagePreview(null); }}>
+                        <img src={messageImagePreview} alt="Preview" className="w-full max-h-48 object-cover rounded-xl border-[1.5px] border-border" />
+                        <Button variant="destructive" size="icon" className="absolute top-2 right-2 h-7 w-7 rounded-lg" onClick={() => { setMessageImage(null); setMessageImagePreview(null); }}>
                           <X className="h-4 w-4" />
                         </Button>
                       </div>
                     ) : (
-                      <Button variant="outline" className="gap-2" onClick={() => fileInputRef.current?.click()}>
+                      <Button variant="outline" className="gap-2 rounded-lg border-[1.5px]" onClick={() => fileInputRef.current?.click()}>
                         <ImageIcon className="h-4 w-4" /> Attach Chart/Screenshot
                       </Button>
                     )}
                     {uploadProgress > 0 && uploadProgress < 100 && <Progress value={uploadProgress} className="mt-2 h-2" />}
                   </div>
-                  <div className="flex items-center justify-between rounded-lg border p-3 bg-muted/30">
+                  <div className="flex items-center justify-between rounded-xl border-[1.5px] border-border p-3.5 bg-muted">
                     <div className="flex items-center gap-2">
                       {messageForm.isPublic ? <Globe className="h-4 w-4 text-primary" /> : <Lock className="h-4 w-4 text-muted-foreground" />}
                       <div>
@@ -417,10 +451,14 @@ export default function AdvisorDashboard() {
                     </div>
                     <Switch checked={messageForm.isPublic} onCheckedChange={v => setMessageForm({ ...messageForm, isPublic: v })} />
                   </div>
-                  <Button className="w-full font-semibold bg-secondary hover:bg-secondary/90 text-secondary-foreground" onClick={postMessage} disabled={posting || !messageForm.groupId || !messageForm.text.trim()}>
+                  <button
+                    className="flex h-[42px] w-full items-center justify-center rounded-lg bg-secondary text-sm font-semibold text-secondary-foreground disabled:opacity-50"
+                    onClick={postMessage}
+                    disabled={posting || !messageForm.groupId || !messageForm.text.trim()}
+                  >
                     {posting ? 'Posting...' : '📝 Post Update'}
-                  </Button>
-                  <p className="text-xs text-muted-foreground text-center">This will appear in the group feed only. No Telegram alert will be sent.</p>
+                  </button>
+                  <p className="text-xs text-[hsl(var(--small-text))] text-center">This will appear in the group feed only. No Telegram alert will be sent.</p>
                 </div>
               </div>
             )}
@@ -428,32 +466,35 @@ export default function AdvisorDashboard() {
             {/* SIGNAL FORM */}
             {postMode === 'signal' && (
               <div>
-                <Button variant="ghost" size="sm" className="mb-4 gap-1" onClick={() => setPostMode('choose')}>← Back</Button>
-                <div className="rounded-xl border-2 border-primary bg-card p-6 space-y-4">
+                <button onClick={() => setPostMode('choose')} className="mb-4 flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-foreground">← Back</button>
+                <div className="rounded-2xl border-2 border-primary/30 bg-card p-6 space-y-4">
                   <h2 className="text-lg font-bold flex items-center gap-2"><Radio className="h-5 w-5 text-primary" /> Post Signal / Trade</h2>
                   <div>
-                    <Label>Select Group</Label>
+                    <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Select Group</Label>
                     <Select value={signalForm.groupId} onValueChange={v => setSignalForm({ ...signalForm, groupId: v })}>
-                      <SelectTrigger><SelectValue placeholder="Choose group" /></SelectTrigger>
+                      <SelectTrigger className="mt-1.5 border-[1.5px]"><SelectValue placeholder="Choose group" /></SelectTrigger>
                       <SelectContent>{groups.map(g => <SelectItem key={g.id} value={g.id}>{g.name}</SelectItem>)}</SelectContent>
                     </Select>
                   </div>
-                  <div><Label>Instrument</Label><Input placeholder="NIFTY / BANKNIFTY / RELIANCE..." value={signalForm.instrument} onChange={e => setSignalForm({ ...signalForm, instrument: e.target.value })} /></div>
                   <div>
-                    <Label>Signal Type</Label>
-                    <div className="flex gap-2 mt-1">
-                      <Button className="flex-1 font-semibold" variant={signalForm.signalType === 'BUY' ? 'default' : 'outline'} onClick={() => setSignalForm({ ...signalForm, signalType: 'BUY' })}>🟢 BUY</Button>
-                      <Button className="flex-1 font-semibold" variant={signalForm.signalType === 'SELL' ? 'destructive' : 'outline'} onClick={() => setSignalForm({ ...signalForm, signalType: 'SELL' })}>🔴 SELL</Button>
+                    <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Instrument</Label>
+                    <Input placeholder="NIFTY / BANKNIFTY / RELIANCE..." value={signalForm.instrument} onChange={e => setSignalForm({ ...signalForm, instrument: e.target.value })} className="mt-1.5 border-[1.5px]" />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Signal Type</Label>
+                    <div className="flex gap-2 mt-1.5">
+                      <button className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition-all ${signalForm.signalType === 'BUY' ? 'bg-primary text-primary-foreground' : 'border-[1.5px] border-border bg-card text-muted-foreground'}`} onClick={() => setSignalForm({ ...signalForm, signalType: 'BUY' })}>🟢 BUY</button>
+                      <button className={`flex-1 rounded-lg py-2.5 text-sm font-semibold transition-all ${signalForm.signalType === 'SELL' ? 'bg-[hsl(25,100%,40%)] text-white' : 'border-[1.5px] border-border bg-card text-muted-foreground'}`} onClick={() => setSignalForm({ ...signalForm, signalType: 'SELL' })}>🟠 SELL</button>
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
-                    <div><Label>Entry Price</Label><Input type="number" value={signalForm.entryPrice} onChange={e => setSignalForm({ ...signalForm, entryPrice: e.target.value })} /></div>
-                    <div><Label>Target Price</Label><Input type="number" value={signalForm.targetPrice} onChange={e => setSignalForm({ ...signalForm, targetPrice: e.target.value })} /></div>
-                    <div><Label>Stop Loss</Label><Input type="number" value={signalForm.stopLoss} onChange={e => setSignalForm({ ...signalForm, stopLoss: e.target.value })} /></div>
+                    <div><Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Entry Price</Label><Input type="number" value={signalForm.entryPrice} onChange={e => setSignalForm({ ...signalForm, entryPrice: e.target.value })} className="mt-1.5 border-[1.5px]" /></div>
+                    <div><Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Target Price</Label><Input type="number" value={signalForm.targetPrice} onChange={e => setSignalForm({ ...signalForm, targetPrice: e.target.value })} className="mt-1.5 border-[1.5px]" /></div>
+                    <div><Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Stop Loss</Label><Input type="number" value={signalForm.stopLoss} onChange={e => setSignalForm({ ...signalForm, stopLoss: e.target.value })} className="mt-1.5 border-[1.5px]" /></div>
                     <div>
-                      <Label>Timeframe</Label>
+                      <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Timeframe</Label>
                       <Select value={signalForm.timeframe} onValueChange={v => setSignalForm({ ...signalForm, timeframe: v })}>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectTrigger className="mt-1.5 border-[1.5px]"><SelectValue /></SelectTrigger>
                         <SelectContent>
                           <SelectItem value="Intraday">Intraday</SelectItem>
                           <SelectItem value="Swing">Swing</SelectItem>
@@ -462,8 +503,11 @@ export default function AdvisorDashboard() {
                       </Select>
                     </div>
                   </div>
-                  <div><Label>Notes (optional)</Label><Textarea value={signalForm.notes} onChange={e => setSignalForm({ ...signalForm, notes: e.target.value })} /></div>
-                  <div className="flex items-center justify-between rounded-lg border p-3 bg-muted/30">
+                  <div>
+                    <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Notes (optional)</Label>
+                    <Textarea value={signalForm.notes} onChange={e => setSignalForm({ ...signalForm, notes: e.target.value })} className="mt-1.5 border-[1.5px]" />
+                  </div>
+                  <div className="flex items-center justify-between rounded-xl border-[1.5px] border-border p-3.5 bg-muted">
                     <div className="flex items-center gap-2">
                       {signalForm.isPublic ? <Globe className="h-4 w-4 text-primary" /> : <Lock className="h-4 w-4 text-muted-foreground" />}
                       <div>
@@ -473,9 +517,13 @@ export default function AdvisorDashboard() {
                     </div>
                     <Switch checked={signalForm.isPublic} onCheckedChange={v => setSignalForm({ ...signalForm, isPublic: v })} />
                   </div>
-                  <Button className="w-full font-semibold" onClick={postSignal} disabled={posting || !signalForm.groupId || !signalForm.instrument || !signalForm.entryPrice}>
+                  <button
+                    className="flex h-[42px] w-full items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground disabled:opacity-50"
+                    onClick={postSignal}
+                    disabled={posting || !signalForm.groupId || !signalForm.instrument || !signalForm.entryPrice}
+                  >
                     {posting ? 'Posting...' : '📊 Post Signal'}
-                  </Button>
+                  </button>
                   <p className="text-xs text-primary text-center font-medium">⚡ This will send a Telegram alert to all active subscribers</p>
                 </div>
               </div>
@@ -487,11 +535,11 @@ export default function AdvisorDashboard() {
         {tab === 'signals_history' && (
           <div>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold">All Signals ({signals.filter(s => (s as any).post_type !== 'message').length})</h2>
-              <div className="flex gap-2 text-xs text-muted-foreground">
-                <span className="flex items-center gap-1"><CheckCircle2 className="h-3 w-3 text-primary" /> Target Hit</span>
-                <span className="flex items-center gap-1"><XCircle className="h-3 w-3 text-destructive" /> SL Hit</span>
-                <span className="flex items-center gap-1"><Clock className="h-3 w-3 text-muted-foreground" /> Pending</span>
+              <h2 className="text-[17px] font-extrabold text-foreground">All Signals ({signalCount})</h2>
+              <div className="flex gap-3 text-xs">
+                <span className="flex items-center gap-1 text-primary"><CheckCircle2 className="h-3 w-3" /> Target Hit</span>
+                <span className="flex items-center gap-1 text-[hsl(var(--small-text))]"><XCircle className="h-3 w-3" /> SL Hit</span>
+                <span className="flex items-center gap-1 text-muted-foreground"><Clock className="h-3 w-3" /> Pending</span>
               </div>
             </div>
 
@@ -505,42 +553,47 @@ export default function AdvisorDashboard() {
                 <div key={g.id} className="mb-6">
                   <div className="flex items-center gap-3 mb-3">
                     <h3 className="font-bold text-foreground">{g.name}</h3>
-                    <span className="text-xs text-muted-foreground">{groupSignals.length} signals</span>
-                    <span className="text-xs text-primary font-medium">{hits} hit</span>
-                    <span className="text-xs text-destructive font-medium">{misses} miss</span>
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">{groupSignals.length} signals</span>
+                    <span className="text-xs font-medium text-primary">{hits} hit</span>
+                    <span className="text-xs font-medium text-[hsl(var(--small-text))]">{misses} miss</span>
                     <span className="text-xs text-muted-foreground">{pending} pending</span>
                   </div>
                   <div className="space-y-2">
-                    {groupSignals.map(sig => (
-                      <div key={sig.id} className="rounded-xl border bg-card p-4 flex items-center gap-4">
-                        <div className={`w-1 self-stretch rounded-full ${sig.signal_type === 'BUY' ? 'bg-primary' : 'bg-destructive'}`} />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className="font-bold text-foreground">{sig.instrument}</span>
-                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${sig.signal_type === 'BUY' ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive'}`}>{sig.signal_type}</span>
-                            <span className="text-xs text-muted-foreground bg-muted px-2 py-0.5 rounded-full">{sig.timeframe}</span>
+                    {groupSignals.map(sig => {
+                      const barColor = sig.result === 'TARGET_HIT' ? 'bg-primary' : sig.result === 'SL_HIT' ? 'bg-[hsl(var(--small-text))]' : 'bg-[hsl(var(--warning))]';
+                      return (
+                        <div key={sig.id} className="relative overflow-hidden rounded-2xl border-[1.5px] border-border bg-card p-4 pl-[18px]">
+                          <div className={`absolute left-0 top-0 bottom-0 w-1 ${barColor}`} />
+                          <div className="flex items-center gap-4">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-bold text-foreground uppercase">{sig.instrument}</span>
+                                <span className={`text-[11px] font-bold px-2 py-0.5 rounded ${sig.signal_type === 'BUY' ? 'bg-light-green text-primary' : 'bg-[hsl(45,100%,94%)] text-[hsl(25,100%,40%)]'}`}>{sig.signal_type}</span>
+                                <span className="text-[11px] bg-muted px-2 py-0.5 rounded text-muted-foreground">{sig.timeframe}</span>
+                              </div>
+                              <div className="mt-1.5 flex gap-4 text-sm">
+                                <span className="text-muted-foreground">Entry: <span className="font-semibold text-foreground">₹{Number(sig.entry_price).toLocaleString('en-IN')}</span></span>
+                                <span className="text-muted-foreground">Target: <span className="font-semibold text-foreground">₹{Number(sig.target_price).toLocaleString('en-IN')}</span></span>
+                                <span className="text-muted-foreground">SL: <span className="font-semibold text-foreground">₹{Number(sig.stop_loss).toLocaleString('en-IN')}</span></span>
+                              </div>
+                              {sig.notes && <p className="text-xs text-muted-foreground mt-1 truncate italic">{sig.notes}</p>}
+                            </div>
+                            <div className="flex flex-col items-end gap-1 shrink-0">
+                              <div className="flex items-center gap-1">
+                                {resultIcon(sig.result)}
+                                <span className="text-xs font-medium">{sig.result === 'TARGET_HIT' ? 'Hit' : sig.result === 'SL_HIT' ? 'Miss' : 'Pending'}</span>
+                              </div>
+                              <span className="text-[11px] text-[hsl(var(--small-text))]">{sig.signal_date ? new Date(sig.signal_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : ''}</span>
+                            </div>
                           </div>
-                          <div className="mt-1 flex gap-4 text-sm">
-                            <span className="text-muted-foreground">Entry: <span className="font-semibold text-foreground">₹{Number(sig.entry_price).toLocaleString('en-IN')}</span></span>
-                            <span className="text-muted-foreground">Target: <span className="font-semibold text-primary">₹{Number(sig.target_price).toLocaleString('en-IN')}</span></span>
-                            <span className="text-muted-foreground">SL: <span className="font-semibold text-destructive">₹{Number(sig.stop_loss).toLocaleString('en-IN')}</span></span>
-                          </div>
-                          {sig.notes && <p className="text-xs text-muted-foreground mt-1 truncate">{sig.notes}</p>}
                         </div>
-                        <div className="flex flex-col items-end gap-1">
-                          <div className="flex items-center gap-1">
-                            {resultIcon(sig.result)}
-                            <span className="text-xs font-medium">{sig.result === 'TARGET_HIT' ? 'Hit' : sig.result === 'SL_HIT' ? 'Miss' : 'Pending'}</span>
-                          </div>
-                          <span className="text-xs text-muted-foreground">{sig.signal_date ? new Date(sig.signal_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : ''}</span>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
                 </div>
               );
             })}
-            {signals.filter(s => (s as any).post_type !== 'message').length === 0 && <div className="rounded-xl border bg-card p-12 text-center text-muted-foreground">No signals posted yet</div>}
+            {signalCount === 0 && <div className="rounded-2xl border-[1.5px] border-border bg-card p-12 text-center text-muted-foreground">No signals posted yet</div>}
           </div>
         )}
 
@@ -553,107 +606,113 @@ export default function AdvisorDashboard() {
               const groupRevenue = groupSubs.reduce((sum, s) => sum + (s.amount_paid || 0), 0);
               return (
                 <div key={g.id} className="mb-8">
-                  <div className="flex items-center gap-3 mb-3">
-                    <h3 className="font-bold text-lg">{g.name}</h3>
-                    <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">{activeGroupSubs.length} active</span>
-                    <span className="text-xs text-muted-foreground">• ₹{groupRevenue.toLocaleString('en-IN')} collected</span>
+                  <div className="flex items-center gap-3 mb-3 flex-wrap">
+                    <h3 className="text-lg font-bold text-foreground">{g.name}</h3>
+                    <span className="rounded-full bg-light-green px-2.5 py-0.5 text-xs font-bold text-primary">{activeGroupSubs.length} active</span>
+                    <span className="text-xs font-semibold text-primary">₹{groupRevenue.toLocaleString('en-IN')} collected</span>
                   </div>
-                  <div className="rounded-xl border bg-card overflow-x-auto">
-                    <table className="w-full text-sm">
-                      <thead><tr className="border-b bg-muted/50 text-left">
-                        <th className="p-3 font-medium text-muted-foreground">Name</th>
-                        <th className="p-3 font-medium text-muted-foreground">Email</th>
-                        <th className="p-3 font-medium text-muted-foreground">Start</th>
-                        <th className="p-3 font-medium text-muted-foreground">End</th>
-                        <th className="p-3 font-medium text-muted-foreground">Paid</th>
-                        <th className="p-3 font-medium text-muted-foreground">Payment ID</th>
-                        <th className="p-3 font-medium text-muted-foreground">Status</th>
-                      </tr></thead>
-                      <tbody>
-                        {groupSubs.length === 0 && <tr><td colSpan={7} className="p-6 text-center text-muted-foreground">No subscribers yet</td></tr>}
-                        {groupSubs.map((s: any, i: number) => (
-                          <tr key={s.id} className={`border-b last:border-0 ${i % 2 === 1 ? 'bg-muted/30' : ''}`}>
-                            <td className="p-3 font-medium">{s.profiles?.full_name || '-'}</td>
-                            <td className="p-3 text-muted-foreground">{s.profiles?.email || '-'}</td>
-                            <td className="p-3">{s.start_date ? new Date(s.start_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</td>
-                            <td className="p-3">{s.end_date ? new Date(s.end_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</td>
-                            <td className="p-3 font-semibold">₹{(s.amount_paid || 0).toLocaleString('en-IN')}</td>
-                            <td className="p-3 font-mono text-xs text-muted-foreground">{s.razorpay_payment_id || '-'}</td>
-                            <td className="p-3"><span className={`text-xs font-medium px-2 py-0.5 rounded-full ${s.status === 'active' ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground'}`}>{s.status}</span></td>
+                  <div className="overflow-hidden rounded-2xl border-[1.5px] border-border bg-card">
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-border bg-muted">
+                            <th className="px-5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Name</th>
+                            <th className="px-5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Email</th>
+                            <th className="px-5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Period</th>
+                            <th className="px-5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Paid</th>
+                            <th className="px-5 py-3 text-left text-[11px] font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Status</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {groupSubs.length === 0 && <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">No subscribers yet</td></tr>}
+                          {groupSubs.map((s: any) => (
+                            <tr key={s.id} className="border-b border-muted last:border-0">
+                              <td className="px-5 py-3.5 font-semibold text-foreground capitalize">{s.profiles?.full_name || '-'}</td>
+                              <td className="px-5 py-3.5 text-[13px] text-muted-foreground">{s.profiles?.email || '-'}</td>
+                              <td className="px-5 py-3.5 text-[13px] text-muted-foreground">
+                                {s.start_date ? new Date(s.start_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '-'}
+                                {' → '}
+                                {s.end_date ? new Date(s.end_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '-'}
+                              </td>
+                              <td className="px-5 py-3.5 font-bold text-primary">₹{(s.amount_paid || 0).toLocaleString('en-IN')}</td>
+                              <td className="px-5 py-3.5">
+                                <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${s.status === 'active' ? 'bg-light-green text-primary' : 'bg-muted text-[hsl(var(--small-text))]'}`}>{s.status}</span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
                 </div>
               );
             })}
-            {groups.length === 0 && <div className="rounded-xl border bg-card p-12 text-center text-muted-foreground">Create a group first</div>}
+            {groups.length === 0 && <div className="rounded-2xl border-[1.5px] border-border bg-card p-12 text-center text-muted-foreground">Create a group first</div>}
           </div>
         )}
 
         {/* REVENUE TAB */}
         {tab === 'revenue' && (
-          <div className="max-w-2xl">
-            <div className="rounded-xl border bg-card p-6 mb-6">
+          <div className="max-w-2xl space-y-4">
+            <div className="rounded-2xl border-[1.5px] border-border bg-card p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
               <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><IndianRupee className="h-5 w-5 text-primary" /> Revenue Breakdown</h2>
               <div className="space-y-3">
-                <div className="flex justify-between items-center py-3 border-b">
+                <div className="flex justify-between items-center py-3 border-b border-border">
                   <span className="text-muted-foreground">Total Collections</span>
                   <span className="text-xl font-bold text-foreground">₹{totalRevenue.toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex justify-between items-center py-2">
                   <span className="text-muted-foreground flex items-center gap-1"><AlertTriangle className="h-3.5 w-3.5" /> GST (18%)</span>
-                  <span className="text-destructive font-semibold">- ₹{Math.round(gstAmount(totalRevenue)).toLocaleString('en-IN')}</span>
+                  <span className="text-muted-foreground font-semibold">- ₹{Math.round(gstAmount(totalRevenue)).toLocaleString('en-IN')}</span>
                 </div>
-                <div className="flex justify-between items-center py-2 border-b">
+                <div className="flex justify-between items-center py-2 border-b border-border">
                   <span className="text-muted-foreground">After GST</span>
                   <span className="font-semibold text-foreground">₹{Math.round(afterGST(totalRevenue)).toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex justify-between items-center py-2">
                   <span className="text-muted-foreground">TradeCircle Fee (30%)</span>
-                  <span className="text-destructive font-semibold">- ₹{Math.round(tcFee(totalRevenue)).toLocaleString('en-IN')}</span>
+                  <span className="text-muted-foreground font-semibold">- ₹{Math.round(tcFee(totalRevenue)).toLocaleString('en-IN')}</span>
                 </div>
-                <div className="flex justify-between items-center py-3 border-t-2 border-primary/20 bg-primary/5 rounded-lg px-3 -mx-3">
+                <div className="flex justify-between items-center py-3 rounded-xl bg-light-green px-4 -mx-1">
                   <span className="font-bold text-foreground text-lg">Your Earnings</span>
-                  <span className="text-2xl font-bold text-primary">₹{Math.round(afterFees(totalRevenue)).toLocaleString('en-IN')}</span>
+                  <span className="text-2xl font-black text-primary">₹{Math.round(afterFees(totalRevenue)).toLocaleString('en-IN')}</span>
                 </div>
               </div>
             </div>
 
-            <div className="rounded-xl border bg-card p-6 mb-6">
-              <h3 className="font-bold mb-3">This Month</h3>
-              <div className="grid grid-cols-3 gap-4 text-center">
-                <div className="rounded-lg bg-muted/50 p-3">
-                  <p className="text-xs text-muted-foreground">Collections</p>
-                  <p className="text-lg font-bold text-foreground">₹{thisMonthRevenue.toLocaleString('en-IN')}</p>
+            <div className="rounded-2xl border-[1.5px] border-border bg-card p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+              <h3 className="font-bold mb-3 text-foreground">This Month</h3>
+              <div className="grid grid-cols-3 gap-3 text-center">
+                <div className="rounded-xl bg-muted p-3">
+                  <p className="text-[10px] text-[hsl(var(--small-text))] uppercase font-bold tracking-wider">Collections</p>
+                  <p className="text-lg font-bold text-foreground mt-1">₹{thisMonthRevenue.toLocaleString('en-IN')}</p>
                 </div>
-                <div className="rounded-lg bg-muted/50 p-3">
-                  <p className="text-xs text-muted-foreground">Deductions</p>
-                  <p className="text-lg font-bold text-destructive">₹{Math.round(thisMonthRevenue - afterFees(thisMonthRevenue)).toLocaleString('en-IN')}</p>
+                <div className="rounded-xl bg-muted p-3">
+                  <p className="text-[10px] text-[hsl(var(--small-text))] uppercase font-bold tracking-wider">Deductions</p>
+                  <p className="text-lg font-bold text-muted-foreground mt-1">₹{Math.round(thisMonthRevenue - afterFees(thisMonthRevenue)).toLocaleString('en-IN')}</p>
                 </div>
-                <div className="rounded-lg bg-primary/5 p-3">
-                  <p className="text-xs text-muted-foreground">Your Earnings</p>
-                  <p className="text-lg font-bold text-primary">₹{Math.round(afterFees(thisMonthRevenue)).toLocaleString('en-IN')}</p>
+                <div className="rounded-xl bg-light-green p-3">
+                  <p className="text-[10px] text-[hsl(var(--small-text))] uppercase font-bold tracking-wider">Your Earnings</p>
+                  <p className="text-lg font-bold text-primary mt-1">₹{Math.round(afterFees(thisMonthRevenue)).toLocaleString('en-IN')}</p>
                 </div>
               </div>
             </div>
 
-            <div className="rounded-xl border bg-card p-6">
-              <h3 className="font-bold mb-3">Per Group Earnings</h3>
-              <div className="space-y-3">
+            <div className="rounded-2xl border-[1.5px] border-border bg-card p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+              <h3 className="font-bold mb-3 text-foreground">Per Group Earnings</h3>
+              <div className="space-y-2">
                 {groups.map(g => {
                   const groupRev = subscribers.filter(s => s.group_id === g.id).reduce((sum, s) => sum + (s.amount_paid || 0), 0);
                   const groupSubs = subscribers.filter(s => s.group_id === g.id && s.status === 'active').length;
                   return (
-                    <div key={g.id} className="flex items-center justify-between rounded-lg bg-muted/30 p-3">
+                    <div key={g.id} className="flex items-center justify-between rounded-xl bg-muted p-3.5">
                       <div>
                         <p className="font-semibold text-foreground">{g.name}</p>
                         <p className="text-xs text-muted-foreground">{groupSubs} active subs • ₹{groupRev.toLocaleString('en-IN')} collected</p>
                       </div>
                       <div className="text-right">
                         <p className="font-bold text-primary">₹{Math.round(afterFees(groupRev)).toLocaleString('en-IN')}</p>
-                        <p className="text-xs text-muted-foreground">your earnings</p>
+                        <p className="text-[10px] text-[hsl(var(--small-text))]">your earnings</p>
                       </div>
                     </div>
                   );
@@ -672,22 +731,36 @@ export default function AdvisorDashboard() {
         {/* PROFILE TAB */}
         {tab === 'profile' && (
           <div className="max-w-lg">
-            <div className="rounded-xl border bg-card p-6 space-y-3">
-              <div className="flex items-center gap-4 mb-4">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-2xl font-bold text-primary-foreground overflow-hidden">
-                  {advisor.profile_photo_url ? <img src={advisor.profile_photo_url} alt="" className="h-full w-full object-cover" /> : advisor.full_name.charAt(0)}
+            <div className="rounded-2xl border-[1.5px] border-border bg-card p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+              <div className="flex items-center gap-4 mb-6">
+                <div className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-gradient-to-br from-primary to-secondary text-2xl font-bold text-primary-foreground overflow-hidden">
+                  {advisor.profile_photo_url ? <img src={advisor.profile_photo_url} alt="" className="h-full w-full object-cover" /> : advisor.full_name.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold">{advisor.full_name}</h2>
-                  <span className="text-xs font-medium bg-primary/10 text-primary px-2 py-0.5 rounded-full">{advisor.status}</span>
+                  <h2 className="text-[22px] font-extrabold text-foreground capitalize">{advisor.full_name}</h2>
+                  <span className="inline-flex items-center rounded-full bg-light-green px-3 py-0.5 text-xs font-semibold text-primary mt-1">✓ {advisor.status}</span>
                 </div>
               </div>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between rounded-lg bg-muted/50 p-3"><span className="text-muted-foreground">SEBI Reg No</span><span className="font-medium">{advisor.sebi_reg_no}</span></div>
-                <div className="flex justify-between rounded-lg bg-muted/50 p-3"><span className="text-muted-foreground">Strategy</span><span className="font-medium">{advisor.strategy_type}</span></div>
-                <div className="flex justify-between rounded-lg bg-muted/50 p-3"><span className="text-muted-foreground">Email</span><span className="font-medium">{advisor.email}</span></div>
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="rounded-xl bg-muted p-3.5">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">SEBI Reg No</p>
+                  <p className="mt-1 text-sm font-semibold text-foreground">{advisor.sebi_reg_no}</p>
+                </div>
+                <div className="rounded-xl bg-muted p-3.5">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Strategy</p>
+                  <p className="mt-1 text-sm font-semibold text-foreground">{advisor.strategy_type || '—'}</p>
+                </div>
+                <div className="col-span-2 rounded-xl bg-muted p-3.5">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Email</p>
+                  <p className="mt-1 text-sm font-semibold text-foreground">{advisor.email}</p>
+                </div>
+                {advisor.bio && (
+                  <div className="col-span-2 rounded-xl bg-muted p-3.5">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Bio</p>
+                    <p className="mt-1 text-sm text-foreground leading-relaxed">{advisor.bio}</p>
+                  </div>
+                )}
               </div>
-              {advisor.bio && <div className="rounded-lg bg-muted/50 p-3"><p className="text-xs text-muted-foreground">Bio</p><p className="text-sm mt-1">{advisor.bio}</p></div>}
             </div>
           </div>
         )}
