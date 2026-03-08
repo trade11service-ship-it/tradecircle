@@ -44,6 +44,9 @@ export function Navbar() {
         <div className="hidden items-center gap-6 md:flex">
           <Link to="/" className={linkClass('/')}>Home</Link>
           <Link to="/#advisors" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Browse Advisors</Link>
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(120,52%,93%)] px-2.5 py-0.5 text-[11px] font-semibold text-primary">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary" /> Platform Active
+          </span>
           {user ? (
             <>
               <Link to={getDashboardLink()} className={linkClass(getDashboardLink())}>Dashboard</Link>
