@@ -151,7 +151,7 @@ export default function Landing() {
                   <div className="mt-4 flex items-center gap-2">
                     <Badge variant="secondary">{advisor.strategy_type}</Badge>
                     <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                      <Star className="h-3.5 w-3.5 fill-current text-yellow-500" /> 4.5
+                      <Star className="h-3.5 w-3.5 fill-current" style={{ color: 'hsl(45, 93%, 47%)' }} /> 4.5
                     </div>
                   </div>
                   <p className="mt-3 text-sm text-muted-foreground">{advisor.subCount} subscribers</p>
