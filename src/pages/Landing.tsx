@@ -70,7 +70,8 @@ export default function Landing() {
     return matchSearch && matchFilter;
   });
 
-  const filters = ['All', 'Options', 'Equity', 'Futures'];
+  const filters = ['All', 'Options', 'Equity', 'Futures', 'Intraday', 'Swing'];
+  const displayedAdvisors = showAll ? filtered : filtered.slice(0, 4);
 
   const trustItems = [
     '🛡️ SEBI Verified Only',
