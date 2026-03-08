@@ -198,6 +198,35 @@ export type Database = {
         }
         Relationships: []
       }
+      group_follows: {
+        Row: {
+          created_at: string
+          group_id: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          group_id: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          group_id?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_follows_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       groups: {
         Row: {
           advisor_id: string
@@ -375,6 +404,7 @@ export type Database = {
           id: string
           image_url: string | null
           instrument: string | null
+          is_public: boolean
           message_text: string | null
           notes: string | null
           post_type: string
@@ -393,6 +423,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           instrument?: string | null
+          is_public?: boolean
           message_text?: string | null
           notes?: string | null
           post_type?: string
@@ -411,6 +442,7 @@ export type Database = {
           id?: string
           image_url?: string | null
           instrument?: string | null
+          is_public?: boolean
           message_text?: string | null
           notes?: string | null
           post_type?: string
