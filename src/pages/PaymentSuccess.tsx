@@ -27,9 +27,64 @@ export default function PaymentSuccess() {
     const { data: group } = await supabase.from('groups').select('*').eq('id', groupId).single();
     if (!group) { setStatus('error'); return; }
     const endDate = new Date(); endDate.setDate(endDate.getDate() + 30);
-    const { error } = await supabase.from('subscriptions').insert({ user_id: user!.id, group_id: groupId, advisor_id: group.advisor_id, end_date: endDate.toISOString(), amount_paid: group.monthly_price, status: 'active', razorpay_payment_id: paymentId });
+
+    // Check for referral
+    let fromReferral = false;
+    let referralCode: string | null = null;
+    let platformFee = 30;
+    const cookie = document.cookie.split(';').find(c => c.trim().startsWith('referral_code='));
+    const cookieCode = cookie?.split('=')?.[1]?.trim();
+
+    if (cookieCode) {
+      const { data: refSignup } = await supabase.from('referral_signups')
+        .select('*')
+        .eq('user_id', user!.id)
+        .eq('group_id', groupId)
+        .eq('is_referral_active', true)
+        .maybeSingle();
+
+      if (refSignup) {
+        // Check 30-day window
+        const signupDate = new Date(refSignup.signed_up_at);
+        const daysSince = (Date.now() - signupDate.getTime()) / (1000 * 60 * 60 * 24);
+        if (daysSince <= 30) {
+          fromReferral = true;
+          referralCode = refSignup.referral_code;
+          platformFee = 15;
+        }
+      }
+    }
+
+    const { error } = await supabase.from('subscriptions').insert({
+      user_id: user!.id,
+      group_id: groupId,
+      advisor_id: group.advisor_id,
+      end_date: endDate.toISOString(),
+      amount_paid: group.monthly_price,
+      status: 'active',
+      razorpay_payment_id: paymentId,
+      from_referral: fromReferral,
+      referral_code: referralCode,
+      platform_fee_percent: platformFee,
+    });
+
     if (error) { console.error('Subscription error:', error); setStatus('error'); }
-    else { setStatus('success'); setTimeout(() => navigate('/dashboard'), 2000); }
+    else {
+      // Update referral stats if applicable
+      if (fromReferral && referralCode) {
+        try {
+          await supabase.rpc('increment_referral_conversions', { _code: referralCode, _revenue: group.monthly_price });
+          await supabase.from('referral_signups')
+            .update({ converted_to_paid: true })
+            .eq('user_id', user!.id)
+            .eq('group_id', groupId);
+        } catch (e) { console.error('Referral tracking:', e); }
+        // Clear cookie
+        document.cookie = 'referral_code=;path=/;max-age=0';
+      }
+      setStatus('success');
+      setTimeout(() => navigate('/dashboard'), 2000);
+    }
   };
 
   return (

@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
-import { ShieldAlert, Users, IndianRupee, Clock, Download, Search } from 'lucide-react';
+import { ShieldAlert, Users, IndianRupee, Clock, Download, Search, Gift } from 'lucide-react';
+import { AdminReferralTab } from '@/components/AdminReferralTab';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Advisor = Tables<'advisors'>;
@@ -15,7 +16,7 @@ type Advisor = Tables<'advisors'>;
 export default function AdminDashboard() {
   const { user, profile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<'pending' | 'advisors' | 'users' | 'payments' | 'legal' | 'requests'>('pending');
+  const [tab, setTab] = useState<'pending' | 'advisors' | 'users' | 'payments' | 'legal' | 'requests' | 'referrals'>('pending');
   const [pendingAdvisors, setPendingAdvisors] = useState<Advisor[]>([]);
   const [allAdvisors, setAllAdvisors] = useState<Advisor[]>([]);
   const [users, setUsers] = useState<any[]>([]);
@@ -128,6 +129,7 @@ export default function AdminDashboard() {
     { key: 'payments' as const, label: 'Payments' },
     { key: 'legal' as const, label: 'Legal Records' },
     { key: 'requests' as const, label: `Requests (${deletionRequests.filter(r => r.status === 'pending').length})` },
+    { key: 'referrals' as const, label: 'Referrals' },
   ];
 
   const filteredAdvisorLegal = advisorLegal.filter((r: any) =>
@@ -386,6 +388,11 @@ export default function AdminDashboard() {
               </table>
             </div>
           </div>
+        )}
+
+        {/* REFERRALS TAB */}
+        {tab === 'referrals' && !loading && (
+          <AdminReferralTab />
         )}
       </div>
       <Footer />
