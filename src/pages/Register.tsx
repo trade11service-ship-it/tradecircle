@@ -52,7 +52,26 @@ export default function Register() {
     });
     if (error) toast.error(error.message);
     else {
-      if (data.user) await saveLegalAcceptance(data.user.id);
+      if (data.user) {
+        await saveLegalAcceptance(data.user.id);
+        // Check referral cookie
+        const cookie = document.cookie.split(';').find(c => c.trim().startsWith('referral_code='));
+        const cookieCode = cookie?.split('=')?.[1]?.trim();
+        if (cookieCode) {
+          try {
+            const { data: refLink } = await supabase.from('referral_links').select('*').eq('referral_code', cookieCode).eq('is_active', true).maybeSingle();
+            if (refLink) {
+              await supabase.from('referral_signups').insert({
+                referral_code: cookieCode,
+                advisor_id: refLink.advisor_id,
+                group_id: refLink.group_id,
+                user_id: data.user.id,
+              });
+              await supabase.rpc('increment_referral_signups', { _code: cookieCode });
+            }
+          } catch (e) { console.error('Referral signup error:', e); }
+        }
+      }
       setRegistered(true);
     }
     setLoading(false);
