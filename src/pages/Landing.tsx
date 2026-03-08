@@ -32,9 +32,15 @@ export default function Landing() {
       .eq('status', 'approved');
     if (advisorsData) {
       const withSubs = await Promise.all(advisorsData.map(async (a) => {
-        // Use security definer function for public subscriber count
-        const { data: countData } = await supabase.rpc('get_advisor_subscriber_count', { _advisor_id: a.id });
-        return { ...a, subCount: (countData as number) || 0 };
+        const [{ data: countData }, { data: statsData }] = await Promise.all([
+          supabase.rpc('get_advisor_subscriber_count', { _advisor_id: a.id }),
+          supabase.rpc('get_advisor_signal_stats', { _advisor_id: a.id }),
+        ]);
+        return {
+          ...a,
+          subCount: (countData as number) || 0,
+          signalStats: (statsData as any) || { total_signals: 0, win_count: 0, loss_count: 0, resolved_count: 0 },
+        };
       }));
       setAdvisors(withSubs as any);
     }
