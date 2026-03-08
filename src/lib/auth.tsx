@@ -22,6 +22,44 @@ async function fetchProfile(userId: string): Promise<Profile | null> {
   return data;
 }
 
+/** Process referral cookie for OAuth signups */
+async function processReferralCookie(userId: string) {
+  try {
+    const cookie = document.cookie.split(';').find(c => c.trim().startsWith('referral_code='));
+    const code = cookie?.split('=')?.[1]?.trim();
+    if (!code) return;
+
+    // Check if referral signup already recorded for this user
+    const { data: existing } = await supabase
+      .from('referral_signups')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('referral_code', code)
+      .maybeSingle();
+    if (existing) return; // Already tracked
+
+    const { data: refLink } = await supabase
+      .from('referral_links')
+      .select('*')
+      .eq('referral_code', code)
+      .eq('is_active', true)
+      .maybeSingle();
+    if (!refLink) return;
+
+    await supabase.from('referral_signups').insert({
+      referral_code: code,
+      advisor_id: refLink.advisor_id,
+      group_id: refLink.group_id,
+      user_id: userId,
+    });
+    await supabase.rpc('increment_referral_signups', { _code: code });
+    // Clear cookie after processing
+    document.cookie = 'referral_code=;path=/;max-age=0';
+  } catch (e) {
+    console.error('Referral processing error:', e);
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
@@ -31,36 +69,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    // 1. Set up listener FIRST (per Supabase docs)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!mounted) return;
       const currentUser = session?.user ?? null;
       setUser(currentUser);
 
-      // Handle password recovery redirect
       if (event === 'PASSWORD_RECOVERY') {
         navigate('/reset-password');
         return;
       }
 
       if (currentUser) {
-        // Use setTimeout to avoid blocking the auth state change callback
         setTimeout(async () => {
           if (!mounted) return;
           const p = await fetchProfile(currentUser.id);
           if (mounted) setProfile(p);
+
+          // Process referral cookie on sign-in (covers OAuth signups)
+          if (event === 'SIGNED_IN') {
+            await processReferralCookie(currentUser.id);
+          }
         }, 0);
       } else {
         setProfile(null);
       }
 
-      // Only set loading false on auth state change after initial load
       if (event !== 'INITIAL_SESSION') {
         setLoading(false);
       }
     });
 
-    // 2. Then check existing session
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (!mounted) return;
       const currentUser = session?.user ?? null;
