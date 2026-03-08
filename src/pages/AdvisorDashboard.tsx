@@ -125,11 +125,12 @@ export default function AdvisorDashboard() {
       target_price: 0,
       stop_loss: 0,
       timeframe: '',
+      is_public: messageForm.isPublic,
     });
 
     if (error) { toast.error(error.message); }
     else { toast.success('Update posted!'); }
-    setMessageForm({ groupId: messageForm.groupId, text: '' });
+    setMessageForm({ groupId: messageForm.groupId, text: '', isPublic: false });
     setMessageImage(null);
     setMessageImagePreview(null);
     setUploadProgress(0);
@@ -167,7 +168,7 @@ export default function AdvisorDashboard() {
     } catch (err) {
       console.error('Telegram send error:', err);
     }
-    setSignalForm({ groupId: signalForm.groupId, instrument: '', signalType: 'BUY', entryPrice: '', targetPrice: '', stopLoss: '', timeframe: 'Intraday', notes: '' });
+    setSignalForm({ groupId: signalForm.groupId, instrument: '', signalType: 'BUY', entryPrice: '', targetPrice: '', stopLoss: '', timeframe: 'Intraday', notes: '', isPublic: false });
     setPosting(false);
     fetchData();
   };
