@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
     }
 
     const userId = claimsData.claims.sub;
-    const { group_id } = await req.json();
+    const { group_id, origin_url } = await req.json();
 
     // Get group info
     const { data: group } = await supabase.from('groups').select('*').eq('id', group_id).single();
@@ -58,6 +58,10 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Payment system not configured' }), { status: 500, headers: corsHeaders });
     }
 
+    // Use the frontend origin for callback, fallback to constructing from request
+    const frontendOrigin = origin_url || req.headers.get('origin') || req.headers.get('referer')?.replace(/\/+$/, '') || '';
+    const callbackUrl = `${frontendOrigin}/payment-success?group_id=${group_id}&status=paid`;
+
     // Create a unique payment link for this user + group
     const razorpayRes = await fetch('https://api.razorpay.com/v1/payment_links', {
       method: 'POST',
@@ -75,14 +79,14 @@ Deno.serve(async (req) => {
           contact: profile?.phone || '',
         },
         notify: { sms: true, email: true },
-        callback_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/razorpay-webhook?group_id=${group_id}`,
+        callback_url: callbackUrl,
         callback_method: 'get',
         notes: {
           group_id: group_id,
           user_id: userId,
           group_name: group.name,
         },
-        expire_by: Math.floor(Date.now() / 1000) + 3600, // 1 hour expiry
+        expire_by: Math.floor(Date.now() / 1000) + 3600,
       }),
     });
 

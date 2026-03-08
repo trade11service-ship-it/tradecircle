@@ -75,7 +75,7 @@ export default function AdvisorProfile() {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${session?.session?.access_token}`,
         },
-        body: JSON.stringify({ group_id: group.id }),
+        body: JSON.stringify({ group_id: group.id, origin_url: window.location.origin }),
       });
       const result = await res.json();
       if (res.ok && result.payment_url) {
