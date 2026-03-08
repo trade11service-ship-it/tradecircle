@@ -45,7 +45,7 @@ export default function AdvisorProfile() {
   const [loading, setLoading] = useState(true);
   const [subscribing, setSubscribing] = useState<string | null>(null);
   const [signalTab, setSignalTab] = useState<'all' | 'past' | 'today'>('all');
-  const [riskAccepted, setRiskAccepted] = useState(false);
+  const [riskAlreadyAccepted, setRiskAlreadyAccepted] = useState(false);
 
   useEffect(() => { if (id) fetchData(); }, [id, user]);
 
@@ -74,29 +74,39 @@ export default function AdvisorProfile() {
       } else {
         setSubscribedGroupIds(subIds);
       }
+      // Check if user already accepted risk disclaimer
+      const { data: acceptance } = await supabase
+        .from('user_legal_acceptances')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('acceptance_type', 'subscription_risk')
+        .limit(1);
+      if (acceptance && acceptance.length > 0) setRiskAlreadyAccepted(true);
     }
     setLoading(false);
   };
 
   const handleSubscribe = async (group: Group) => {
     if (!user) { navigate('/login'); return; }
-    if (!riskAccepted) { toast.error('Please acknowledge the risk disclaimer to proceed'); return; }
     setSubscribing(group.id);
     try {
-      // Save risk acceptance
-      const ip = await getIpAddress();
-      await supabase.from('user_legal_acceptances').insert({
-        user_id: user.id,
-        full_name: profile?.full_name || '',
-        email: profile?.email || user.email || '',
-        acceptance_type: 'subscription_risk',
-        checkbox_text: SUBSCRIPTION_RISK_TEXT,
-        accepted: true,
-        ip_address: ip,
-        user_agent: navigator.userAgent,
-        device_info: getDeviceInfo(),
-        page_url: window.location.href,
-      });
+      // Auto-save risk acceptance if not already accepted
+      if (!riskAlreadyAccepted) {
+        const ip = await getIpAddress();
+        await supabase.from('user_legal_acceptances').insert({
+          user_id: user.id,
+          full_name: profile?.full_name || '',
+          email: profile?.email || user.email || '',
+          acceptance_type: 'subscription_risk',
+          checkbox_text: SUBSCRIPTION_RISK_TEXT,
+          accepted: true,
+          ip_address: ip,
+          user_agent: navigator.userAgent,
+          device_info: getDeviceInfo(),
+          page_url: window.location.href,
+        });
+        setRiskAlreadyAccepted(true);
+      }
 
       const { data: session } = await supabase.auth.getSession();
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/initiate-payment`, {
@@ -170,20 +180,6 @@ export default function AdvisorProfile() {
               </div>
             )}
 
-            {/* Risk disclaimer checkbox for subscription */}
-            {groups.length > 0 && !isOwner && !isSubscribedToAny && (
-              <div className="flex items-start gap-3 rounded-lg border p-3 bg-muted/30 mb-4">
-                <Checkbox
-                  id="risk-accept"
-                  checked={riskAccepted}
-                  onCheckedChange={(checked) => setRiskAccepted(checked === true)}
-                  className="mt-0.5"
-                />
-                <label htmlFor="risk-accept" className="text-xs leading-relaxed text-muted-foreground cursor-pointer">
-                  {SUBSCRIPTION_RISK_TEXT}
-                </label>
-              </div>
-            )}
 
             <div className="space-y-4">
               {groups.map(group => (
