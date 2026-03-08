@@ -24,7 +24,7 @@ export default function ReferralLanding() {
   const [pastSignals, setPastSignals] = useState<any[]>([]);
   const [isOwnLink, setIsOwnLink] = useState(false);
   const [subscribing, setSubscribing] = useState(false);
-  const [riskAccepted, setRiskAccepted] = useState(false);
+  const [riskAlreadyAccepted, setRiskAlreadyAccepted] = useState(false);
   const [alreadySubscribed, setAlreadySubscribed] = useState(false);
 
   // Signup form
@@ -116,24 +116,27 @@ export default function ReferralLanding() {
 
   const handleSubscribe = async () => {
     if (!user) { setShowSignup(true); return; }
-    if (!riskAccepted) { toast.error('Please acknowledge the risk disclaimer'); return; }
     if (!group) return;
     setSubscribing(true);
 
     try {
-      const ip = await getIpAddress();
-      await supabase.from('user_legal_acceptances').insert({
-        user_id: user.id,
-        full_name: profile?.full_name || '',
-        email: profile?.email || user.email || '',
-        acceptance_type: 'subscription_risk',
-        checkbox_text: SUBSCRIPTION_RISK_TEXT,
-        accepted: true,
-        ip_address: ip,
-        user_agent: navigator.userAgent,
-        device_info: getDeviceInfo(),
-        page_url: window.location.href,
-      });
+      // Auto-save risk acceptance if not already accepted
+      if (!riskAlreadyAccepted) {
+        const ip = await getIpAddress();
+        await supabase.from('user_legal_acceptances').insert({
+          user_id: user.id,
+          full_name: profile?.full_name || '',
+          email: profile?.email || user.email || '',
+          acceptance_type: 'subscription_risk',
+          checkbox_text: SUBSCRIPTION_RISK_TEXT,
+          accepted: true,
+          ip_address: ip,
+          user_agent: navigator.userAgent,
+          device_info: getDeviceInfo(),
+          page_url: window.location.href,
+        });
+        setRiskAlreadyAccepted(true);
+      }
 
       const { data: session } = await supabase.auth.getSession();
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/initiate-payment`, {
@@ -346,17 +349,6 @@ export default function ReferralLanding() {
           </div>
         ) : user && !showSignup ? (
           <div className="space-y-4">
-            <div className="flex items-start gap-3 rounded-lg border p-3 bg-muted/30">
-              <Checkbox
-                id="risk-ref"
-                checked={riskAccepted}
-                onCheckedChange={(c) => setRiskAccepted(c === true)}
-                className="mt-0.5"
-              />
-              <label htmlFor="risk-ref" className="text-xs leading-relaxed text-muted-foreground cursor-pointer">
-                {SUBSCRIPTION_RISK_TEXT}
-              </label>
-            </div>
             <Button
               className="w-full py-6 text-lg font-bold"
               onClick={handleSubscribe}
