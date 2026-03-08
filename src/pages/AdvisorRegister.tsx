@@ -57,6 +57,30 @@ export default function AdvisorRegister() {
     </div>
   );
 
+  if (existingAdvisor) return (
+    <div className="min-h-screen flex flex-col bg-off-white"><Navbar />
+      <div className="flex-1 flex items-center justify-center px-4">
+        <div className="tc-card-static p-8 text-center max-w-md">
+          <CheckCircle className="mx-auto h-16 w-16 text-primary" />
+          <h2 className="mt-4 text-xl font-bold">Already Registered</h2>
+          <p className="mt-3 text-sm text-muted-foreground">
+            You are already registered as an advisor on TradeCircle. 
+            {existingAdvisor.status === 'pending' && ' Your application is currently under review.'}
+            {existingAdvisor.status === 'approved' && ' Your account is active.'}
+            {existingAdvisor.status === 'rejected' && ` Your application was rejected${existingAdvisor.rejection_reason ? ': ' + existingAdvisor.rejection_reason : '.'}`}
+          </p>
+          <div className="mt-6 flex gap-3 justify-center">
+            {existingAdvisor.status === 'approved' && (
+              <Button onClick={() => navigate('/advisor/dashboard')} className="tc-btn-click">Go to Dashboard</Button>
+            )}
+            <Button variant="outline" onClick={() => navigate('/')} className="tc-btn-click">Back to Home</Button>
+          </div>
+        </div>
+      </div>
+      <Footer />
+    </div>
+  );
+
   const handleSubmit = async () => {
     if (!check1 || !check2) {
       setShowCheckError(true);
