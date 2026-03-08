@@ -180,7 +180,7 @@ export default function AdvisorDashboard() {
   };
 
   if (loading) return <div className="min-h-screen bg-background"><Navbar /><div className="flex items-center justify-center py-20"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div></div>;
-  if (!advisor) return <div className="min-h-screen bg-background"><Navbar /><div className="py-20 text-center text-muted-foreground">No advisor profile found.</div><Footer /></div>;
+  if (!advisor) return <div className="min-h-screen bg-background"><Navbar /><div className="py-20 text-center text-muted-foreground">No advisor profile found.</div></div>;
 
   if (advisor.status === 'pending') return (
     <div className="min-h-screen flex flex-col bg-background"><Navbar />
