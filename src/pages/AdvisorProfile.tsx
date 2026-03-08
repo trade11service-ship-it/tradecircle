@@ -133,15 +133,6 @@ export default function AdvisorProfile() {
         </div>
       </section>
 
-      {/* Advisor Profile Disclaimer Banner */}
-      <div className="container mx-auto px-4 mt-4">
-        <div className="rounded-lg border px-4 py-2.5" style={{ background: '#FFF8E1', borderColor: '#F57F17' }}>
-          <p className="text-[13px]" style={{ color: '#5D4037' }}>
-            ℹ️ Signals on this page are posted by an independently SEBI-registered advisor. TradeCircle (STREZONIC PRIVATE LIMITED) is a listing platform only. Always trade with proper risk management.
-          </p>
-        </div>
-      </div>
-
       <div className="container mx-auto px-4 py-10">
         <div className="grid gap-8 lg:grid-cols-3">
           {/* Left: Groups */}

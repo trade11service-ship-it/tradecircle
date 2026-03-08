@@ -51,7 +51,13 @@ export function Footer() {
           </div>
         </div>
 
-        <div className="mt-12 border-t border-secondary-foreground/20 pt-6">
+        <div className="mt-10 rounded-lg border border-yellow-600/30 bg-yellow-50/10 px-4 py-2.5">
+          <p className="text-[11px] leading-relaxed text-secondary-foreground/70">
+            ℹ️ Signals on this platform are posted by independently SEBI-registered advisors. TradeCircle (STREZONIC PRIVATE LIMITED) is a listing platform only. Always trade with proper risk management.
+          </p>
+        </div>
+
+        <div className="mt-4 border-t border-secondary-foreground/20 pt-6">
           <p className="text-xs leading-relaxed opacity-60">
             {disclaimer}
           </p>
