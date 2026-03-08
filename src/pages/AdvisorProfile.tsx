@@ -5,10 +5,12 @@ import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { SignalCard } from '@/components/SignalCard';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
 import { Shield, Users, ArrowRight } from 'lucide-react';
 import type { Tables } from '@/integrations/supabase/types';
+import { SUBSCRIPTION_RISK_TEXT, getDeviceInfo, getIpAddress } from '@/lib/legalTexts';
 
 type Advisor = Tables<'advisors'>;
 type Group = Tables<'groups'>;
@@ -16,7 +18,7 @@ type Signal = Tables<'signals'>;
 
 export default function AdvisorProfile() {
   const { id } = useParams<{ id: string }>();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [advisor, setAdvisor] = useState<Advisor | null>(null);
   const [groups, setGroups] = useState<(Group & { subCount: number })[]>([]);
@@ -26,6 +28,7 @@ export default function AdvisorProfile() {
   const [loading, setLoading] = useState(true);
   const [subscribing, setSubscribing] = useState<string | null>(null);
   const [signalTab, setSignalTab] = useState<'all' | 'past' | 'today'>('all');
+  const [riskAccepted, setRiskAccepted] = useState(false);
 
   useEffect(() => { if (id) fetchData(); }, [id, user]);
 
@@ -48,7 +51,6 @@ export default function AdvisorProfile() {
     if (user) {
       const { data: subs } = await supabase.from('subscriptions').select('group_id').eq('user_id', user.id).eq('status', 'active');
       const subIds = (subs || []).map(s => s.group_id);
-      // If user is the advisor, grant free access to all their groups
       if (adv && adv.user_id === user.id) {
         const allGroupIds = (grps || []).map(g => g.id);
         setSubscribedGroupIds([...new Set([...subIds, ...allGroupIds])]);
@@ -61,8 +63,24 @@ export default function AdvisorProfile() {
 
   const handleSubscribe = async (group: Group) => {
     if (!user) { navigate('/login'); return; }
+    if (!riskAccepted) { toast.error('Please acknowledge the risk disclaimer to proceed'); return; }
     setSubscribing(group.id);
     try {
+      // Save risk acceptance
+      const ip = await getIpAddress();
+      await supabase.from('user_legal_acceptances').insert({
+        user_id: user.id,
+        full_name: profile?.full_name || '',
+        email: profile?.email || user.email || '',
+        acceptance_type: 'subscription_risk',
+        checkbox_text: SUBSCRIPTION_RISK_TEXT,
+        accepted: true,
+        ip_address: ip,
+        user_agent: navigator.userAgent,
+        device_info: getDeviceInfo(),
+        page_url: window.location.href,
+      });
+
       const { data: session } = await supabase.auth.getSession();
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/initiate-payment`, {
         method: 'POST',
@@ -115,6 +133,15 @@ export default function AdvisorProfile() {
         </div>
       </section>
 
+      {/* Advisor Profile Disclaimer Banner */}
+      <div className="container mx-auto px-4 mt-4">
+        <div className="rounded-lg border px-4 py-2.5" style={{ background: '#FFF8E1', borderColor: '#F57F17' }}>
+          <p className="text-[13px]" style={{ color: '#5D4037' }}>
+            ℹ️ Signals on this page are posted by an independently SEBI-registered advisor. TradeCircle (STREZONIC PRIVATE LIMITED) is a listing platform only. Always trade with proper risk management.
+          </p>
+        </div>
+      </div>
+
       <div className="container mx-auto px-4 py-10">
         <div className="grid gap-8 lg:grid-cols-3">
           {/* Left: Groups */}
@@ -125,6 +152,22 @@ export default function AdvisorProfile() {
                 <p className="text-sm text-muted-foreground">This advisor hasn't created any signal groups yet.</p>
               </div>
             )}
+
+            {/* Risk disclaimer checkbox for subscription */}
+            {groups.length > 0 && !isOwner && !isSubscribedToAny && (
+              <div className="flex items-start gap-3 rounded-lg border p-3 bg-muted/30 mb-4">
+                <Checkbox
+                  id="risk-accept"
+                  checked={riskAccepted}
+                  onCheckedChange={(checked) => setRiskAccepted(checked === true)}
+                  className="mt-0.5"
+                />
+                <label htmlFor="risk-accept" className="text-xs leading-relaxed text-muted-foreground cursor-pointer">
+                  {SUBSCRIPTION_RISK_TEXT}
+                </label>
+              </div>
+            )}
+
             <div className="space-y-4">
               {groups.map(group => (
                 <div key={group.id} className="tc-card p-5">

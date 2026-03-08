@@ -7,10 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
 import { CheckCircle, FileText, Shield } from 'lucide-react';
+import { ADVISOR_CHECKBOX_1_TEXT, ADVISOR_CHECKBOX_2_TEXT, getDeviceInfo, getIpAddress } from '@/lib/legalTexts';
 
 export default function AdvisorRegister() {
   const navigate = useNavigate();
@@ -18,6 +20,9 @@ export default function AdvisorRegister() {
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({ sebiRegNo: '', bio: '', strategyType: '', aadhaarNo: '', panNo: '', address: '', phone: '' });
+  const [check1, setCheck1] = useState(false);
+  const [check2, setCheck2] = useState(false);
+  const [showCheckError, setShowCheckError] = useState(false);
   const update = (key: string, value: string) => setForm({ ...form, [key]: value });
 
   if (authLoading) return <div className="flex min-h-screen items-center justify-center bg-off-white"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>;
@@ -40,16 +45,38 @@ export default function AdvisorRegister() {
   );
 
   const handleSubmit = async () => {
+    if (!check1 || !check2) {
+      setShowCheckError(true);
+      toast.error('Please accept all terms to proceed');
+      return;
+    }
     setLoading(true);
     try {
       if (form.phone) await supabase.from('profiles').update({ phone: form.phone, role: 'advisor' }).eq('id', user.id);
-      const { error: advError } = await supabase.from('advisors').insert({
+      const { data: advData, error: advError } = await supabase.from('advisors').insert({
         user_id: user.id, full_name: profile?.full_name || '', email: profile?.email || user.email || '',
         phone: form.phone || profile?.phone || '', sebi_reg_no: form.sebiRegNo, bio: form.bio,
         strategy_type: form.strategyType, aadhaar_no: form.aadhaarNo, pan_no: form.panNo,
         address: form.address, status: 'pending',
-      });
+      }).select('id').single();
       if (advError) throw advError;
+
+      // Save legal acceptance
+      const ip = await getIpAddress();
+      await supabase.from('advisor_legal_acceptances').insert({
+        advisor_id: advData.id,
+        full_name: profile?.full_name || '',
+        sebi_reg_no: form.sebiRegNo,
+        pan_no: form.panNo,
+        checkbox_1_sebi_responsibility: true,
+        checkbox_1_text: ADVISOR_CHECKBOX_1_TEXT,
+        checkbox_2_indemnity: true,
+        checkbox_2_text: ADVISOR_CHECKBOX_2_TEXT,
+        ip_address: ip,
+        user_agent: navigator.userAgent,
+        device_info: getDeviceInfo(),
+      });
+
       setStep(4);
     } catch (error: any) { toast.error(error.message || 'Registration failed'); }
     setLoading(false);
@@ -128,9 +155,39 @@ export default function AdvisorRegister() {
                 </div>
               ))}
             </div>
+
+            {/* Legal Checkboxes */}
+            <div className="space-y-3 mt-4">
+              <div className="flex items-start gap-3 rounded-lg border p-3 bg-muted/30">
+                <Checkbox
+                  id="check1"
+                  checked={check1}
+                  onCheckedChange={(checked) => { setCheck1(checked === true); setShowCheckError(false); }}
+                  className="mt-0.5"
+                />
+                <label htmlFor="check1" className="text-xs leading-relaxed text-muted-foreground cursor-pointer">
+                  {ADVISOR_CHECKBOX_1_TEXT}
+                </label>
+              </div>
+              <div className="flex items-start gap-3 rounded-lg border p-3 bg-muted/30">
+                <Checkbox
+                  id="check2"
+                  checked={check2}
+                  onCheckedChange={(checked) => { setCheck2(checked === true); setShowCheckError(false); }}
+                  className="mt-0.5"
+                />
+                <label htmlFor="check2" className="text-xs leading-relaxed text-muted-foreground cursor-pointer">
+                  {ADVISOR_CHECKBOX_2_TEXT}
+                </label>
+              </div>
+              {showCheckError && (
+                <p className="text-xs text-destructive font-medium">Please accept all terms to proceed</p>
+              )}
+            </div>
+
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1 tc-btn-click" onClick={() => setStep(2)}>Back</Button>
-              <Button className="flex-1 tc-btn-click font-semibold" onClick={handleSubmit} disabled={loading}>{loading ? 'Submitting...' : 'Submit Application'}</Button>
+              <Button className="flex-1 tc-btn-click font-semibold" onClick={handleSubmit} disabled={loading || !check1 || !check2}>{loading ? 'Submitting...' : 'Submit Application'}</Button>
             </div>
           </div>
         )}
@@ -139,7 +196,7 @@ export default function AdvisorRegister() {
           <div className="tc-card-static p-8 text-center">
             <CheckCircle className="mx-auto h-16 w-16 text-primary" />
             <h2 className="mt-4 text-xl font-bold">Application Submitted!</h2>
-            <p className="mt-3 text-sm text-muted-foreground">Our team will verify your SEBI registration within 24-48 hours. You'll receive an email once approved.</p>
+            <p className="mt-3 text-sm text-muted-foreground">Application submitted successfully. Our team will verify your details within 24-48 hours and contact you directly.</p>
             <Button className="mt-6 tc-btn-click" onClick={() => navigate('/')}>Back to Home</Button>
           </div>
         )}
