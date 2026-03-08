@@ -14,6 +14,74 @@ export type Database = {
   }
   public: {
     Tables: {
+      advisor_legal_acceptances: {
+        Row: {
+          advisor_id: string
+          checkbox_1_accepted_at: string
+          checkbox_1_sebi_responsibility: boolean
+          checkbox_1_text: string
+          checkbox_2_accepted_at: string
+          checkbox_2_indemnity: boolean
+          checkbox_2_text: string
+          company_cin: string
+          device_info: string | null
+          form_submitted_at: string
+          full_name: string
+          id: string
+          ip_address: string | null
+          pan_no: string | null
+          sebi_reg_no: string
+          status: string
+          user_agent: string | null
+        }
+        Insert: {
+          advisor_id: string
+          checkbox_1_accepted_at?: string
+          checkbox_1_sebi_responsibility?: boolean
+          checkbox_1_text: string
+          checkbox_2_accepted_at?: string
+          checkbox_2_indemnity?: boolean
+          checkbox_2_text: string
+          company_cin?: string
+          device_info?: string | null
+          form_submitted_at?: string
+          full_name: string
+          id?: string
+          ip_address?: string | null
+          pan_no?: string | null
+          sebi_reg_no: string
+          status?: string
+          user_agent?: string | null
+        }
+        Update: {
+          advisor_id?: string
+          checkbox_1_accepted_at?: string
+          checkbox_1_sebi_responsibility?: boolean
+          checkbox_1_text?: string
+          checkbox_2_accepted_at?: string
+          checkbox_2_indemnity?: boolean
+          checkbox_2_text?: string
+          company_cin?: string
+          device_info?: string | null
+          form_submitted_at?: string
+          full_name?: string
+          id?: string
+          ip_address?: string | null
+          pan_no?: string | null
+          sebi_reg_no?: string
+          status?: string
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "advisor_legal_acceptances_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "advisors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       advisors: {
         Row: {
           aadhaar_no: string | null
@@ -424,6 +492,62 @@ export type Database = {
           },
           {
             foreignKeyName: "telegram_settings_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_legal_acceptances: {
+        Row: {
+          acceptance_type: string
+          accepted: boolean
+          accepted_at: string
+          checkbox_text: string
+          company_cin: string
+          device_info: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          ip_address: string | null
+          page_url: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          acceptance_type: string
+          accepted?: boolean
+          accepted_at?: string
+          checkbox_text: string
+          company_cin?: string
+          device_info?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          ip_address?: string | null
+          page_url?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          acceptance_type?: string
+          accepted?: boolean
+          accepted_at?: string
+          checkbox_text?: string
+          company_cin?: string
+          device_info?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          ip_address?: string | null
+          page_url?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_legal_acceptances_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
