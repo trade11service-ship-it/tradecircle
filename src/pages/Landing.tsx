@@ -5,7 +5,7 @@ import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Star, Search, Shield, CreditCard, Bell, ArrowRight } from 'lucide-react';
+import { Star, Search, Shield, ShieldCheck, FileCheck, Lock, CreditCard, Bell, ArrowRight } from 'lucide-react';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { useAuth } from '@/lib/auth';
 import type { Tables } from '@/integrations/supabase/types';
@@ -76,33 +76,84 @@ export default function Landing() {
       <Navbar />
 
       {/* Hero */}
-      <section className="px-4 py-12 md:py-28">
-        <div className="container mx-auto max-w-3xl text-center">
-          <span className="inline-flex items-center gap-2 rounded-full bg-light-green px-4 py-1.5 text-xs font-semibold text-primary mb-4 md:mb-6">
-            🛡️ India's First SEBI Advisor Marketplace
+      <section className="relative px-5 pt-8 pb-10 md:pt-20 md:pb-16 overflow-hidden">
+        {/* Subtle green radial glow */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-[300px] opacity-60" style={{ background: 'radial-gradient(ellipse 600px 300px at 50% -50px, hsl(120,52%,93%) 0%, transparent 70%)' }} />
+
+        <div className="container relative mx-auto max-w-lg md:max-w-2xl text-center">
+          {/* Hero Badge */}
+          <span className="inline-flex items-center gap-2 rounded-full border border-primary px-5 py-2 text-[13px] font-bold text-primary tracking-wide" style={{ background: 'linear-gradient(135deg, hsl(120,52%,93%) 0%, hsl(213,100%,94%) 100%)' }}>
+            <Shield className="h-4 w-4" /> SEBI Verified Advisor Marketplace
           </span>
-          <h1 className="tc-page-title leading-tight text-3xl md:text-5xl lg:text-[52px]">
-            Tired of Fake Tips<br />& Telegram Scams?
+
+          {/* Main Headline */}
+          <h1 className="mt-5 leading-tight">
+            <span className="block text-[32px] md:text-[40px] font-extrabold text-secondary tracking-tight">India's Most Trusted</span>
+            <span className="relative inline-block text-[32px] md:text-[40px] font-extrabold text-foreground tracking-tight">
+              Trading Advisory Platform
+              <span className="absolute bottom-0 left-0 h-1 rounded-full bg-primary animate-hero-underline" />
+            </span>
           </h1>
-          <p className="mx-auto mt-4 max-w-xl text-base md:text-lg text-muted-foreground">
-            Connect with real SEBI-registered advisors. Verified licenses. Transparent track records. Signals delivered directly to your Telegram.
+
+          {/* Authority Subtext */}
+          <p className="mx-auto mt-4 max-w-[300px] md:max-w-md text-[15px] leading-[1.7] text-muted-foreground">
+            Every advisor on TradeCircle holds a valid SEBI registration number — manually verified by our team before they can post a single signal.
           </p>
-          <div className="mt-6 md:mt-8 flex flex-col sm:flex-row justify-center gap-3">
-            <a href="#advisors">
-              <Button size="lg" className="w-full sm:w-auto px-6 md:px-8 py-5 md:py-6 text-sm md:text-base font-semibold tc-btn-click">
-                Browse Verified Advisors <ArrowRight className="ml-1 h-4 w-4" />
-              </Button>
-            </a>
-            <Link to="/advisor-register">
-              <Button size="lg" variant="outline" className="w-full sm:w-auto px-6 md:px-8 py-5 md:py-6 text-sm md:text-base font-semibold border-2 border-primary text-primary hover:bg-light-green tc-btn-click">
-                Register as Advisor
-              </Button>
-            </Link>
-          </div>
-          <div className="mt-6 flex flex-wrap justify-center gap-2 md:gap-4">
-            {['✓ 100% SEBI Verified', '✓ Transparent History', '✓ Telegram Alerts'].map(item => (
-              <span key={item} className="rounded-full bg-muted px-3 md:px-4 py-1.5 text-xs font-medium text-muted-foreground">{item}</span>
+
+          {/* SEBI Authority Badge Row */}
+          <div className="mt-6 flex justify-center gap-3 overflow-x-auto pb-1">
+            {[
+              { icon: <ShieldCheck className="h-5 w-5 text-primary" />, line1: 'SEBI Verified', line2: 'All Advisors' },
+              { icon: <FileCheck className="h-5 w-5 text-secondary" />, line1: 'Manual KYC', line2: 'Every Advisor' },
+              { icon: <Lock className="h-5 w-5 text-primary" />, line1: 'Legally Bound', line2: 'By SEBI Rules' },
+            ].map((badge, i) => (
+              <div key={i} className="flex min-w-[100px] flex-col items-center rounded-[10px] border-[1.5px] border-border bg-card px-4 py-3 shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
+                {badge.icon}
+                <span className="mt-1.5 text-[13px] font-bold text-foreground">{badge.line1}</span>
+                <span className="text-[11px] text-muted-foreground">{badge.line2}</span>
+              </div>
             ))}
+          </div>
+
+          {/* Primary CTA */}
+          <a href="#advisors">
+            <Button className="mt-7 w-full h-[54px] rounded-xl bg-primary text-[17px] font-bold tracking-wide shadow-[0_6px_20px_rgba(27,94,32,0.35)] hover:bg-primary/90 hover:-translate-y-px hover:shadow-[0_8px_24px_rgba(27,94,32,0.4)] transition-all duration-200 tc-btn-click">
+              Explore Verified Advisors <ArrowRight className="ml-1.5 h-4 w-4" />
+            </Button>
+          </a>
+
+          {/* Secondary CTA */}
+          <Link to="/advisor-register">
+            <Button variant="outline" className="mt-3 w-full h-[50px] rounded-xl border-2 border-secondary text-secondary text-base font-semibold hover:bg-light-blue tc-btn-click">
+              Join as SEBI Advisor
+            </Button>
+          </Link>
+
+          {/* Social Proof Line */}
+          <div className="mt-5 flex items-center justify-center gap-2">
+            <div className="flex -space-x-2">
+              {[
+                { bg: 'bg-primary', letter: 'A' },
+                { bg: 'bg-secondary', letter: 'R' },
+                { bg: 'bg-[hsl(214,60%,45%)]', letter: 'S' },
+                { bg: 'bg-[hsl(123,40%,35%)]', letter: 'M' },
+              ].map((av, i) => (
+                <div key={i} className={`flex h-7 w-7 items-center justify-center rounded-full ${av.bg} text-[10px] font-bold text-primary-foreground ring-2 ring-background`}>
+                  {av.letter}
+                </div>
+              ))}
+            </div>
+            <span className="text-[13px] font-medium text-muted-foreground">
+              <span className="font-bold text-primary">500+</span> traders joined this month
+            </span>
+          </div>
+
+          {/* Authority Footer Note */}
+          <div className="mt-4 flex items-center justify-center gap-1.5">
+            <Lock className="h-3 w-3 text-[hsl(var(--small-text))]" />
+            <span className="text-[10px] tracking-wide text-[hsl(var(--small-text))]">
+              Operated by STREZONIC PRIVATE LIMITED · CIN: U62099MH2025PTC453360
+            </span>
           </div>
         </div>
       </section>
