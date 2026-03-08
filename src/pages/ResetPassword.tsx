@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Navbar } from '@/components/Navbar';
@@ -15,13 +15,7 @@ export default function ResetPassword() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-  useEffect(() => {
-    const hash = window.location.hash;
-    if (!hash.includes('type=recovery')) {
-      toast.error('Invalid reset link');
-      navigate('/login');
-    }
-  }, [navigate]);
+  // No redirect check needed - auth provider handles PASSWORD_RECOVERY navigation
 
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
