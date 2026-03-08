@@ -59,36 +59,34 @@ export default function AdvisorProfile() {
     setLoading(false);
   };
 
-  const handleSubscribe = (group: Group) => {
+  const [subscribing, setSubscribing] = useState<string | null>(null);
+
+  const handleSubscribe = async (group: Group) => {
     if (!user) {
       navigate('/login');
       return;
     }
-    if (group.razorpay_payment_link) {
-      // For now, create subscription directly (placeholder for payment)
-      handleCreateSubscription(group);
-    } else {
-      handleCreateSubscription(group);
-    }
-  };
-
-  const handleCreateSubscription = async (group: Group) => {
-    const endDate = new Date();
-    endDate.setDate(endDate.getDate() + 30);
-    const { error } = await supabase.from('subscriptions').insert({
-      user_id: user!.id,
-      group_id: group.id,
-      advisor_id: group.advisor_id,
-      end_date: endDate.toISOString(),
-      amount_paid: group.monthly_price,
-      status: 'active',
-    });
-    if (error) {
-      toast.error('Failed to subscribe');
-    } else {
-      toast.success('Subscribed successfully!');
-      setSubscribedGroupIds([...subscribedGroupIds, group.id]);
-      fetchData();
+    setSubscribing(group.id);
+    try {
+      const { data: session } = await supabase.auth.getSession();
+      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/initiate-payment`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.session?.access_token}`,
+        },
+        body: JSON.stringify({ group_id: group.id }),
+      });
+      const result = await res.json();
+      if (res.ok && result.payment_url) {
+        window.location.href = result.payment_url;
+      } else {
+        toast.error(result.error || 'Failed to initiate payment');
+      }
+    } catch (err) {
+      toast.error('Payment initiation failed');
+    } finally {
+      setSubscribing(null);
     }
   };
 
@@ -151,7 +149,9 @@ export default function AdvisorProfile() {
                   {subscribedGroupIds.includes(group.id) ? (
                     <Badge className="mt-2 bg-primary text-primary-foreground">✓ Subscribed</Badge>
                   ) : (
-                    <Button className="mt-2 w-full" size="sm" onClick={() => handleSubscribe(group)}>Subscribe Now — ₹{group.monthly_price}/mo</Button>
+                    <Button className="mt-2 w-full" size="sm" onClick={() => handleSubscribe(group)} disabled={subscribing === group.id}>
+                      {subscribing === group.id ? 'Processing...' : `Subscribe Now — ₹${group.monthly_price}/mo`}
+                    </Button>
                   )}
                 </div>
               ))}
