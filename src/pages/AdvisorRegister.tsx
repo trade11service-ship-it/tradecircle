@@ -28,7 +28,7 @@ export default function AdvisorRegister() {
   const update = (key: string, value: string) => setForm({ ...form, [key]: value });
 
   // Check if user is already registered as advisor
-  useState(() => {
+  useEffect(() => {
     if (user) {
       setCheckingAdvisor(true);
       supabase.from('advisors').select('*').eq('user_id', user.id).single().then(({ data }) => {
@@ -36,7 +36,7 @@ export default function AdvisorRegister() {
         setCheckingAdvisor(false);
       });
     }
-  });
+  }, [user]);
 
   if (authLoading || checkingAdvisor) return <div className="flex min-h-screen items-center justify-center bg-off-white"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>;
 
