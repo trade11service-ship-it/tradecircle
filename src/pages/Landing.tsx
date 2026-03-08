@@ -198,23 +198,69 @@ export default function Landing() {
       )}
 
       {/* How It Works */}
-      <section id="how-it-works" className="px-4 py-12 md:py-20">
-        <div className="container mx-auto text-center">
-          <h2 className="tc-section-title text-xl md:text-[28px]">How TradeCircle Works</h2>
-          <p className="mt-2 text-sm md:text-base text-muted-foreground">3 steps to smarter trading</p>
-          <div className="mt-8 md:mt-12 grid gap-4 md:gap-8 md:grid-cols-3">
+      <section id="how-it-works" className="bg-muted px-5 py-12 md:py-16">
+        <div className="container mx-auto">
+          {/* Header */}
+          <div className="text-center">
+            <span className="inline-block rounded-full border border-secondary bg-light-blue px-3.5 py-1 text-[11px] font-bold text-secondary mb-2.5">SIMPLE PROCESS</span>
+            <h2 className="text-[26px] font-extrabold text-foreground tracking-tight">How It Works</h2>
+            <p className="mt-1.5 text-sm text-muted-foreground">From discovery to signals in 3 steps</p>
+          </div>
+
+          {/* Mobile Timeline */}
+          <div className="relative mx-auto mt-7 max-w-[340px] md:hidden">
+            {/* Vertical line */}
+            <div className="absolute left-[27px] top-7 bottom-7 w-0.5 z-0" style={{ background: 'linear-gradient(to bottom, hsl(var(--primary)), hsl(var(--secondary)), hsl(var(--primary)))' }} />
+
             {[
-              { num: '01', icon: Search, title: 'Browse Verified Advisors', desc: 'Explore SEBI-registered advisors with transparent past performance and verified credentials.' },
-              { num: '02', icon: CreditCard, title: 'Subscribe to a Group', desc: 'Choose a signal group that matches your trading style and pay securely via Razorpay.' },
-              { num: '03', icon: Bell, title: 'Get Signals on Telegram', desc: 'Receive real-time trading signals delivered directly to your Telegram. Never miss an opportunity.' },
+              { num: 1, title: 'Browse Verified Advisors', desc: 'Filter by strategy, check full signal history and SEBI credentials.', tag: '🛡️ SEBI verified only' },
+              { num: 2, title: 'Subscribe to a Group', desc: 'Choose your advisor\'s group and pay securely. Cancel anytime.', tag: '💳 Powered by Razorpay' },
+              { num: 3, title: 'Get Signals on Telegram', desc: 'Every trade alert lands directly in your personal Telegram.', tag: '🔔 Real-time delivery' },
             ].map((step, i) => (
-              <div key={step.num} className="tc-card p-6 md:p-8 text-center relative animate-fade-in" style={{ animationDelay: `${i * 100}ms` }}>
-                <div className="mx-auto mb-3 md:mb-4 flex h-12 w-12 md:h-14 md:w-14 items-center justify-center rounded-2xl bg-light-green text-lg md:text-xl font-extrabold text-primary">
+              <div key={step.num} className="relative z-[1] flex items-start gap-4 mb-6 last:mb-0">
+                <div className="flex h-14 w-14 min-w-[56px] items-center justify-center rounded-full border-[2.5px] border-primary bg-card text-xl font-extrabold text-primary shadow-[0_4px_12px_rgba(27,94,32,0.15)]">
                   {step.num}
                 </div>
-                <step.icon className="mx-auto mb-2 md:mb-3 h-6 w-6 md:h-8 md:w-8 text-primary" />
-                <h3 className="tc-card-title text-sm md:text-base">{step.title}</h3>
-                <p className="mt-2 text-xs md:text-sm text-muted-foreground">{step.desc}</p>
+                <div className="pt-2">
+                  <h3 className="text-base font-bold text-foreground">{step.title}</h3>
+                  <p className="mt-1 text-[13px] leading-relaxed text-muted-foreground">{step.desc}</p>
+                  <span className="mt-2 inline-flex items-center gap-1 rounded-md border border-border bg-card px-2.5 py-1 text-[11px] text-muted-foreground">{step.tag}</span>
+                </div>
+              </div>
+            ))}
+
+            {/* Bottom CTA card */}
+            <div className="mt-2 rounded-xl border-[1.5px] border-primary bg-card p-4 text-center">
+              <p className="text-sm font-semibold text-foreground">Ready to find your advisor?</p>
+              <a href="#advisors">
+                <Button className="mt-2.5 w-full rounded-lg bg-primary text-sm font-semibold tc-btn-click">
+                  Browse Advisors <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                </Button>
+              </a>
+            </div>
+          </div>
+
+          {/* Desktop 3-column */}
+          <div className="relative mt-10 hidden md:grid md:grid-cols-3 md:gap-6 lg:gap-8 max-w-3xl mx-auto">
+            {[
+              { num: 1, icon: Search, title: 'Browse Verified Advisors', desc: 'Filter by strategy, check full signal history and SEBI credentials.', tag: '🛡️ SEBI verified only' },
+              { num: 2, icon: CreditCard, title: 'Subscribe to a Group', desc: 'Choose your advisor\'s group and pay securely. Cancel anytime.', tag: '💳 Powered by Razorpay' },
+              { num: 3, icon: Bell, title: 'Get Signals on Telegram', desc: 'Every trade alert lands directly in your personal Telegram.', tag: '🔔 Real-time delivery' },
+            ].map((step, i) => (
+              <div key={step.num} className="relative rounded-2xl border-[1.5px] border-border bg-card p-7 text-center shadow-[0_4px_16px_rgba(0,0,0,0.06)]">
+                {/* Arrow between cards */}
+                {i < 2 && (
+                  <div className="absolute -right-4 top-1/2 -translate-y-1/2 z-10">
+                    <ArrowRight className="h-5 w-5 text-primary opacity-40" />
+                  </div>
+                )}
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full border-[2.5px] border-primary bg-card text-xl font-extrabold text-primary shadow-[0_4px_12px_rgba(27,94,32,0.15)]">
+                  {step.num}
+                </div>
+                <step.icon className="mx-auto mt-3 h-8 w-8 text-primary" />
+                <h3 className="mt-3 text-[17px] font-bold text-foreground">{step.title}</h3>
+                <p className="mt-2 text-[13px] text-muted-foreground">{step.desc}</p>
+                <span className="mt-3 inline-flex items-center gap-1 rounded-md border border-border bg-muted px-2.5 py-1 text-[11px] text-muted-foreground">{step.tag}</span>
               </div>
             ))}
           </div>
