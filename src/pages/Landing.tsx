@@ -6,6 +6,7 @@ import { Footer } from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Star, Search, Shield, CreditCard, Bell, MessageCircle, Eye, Ban, IndianRupee, ArrowRight } from 'lucide-react';
+import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Advisor = Tables<'advisors'>;
@@ -234,6 +235,34 @@ export default function Landing() {
               })}
             </div>
           )}
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section className="tc-section">
+        <div className="container mx-auto max-w-3xl text-center">
+          <h2 className="tc-section-title">Frequently Asked Questions</h2>
+          <p className="mt-2 text-muted-foreground">Got questions? We've got answers.</p>
+          <div className="mt-10 text-left">
+            <Accordion type="single" collapsible className="space-y-3">
+              {[
+                { q: 'Is TradeCircle an investment advisor?', a: 'No. TradeCircle is a technology platform that connects traders with independently SEBI-registered investment advisors. We do not provide any investment advice or trading recommendations.' },
+                { q: 'How are advisors verified?', a: 'Every advisor on TradeCircle is manually verified for a valid SEBI registration number before being listed. We check their credentials against official SEBI records.' },
+                { q: 'How do I receive trading signals?', a: 'Once you subscribe to an advisor\'s group, you receive real-time trading signals directly on Telegram. Just link your Telegram username in your dashboard settings.' },
+                { q: 'Can I cancel my subscription?', a: 'Subscriptions are billed monthly and are non-refundable. However, you can choose not to renew at the end of your billing period.' },
+                { q: 'Is my payment secure?', a: 'Yes! All payments are processed securely through Razorpay, a trusted payment gateway used by millions of Indians.' },
+              ].map((faq, i) => (
+                <AccordionItem key={i} value={`faq-${i}`} className="tc-card px-6 border rounded-xl">
+                  <AccordionTrigger className="text-left font-semibold text-foreground hover:no-underline">
+                    {faq.q}
+                  </AccordionTrigger>
+                  <AccordionContent className="text-muted-foreground">
+                    {faq.a}
+                  </AccordionContent>
+                </AccordionItem>
+              ))}
+            </Accordion>
+          </div>
         </div>
       </section>
 
