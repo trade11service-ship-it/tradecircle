@@ -15,7 +15,7 @@ type Advisor = Tables<'advisors'>;
 export default function AdminDashboard() {
   const { user, profile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<'pending' | 'advisors' | 'users' | 'payments' | 'legal'>('pending');
+  const [tab, setTab] = useState<'pending' | 'advisors' | 'users' | 'payments' | 'legal' | 'requests'>('pending');
   const [pendingAdvisors, setPendingAdvisors] = useState<Advisor[]>([]);
   const [allAdvisors, setAllAdvisors] = useState<Advisor[]>([]);
   const [users, setUsers] = useState<any[]>([]);
@@ -31,6 +31,7 @@ export default function AdminDashboard() {
   const [advisorLegal, setAdvisorLegal] = useState<any[]>([]);
   const [userLegal, setUserLegal] = useState<any[]>([]);
   const [legalSearch, setLegalSearch] = useState('');
+  const [deletionRequests, setDeletionRequests] = useState<any[]>([]);
 
   useEffect(() => {
     if (authLoading) return;
