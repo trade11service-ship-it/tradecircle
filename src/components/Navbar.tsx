@@ -38,7 +38,7 @@ export function Navbar() {
   return (
     <nav className={`sticky top-0 z-50 h-16 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 transition-shadow ${scrolled ? 'shadow-md' : ''}`}>
       <div className="container mx-auto flex h-full items-center justify-between px-4">
-        <Link to="/" className="text-xl font-extrabold text-secondary">TradeCircle</Link>
+        <Link to="/" className="text-xl font-extrabold text-foreground">Trade<span className="text-primary">Circle</span></Link>
 
         {/* Desktop nav */}
         <div className="hidden items-center gap-6 md:flex">

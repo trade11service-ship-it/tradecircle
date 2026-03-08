@@ -459,7 +459,7 @@ export default function Landing() {
       <section className="bg-background px-5 py-12 md:py-16">
         <div className="container mx-auto max-w-2xl">
           <div className="text-center">
-            <span className="text-[11px] font-bold text-primary uppercase tracking-[3px]">WHY TRADECIRCLE</span>
+            <span className="text-[11px] font-bold text-primary uppercase tracking-[3px]">WHY TRADE<span className="text-primary">CIRCLE</span></span>
             <h2 className="mt-1.5 text-[28px] font-extrabold leading-[1.2] tracking-tight text-foreground">
               Built <span className="underline decoration-primary decoration-[3px] underline-offset-4">Different</span>.<br />For Indian Traders.
             </h2>

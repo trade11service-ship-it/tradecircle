@@ -115,7 +115,7 @@ export default function Register() {
         <div className="w-full max-w-md tc-card-static p-8">
           <div className="mb-8 text-center">
             <h1 className="text-2xl font-extrabold text-foreground">Create Account</h1>
-            <p className="mt-2 text-sm text-muted-foreground">Join TradeCircle and start following top advisors</p>
+            <p className="mt-2 text-sm text-muted-foreground">Join <span className="font-bold text-foreground">Trade<span className="text-primary">Circle</span></span> and start following top advisors</p>
           </div>
 
           <form onSubmit={handleRegister} className="space-y-4">
