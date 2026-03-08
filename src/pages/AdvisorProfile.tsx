@@ -157,7 +157,7 @@ export default function AdvisorProfile() {
         </div>
       </section>
 
-  // Already replaced above - this block is now part of the new return
+  
 
       <div className="container mx-auto px-4 py-10">
         <div className="grid gap-8 lg:grid-cols-3">
