@@ -12,7 +12,7 @@ import type { Tables } from '@/integrations/supabase/types';
 import { SUBSCRIPTION_RISK_TEXT, getDeviceInfo, getIpAddress } from '@/lib/legalTexts';
 import { useFollow } from '@/hooks/useFollow';
 
-type Advisor = Tables<'advisors'>;
+type Advisor = Pick<Tables<'advisors'>, 'id' | 'full_name' | 'email' | 'phone' | 'bio' | 'sebi_reg_no' | 'strategy_type' | 'profile_photo_url' | 'status' | 'created_at' | 'user_id'>;
 type Group = Tables<'groups'>;
 type Signal = Tables<'signals'>;
 
@@ -73,7 +73,7 @@ export default function AdvisorProfile() {
   useEffect(() => { if (id) fetchData(); }, [id, user]);
 
   const fetchData = async () => {
-    const { data: adv } = await supabase.from('advisors').select('*').eq('id', id!).single();
+    const { data: adv } = await supabase.from('advisors').select('id, full_name, email, phone, bio, sebi_reg_no, strategy_type, profile_photo_url, status, created_at, user_id').eq('id', id!).single();
     setAdvisor(adv);
 
     const { data: grps } = await supabase.from('groups').select('*').eq('advisor_id', id!).eq('is_active', true);

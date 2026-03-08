@@ -89,7 +89,7 @@ export default function AdvisorRegister() {
     }
     setLoading(true);
     try {
-      if (form.phone) await supabase.from('profiles').update({ phone: form.phone, role: 'advisor' }).eq('id', user.id);
+      if (form.phone) await supabase.from('profiles').update({ phone: form.phone }).eq('id', user.id);
       const { data: advData, error: advError } = await supabase.from('advisors').insert({
         user_id: user.id, full_name: profile?.full_name || '', email: profile?.email || user.email || '',
         phone: form.phone || profile?.phone || '', sebi_reg_no: form.sebiRegNo, bio: form.bio,

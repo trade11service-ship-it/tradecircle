@@ -840,6 +840,15 @@ export type Database = {
         Args: { _advisor_id: string }
         Returns: number
       }
+      get_referral_link_by_code: {
+        Args: { _code: string }
+        Returns: {
+          advisor_id: string
+          group_id: string
+          is_active: boolean
+          referral_code: string
+        }[]
+      }
       increment_referral_clicks: { Args: { _code: string }; Returns: undefined }
       increment_referral_conversions: {
         Args: { _code: string; _revenue: number }
