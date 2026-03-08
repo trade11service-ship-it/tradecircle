@@ -28,7 +28,7 @@ export default function Landing() {
   const fetchAdvisors = async () => {
     const { data: advisorsData } = await supabase
       .from('advisors')
-      .select('*, groups(monthly_price)')
+      .select('id, full_name, email, phone, bio, sebi_reg_no, strategy_type, profile_photo_url, status, created_at, user_id, groups(monthly_price)')
       .eq('status', 'approved');
     if (advisorsData) {
       const withSubs = await Promise.all(advisorsData.map(async (a) => {
