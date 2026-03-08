@@ -16,33 +16,60 @@ const AuthContext = createContext<AuthContextType>({ user: null, profile: null, 
 
 export const useAuth = () => useContext(AuthContext);
 
+async function fetchProfile(userId: string): Promise<Profile | null> {
+  const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
+  return data;
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_, session) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
-        setProfile(data);
+    let mounted = true;
+
+    // 1. Set up listener FIRST (per Supabase docs)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!mounted) return;
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+
+      if (currentUser) {
+        // Use setTimeout to avoid blocking the auth state change callback
+        setTimeout(async () => {
+          if (!mounted) return;
+          const p = await fetchProfile(currentUser.id);
+          if (mounted) setProfile(p);
+        }, 0);
       } else {
         setProfile(null);
       }
-      setLoading(false);
-    });
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        const { data } = await supabase.from('profiles').select('*').eq('id', session.user.id).single();
-        setProfile(data);
+      // Only set loading false on auth state change after initial load
+      if (event !== 'INITIAL_SESSION') {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    // 2. Then check existing session
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!mounted) return;
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+
+      if (currentUser) {
+        const p = await fetchProfile(currentUser.id);
+        if (mounted) setProfile(p);
+      }
+
+      if (mounted) setLoading(false);
+    });
+
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signOut = async () => {

@@ -13,7 +13,7 @@ import { CheckCircle, FileText, User, Shield } from 'lucide-react';
 
 export default function AdvisorRegister() {
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { user, profile, loading: authLoading } = useAuth();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
@@ -22,6 +22,15 @@ export default function AdvisorRegister() {
   });
 
   const update = (key: string, value: string) => setForm({ ...form, [key]: value });
+
+  // Show loading while auth initializes
+  if (authLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
 
   // Must be logged in
   if (!user) {
