@@ -28,10 +28,10 @@ export function Footer() {
           <div>
             <p className="mb-3 font-semibold">Legal</p>
             <ul className="space-y-2 text-sm opacity-80">
-              <li><span className="cursor-default">Privacy Policy</span></li>
-              <li><span className="cursor-default">Terms of Service</span></li>
-              <li><span className="cursor-default">Refund Policy</span></li>
-              <li><span className="cursor-default">Disclaimer</span></li>
+              <li><Link to="/privacy" className="hover:opacity-100 transition-opacity">Privacy Policy</Link></li>
+              <li><Link to="/terms" className="hover:opacity-100 transition-opacity">Terms of Service</Link></li>
+              <li><Link to="/refund" className="hover:opacity-100 transition-opacity">Refund Policy</Link></li>
+              <li><Link to="/disclaimer" className="hover:opacity-100 transition-opacity">Disclaimer</Link></li>
             </ul>
           </div>
 
