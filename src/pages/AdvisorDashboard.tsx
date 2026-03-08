@@ -53,7 +53,8 @@ export default function AdvisorDashboard() {
   }, [advisor]);
 
   const fetchData = async () => {
-    const { data: adv } = await supabase.from('advisors').select('*').eq('user_id', user!.id).single();
+    const { data: adv, error: advError } = await supabase.from('advisors').select('*').eq('user_id', user!.id).maybeSingle();
+    if (advError) console.error('Advisor fetch error:', advError);
     setAdvisor(adv);
     if (adv) {
       const [grpsRes, subsRes, sigsRes] = await Promise.all([
