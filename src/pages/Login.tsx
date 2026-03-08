@@ -54,7 +54,7 @@ export default function Login() {
         <div className="w-full max-w-md tc-card-static p-8">
           <div className="mb-8 text-center">
             <h1 className="text-2xl font-extrabold text-foreground">Welcome Back</h1>
-            <p className="mt-2 text-sm text-muted-foreground">Sign in to your TradeCircle account</p>
+            <p className="mt-2 text-sm text-muted-foreground">Sign in to your <span className="font-bold text-foreground">Trade<span className="text-primary">Circle</span></span> account</p>
           </div>
 
           <Button
