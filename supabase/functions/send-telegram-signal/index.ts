@@ -37,6 +37,13 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Signal not found' }), { status: 404, headers: corsHeaders });
     }
 
+    // Only send Telegram for signal posts, not message posts
+    if (signal.post_type === 'message') {
+      return new Response(JSON.stringify({ sent: 0, message: 'Message posts do not trigger Telegram alerts' }), {
+        status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      });
+    }
+
     // Get all active telegram settings with chat_id for this group
     const { data: telegramUsers } = await supabase
       .from('telegram_settings')
