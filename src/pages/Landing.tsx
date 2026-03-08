@@ -5,7 +5,7 @@ import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Star, Search, Shield, ShieldCheck, FileCheck, Lock, CreditCard, Bell, ArrowRight, BarChart2, Send, Eye, Users, IndianRupee } from 'lucide-react';
+import { Star, Search, Shield, ShieldCheck, FileCheck, Lock, CreditCard, Bell, ArrowRight, BarChart2, Eye, Users, IndianRupee, RefreshCw } from 'lucide-react';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { useAuth } from '@/lib/auth';
 import type { Tables } from '@/integrations/supabase/types';
@@ -456,56 +456,43 @@ export default function Landing() {
       </section>
 
       {/* Why TradeCircle */}
-      <section className="bg-secondary px-5 py-13 md:py-16">
+      <section className="bg-background px-5 py-12 md:py-16">
         <div className="container mx-auto max-w-2xl">
-          {/* Header */}
           <div className="text-center">
-            <span className="inline-block rounded-full border border-white/30 bg-white/15 px-3.5 py-1 text-[11px] font-bold text-white tracking-[2px]">WHY CHOOSE US</span>
-            <h1 className="mt-2.5 text-[30px] font-extrabold leading-[1.2] tracking-tight text-white">
-              Finally. An Advisor<br />Platform That's<br />On <span className="text-[#69F0AE]">YOUR</span> Side.
-            </h1>
-            <p className="mx-auto mt-2.5 max-w-xs text-sm leading-relaxed text-white/70">
-              No more guessing. No more scams.<br />Just verified experts, real signals,<br />and full transparency.
-            </p>
+            <span className="text-[11px] font-bold text-primary uppercase tracking-[3px]">WHY TRADECIRCLE</span>
+            <h2 className="mt-1.5 text-[28px] font-extrabold leading-[1.2] tracking-tight text-foreground">
+              Built <span className="underline decoration-primary decoration-[3px] underline-offset-4">Different</span>.<br />For Indian Traders.
+            </h2>
+            <p className="mt-2 text-sm text-muted-foreground">Everything your Telegram channel never gave you.</p>
           </div>
 
-          {/* Features */}
-          <div className="mt-8 space-y-4">
+          <div className="mt-8 grid grid-cols-2 gap-4">
             {[
-              { icon: Shield, bg: 'bg-[hsl(123,56%,17%)]', title: 'Every Advisor is SEBI Verified', desc: "We manually check each advisor's license before they go live. No fake gurus. No unverified strangers.", tag: '✓ 0 unverified advisors listed' },
-              { icon: BarChart2, bg: 'bg-[hsl(214,70%,40%)]', title: 'See Their Full Track Record', desc: 'Every past signal is recorded permanently. WIN or LOSS — nothing gets hidden or deleted.', tag: '📊 Full history always public' },
-              { icon: Send, bg: 'bg-[hsl(280,65%,35%)]', title: 'Signals Land on Your Telegram', desc: 'The moment your advisor posts a trade — it hits your Telegram instantly. Never miss a signal.', tag: '🔔 Average delivery under 3 sec' },
-              { icon: Eye, bg: 'bg-[hsl(24,100%,35%)]', title: "We Don't Give Advice", desc: 'We connect you with licensed professionals who do. TradeCircle is your discovery tool, not your advisor.', tag: '⚖️ Zero SEBI liability on platform' },
-              { icon: Users, bg: 'bg-[hsl(170,60%,22%)]', title: 'Cancel Anytime. No Lock-in.', desc: 'Monthly subscriptions only. If your advisor stops performing — cancel in one click. Zero questions.', tag: '🔓 No annual contracts ever' },
-              { icon: IndianRupee, bg: 'bg-[hsl(335,70%,30%)]', title: 'You Know Exactly What You Pay', desc: 'Advisors set their price. You see it upfront. No hidden fees, no surprise charges from our side.', tag: '₹ Transparent pricing always' },
+              { icon: Shield, iconBg: 'bg-light-green', iconColor: 'text-primary', title: 'SEBI Verified Only', desc: 'Every advisor manually checked before listing.' },
+              { icon: BarChart2, iconBg: 'bg-light-blue', iconColor: 'text-secondary', title: 'Full Track Record', desc: 'WIN/LOSS history public. Nothing hidden ever.' },
+              { icon: Bell, iconBg: 'bg-[hsl(270,50%,95%)]', iconColor: 'text-[hsl(270,50%,40%)]', title: 'Telegram Alerts', desc: 'Signals delivered to your Telegram instantly.' },
+              { icon: Eye, iconBg: 'bg-[hsl(30,100%,95%)]', iconColor: 'text-[hsl(24,100%,35%)]', title: "We Don't Advise", desc: 'We connect. Advisors advise. Clear separation.' },
+              { icon: RefreshCw, iconBg: 'bg-[hsl(170,40%,93%)]', iconColor: 'text-[hsl(170,60%,22%)]', title: 'Cancel Anytime', desc: 'Monthly only. No lock-in. No questions.' },
+              { icon: IndianRupee, iconBg: 'bg-[hsl(340,60%,95%)]', iconColor: 'text-[hsl(335,70%,30%)]', title: 'No Hidden Fees', desc: 'Upfront pricing. What you see is what you pay.' },
             ].map((f, i) => (
-              <div key={i} className="flex items-start gap-4 rounded-[14px] border border-white/10 bg-white/[0.07] p-4 transition-all duration-200 hover:bg-white/[0.12] hover:border-white/25">
-                <div className={`flex h-[52px] w-[52px] min-w-[52px] items-center justify-center rounded-xl ${f.bg}`}>
-                  <f.icon className="h-6 w-6 text-white" />
+              <div key={i} className="rounded-[14px] border-[1.5px] border-[hsl(220,13%,95%)] bg-muted p-4 transition-all duration-150 hover:border-primary hover:bg-light-green">
+                <div className={`flex h-9 w-9 items-center justify-center rounded-[10px] ${f.iconBg} mb-2.5`}>
+                  <f.icon className={`h-[18px] w-[18px] ${f.iconColor}`} />
                 </div>
-                <div>
-                  <h3 className="text-[15px] font-bold text-white">{f.title}</h3>
-                  <p className="mt-1 text-[13px] leading-relaxed text-white/65">{f.desc}</p>
-                  <span className="mt-1.5 inline-block rounded-md bg-white/10 px-2 py-0.5 text-[10px] text-white/80">{f.tag}</span>
-                </div>
+                <h3 className="text-[13px] font-bold leading-snug text-foreground">{f.title}</h3>
+                <p className="mt-1 text-[12px] leading-relaxed text-muted-foreground">{f.desc}</p>
               </div>
             ))}
           </div>
 
-          {/* Bottom CTA */}
-          <div className="mt-8 rounded-2xl border-[1.5px] border-white/25 bg-white/10 p-6 text-center">
-            <h3 className="text-xl font-extrabold leading-tight text-white">
-              Still using a random<br />Telegram channel?
-            </h3>
-            <p className="mt-2 text-[13px] text-white/70">
-              Over 10 crore Indian traders are exposed to unverified advice daily. You don't have to be one of them.
-            </p>
+          {/* Bottom strip */}
+          <div className="mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 rounded-xl border-[1.5px] border-border bg-muted px-4 py-3.5">
+            <span className="text-sm font-semibold text-foreground">Ready to find your advisor?</span>
             <a href="#advisors">
-              <button className="mt-5 w-full h-[50px] rounded-[10px] bg-[#69F0AE] text-base font-bold text-foreground hover:bg-[#A5D6A7] hover:-translate-y-px transition-all tc-btn-click">
-                Find Your Verified Advisor →
-              </button>
+              <Button className="w-full sm:w-auto rounded-lg bg-primary px-4 py-2 text-[13px] font-semibold tc-btn-click">
+                Browse <ArrowRight className="ml-1 h-3.5 w-3.5" />
+              </Button>
             </a>
-            <p className="mt-2 text-[11px] text-white/50">Free to browse. No account needed.</p>
           </div>
         </div>
       </section>
