@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
-import { SignalCard } from '@/components/SignalCard';
+import { GroupFeed } from '@/components/GroupFeed';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
@@ -34,7 +34,6 @@ const BOT_USERNAME = 'tradecircle_alerts_bot';
 export default function TraderDashboard() {
   const { user, profile } = useAuth();
   const [subscriptions, setSubscriptions] = useState<(Subscription & { group: GroupInfo })[]>([]);
-  const [signals, setSignals] = useState<(Signal & { groupName: string; advisorName: string })[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'signals' | 'telegram'>('signals');
   const [telegramSettings, setTelegramSettings] = useState<Record<string, TelegramSetting>>({});
@@ -76,16 +75,6 @@ export default function TraderDashboard() {
       }
     }));
     setSubscriptions(subList);
-
-    const groupIds = [...new Set(subList.map((s: any) => s.group_id))];
-    if (groupIds.length > 0) {
-      const { data: sigs } = await supabase.from('signals').select('*').in('group_id', groupIds).order('created_at', { ascending: false }).limit(50);
-      const enriched = (sigs || []).map(sig => {
-        const sub = subList.find((s: any) => s.group_id === sig.group_id);
-        return { ...sig, groupName: sub?.group?.name || '', advisorName: sub?.group?.advisor_name || '' };
-      });
-      setSignals(enriched);
-    }
 
     // Telegram settings
     const { data: tSettings } = await supabase.from('telegram_settings').select('*').eq('user_id', user!.id);
@@ -208,20 +197,7 @@ export default function TraderDashboard() {
     toast.success('Telegram disconnected. You can reconnect anytime.');
   };
 
-  useEffect(() => {
-    if (!user) return;
-    const channel = supabase.channel('signals-realtime').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'signals' }, (payload) => {
-      const newSignal = payload.new as Signal;
-      const sub = subscriptions.find(s => s.group_id === newSignal.group_id);
-      if (sub) {
-        setSignals(prev => [{ ...newSignal, groupName: sub.group.name, advisorName: sub.group.advisor_name }, ...prev]);
-        toast.info(`New signal: ${newSignal.instrument} ${newSignal.signal_type}`);
-      }
-    }).subscribe();
-    return () => { supabase.removeChannel(channel); };
-  }, [user, subscriptions]);
-
-  const filteredSignals = selectedGroup ? signals.filter(s => s.group_id === selectedGroup) : signals;
+  const currentSub = selectedGroup ? subscriptions.find(s => s.group_id === selectedGroup) : subscriptions[0];
 
   if (loading) return (
     <div className="min-h-screen bg-off-white">
@@ -437,18 +413,20 @@ export default function TraderDashboard() {
               </div>
             </div>
 
-            {/* Signal feed */}
+            {/* Group Feed */}
             <div className="lg:col-span-3">
-              <div className="space-y-3">
-                {filteredSignals.length === 0 ? (
-                  <div className="tc-card-static p-8 md:p-12 text-center">
-                    <p className="text-sm text-muted-foreground">No signals yet. Subscribe to an advisor to see signals here.</p>
-                    <Link to="/"><Button className="mt-4 tc-btn-click min-h-[44px]">Browse Advisors</Button></Link>
-                  </div>
-                ) : (
-                  filteredSignals.map(s => <SignalCard key={s.id} signal={s} groupName={s.groupName} advisorName={s.advisorName} />)
-                )}
-              </div>
+              {currentSub ? (
+                <GroupFeed
+                  groupId={currentSub.group_id}
+                  advisorName={currentSub.group.advisor_name}
+                  advisorPhoto={currentSub.group.advisor_photo}
+                />
+              ) : (
+                <div className="tc-card-static p-8 md:p-12 text-center">
+                  <p className="text-sm text-muted-foreground">No active subscriptions. Subscribe to an advisor to see their feed.</p>
+                  <Link to="/"><Button className="mt-4 tc-btn-click min-h-[44px]">Browse Advisors</Button></Link>
+                </div>
+              )}
             </div>
           </div>
         )}
