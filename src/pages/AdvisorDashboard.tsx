@@ -152,6 +152,7 @@ export default function AdvisorDashboard() {
       stop_loss: parseFloat(signalForm.stopLoss),
       timeframe: signalForm.timeframe,
       notes: signalForm.notes,
+      is_public: signalForm.isPublic,
     }).select().single();
 
     if (error) { toast.error(error.message); setPosting(false); return; }
