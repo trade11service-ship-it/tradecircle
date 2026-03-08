@@ -11,7 +11,7 @@ import { useAuth } from '@/lib/auth';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Advisor = Tables<'advisors'>;
-type AdvisorWithStats = Advisor & { groups: { monthly_price: number }[]; subCount: number; signalStats: { total_signals: number; win_count: number; loss_count: number; resolved_count: number } };
+type AdvisorWithStats = Pick<Advisor, 'id' | 'full_name' | 'email' | 'phone' | 'bio' | 'sebi_reg_no' | 'strategy_type' | 'profile_photo_url' | 'status' | 'created_at' | 'user_id'> & { groups: { monthly_price: number }[]; subCount: number; signalStats: { total_signals: number; win_count: number; loss_count: number; resolved_count: number } };
 
 export default function Landing() {
   const { user } = useAuth();
