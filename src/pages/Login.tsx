@@ -13,11 +13,21 @@ import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 
 export default function Login() {
   const navigate = useNavigate();
+  const { user, profile, loading: authLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+
+  // Auto-redirect if already logged in (e.g. after Google OAuth redirect)
+  useEffect(() => {
+    if (!authLoading && user && profile) {
+      if (profile.role === 'advisor') navigate('/advisor/dashboard', { replace: true });
+      else if (profile.role === 'admin') navigate('/admin', { replace: true });
+      else navigate('/dashboard', { replace: true });
+    }
+  }, [user, profile, authLoading, navigate]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
