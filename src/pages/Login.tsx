@@ -20,17 +20,18 @@ export default function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
       toast.error(error.message);
-    } else {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
-        if (profile?.role === 'advisor') navigate('/advisor/dashboard');
-        else if (profile?.role === 'admin') navigate('/admin');
-        else navigate('/dashboard');
-      }
+    } else if (data.user && !data.user.email_confirmed_at) {
+      // Email not verified — sign them out immediately
+      await supabase.auth.signOut();
+      toast.error('Please verify your email before signing in. Check your inbox for the verification link.');
+    } else if (data.user) {
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
+      if (profile?.role === 'advisor') navigate('/advisor/dashboard');
+      else if (profile?.role === 'admin') navigate('/admin');
+      else navigate('/dashboard');
     }
     setLoading(false);
   };
