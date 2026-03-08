@@ -42,7 +42,7 @@ export default function AdvisorDashboard() {
       const { data: grps } = await supabase.from('groups').select('*').eq('advisor_id', adv.id);
       setGroups(grps || []);
 
-      const { data: subs } = await supabase.from('subscriptions').select('*, profiles!inner(full_name, email), groups!inner(name)').eq('advisor_id', adv.id);
+      const { data: subs } = await supabase.from('subscriptions').select('*, profiles!inner(full_name, email), groups!inner(name)').eq('advisor_id', adv.id).order('created_at', { ascending: false });
       setSubscribers(subs || []);
     }
     setLoading(false);
