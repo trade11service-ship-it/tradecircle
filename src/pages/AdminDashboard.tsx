@@ -1,22 +1,82 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Navbar } from '@/components/Navbar';
-
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
-import { ShieldAlert, Users, IndianRupee, Clock, Download, Search, Gift } from 'lucide-react';
 import { AdminReferralTab } from '@/components/AdminReferralTab';
 import type { Tables } from '@/integrations/supabase/types';
+import {
+  LayoutDashboard, Clock, UserCheck, Users, CreditCard, Gift, FileText, Mail,
+  ShieldAlert, IndianRupee, Search, Download, CheckCircle, UserPlus, BarChart3,
+  ChevronRight, Lock, Shield, Eye,
+} from 'lucide-react';
 
 type Advisor = Tables<'advisors'>;
+
+type TabKey = 'dashboard' | 'pending' | 'advisors' | 'users' | 'payments' | 'referrals' | 'legal' | 'requests';
+
+const NAV_SECTIONS = [
+  {
+    label: 'OVERVIEW',
+    items: [{ key: 'dashboard' as TabKey, label: 'Dashboard', icon: LayoutDashboard }],
+  },
+  {
+    label: 'MANAGEMENT',
+    items: [
+      { key: 'pending' as TabKey, label: 'Pending', icon: Clock, hasBadge: true },
+      { key: 'advisors' as TabKey, label: 'All Advisors', icon: UserCheck },
+      { key: 'users' as TabKey, label: 'All Users', icon: Users },
+      { key: 'payments' as TabKey, label: 'Payments', icon: CreditCard },
+      { key: 'referrals' as TabKey, label: 'Referrals', icon: Gift },
+    ],
+  },
+  {
+    label: 'COMPLIANCE',
+    items: [
+      { key: 'legal' as TabKey, label: 'Legal Records', icon: FileText },
+      { key: 'requests' as TabKey, label: 'Contact Requests', icon: Mail, hasBadge: true },
+    ],
+  },
+];
+
+const PAGE_TITLES: Record<TabKey, string> = {
+  dashboard: 'Dashboard Overview',
+  pending: 'Pending Approvals',
+  advisors: 'All Advisors',
+  users: 'All Users',
+  payments: 'Payments',
+  referrals: 'Referral Program',
+  legal: 'Legal Records',
+  requests: 'Deletion & Removal Requests',
+};
+
+function formatDate(d: string | null) {
+  if (!d) return '-';
+  return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function AdminAvatar({ name, size = 44 }: { name: string; size?: number }) {
+  return (
+    <div
+      className="flex items-center justify-center rounded-full text-primary-foreground font-extrabold shrink-0"
+      style={{
+        width: size,
+        height: size,
+        background: 'linear-gradient(135deg, hsl(var(--primary)), hsl(var(--secondary)))',
+        fontSize: size * 0.4,
+      }}
+    >
+      {(name || '?')[0].toUpperCase()}
+    </div>
+  );
+}
 
 export default function AdminDashboard() {
   const { user, profile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<'pending' | 'advisors' | 'users' | 'payments' | 'legal' | 'requests' | 'referrals'>('pending');
+  const [tab, setTab] = useState<TabKey>('dashboard');
   const [pendingAdvisors, setPendingAdvisors] = useState<Advisor[]>([]);
   const [allAdvisors, setAllAdvisors] = useState<Advisor[]>([]);
   const [users, setUsers] = useState<any[]>([]);
@@ -26,8 +86,6 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [isVerifiedAdmin, setIsVerifiedAdmin] = useState(false);
   const [verifying, setVerifying] = useState(true);
-
-  // Legal records state
   const [legalTab, setLegalTab] = useState<'advisor' | 'user'>('advisor');
   const [advisorLegal, setAdvisorLegal] = useState<any[]>([]);
   const [userLegal, setUserLegal] = useState<any[]>([]);
@@ -54,9 +112,11 @@ export default function AdminDashboard() {
       supabase.from('profiles').select('*').order('created_at', { ascending: false }),
       supabase.from('subscriptions').select('*, profiles!inner(full_name), advisors!inner(full_name), groups!inner(name)').order('created_at', { ascending: false }),
     ]);
-    setPendingAdvisors(pending.data || []); setAllAdvisors(all.data || []); setUsers(usersData.data || []); setPayments(paymentsData.data || []);
+    setPendingAdvisors(pending.data || []);
+    setAllAdvisors(all.data || []);
+    setUsers(usersData.data || []);
+    setPayments(paymentsData.data || []);
 
-    // Fetch legal records
     const [advLegal, usrLegal] = await Promise.all([
       supabase.from('advisor_legal_acceptances').select('*').order('form_submitted_at', { ascending: false }),
       supabase.from('user_legal_acceptances').select('*').order('accepted_at', { ascending: false }),
@@ -66,7 +126,6 @@ export default function AdminDashboard() {
 
     const { data: delReqs } = await supabase.from('deletion_requests').select('*').order('created_at', { ascending: false });
     setDeletionRequests(delReqs || []);
-
     setLoading(false);
   };
 
@@ -76,14 +135,17 @@ export default function AdminDashboard() {
       supabase.from('profiles').update({ role: 'advisor' }).eq('id', advisor.user_id),
     ]);
     if (a.error || p.error) { toast.error('Failed to approve advisor'); return; }
-    toast.success('Advisor approved successfully'); fetchData();
+    toast.success('Advisor approved successfully');
+    fetchData();
   };
 
   const rejectAdvisor = async (id: string) => {
     if (!rejectReason.trim()) { toast.error('Please provide a rejection reason'); return; }
     const { error } = await supabase.from('advisors').update({ status: 'rejected', rejection_reason: rejectReason }).eq('id', id);
     if (error) { toast.error('Failed to reject'); return; }
-    toast.success('Advisor rejected'); setRejectReason(''); fetchData();
+    toast.success('Advisor rejected');
+    setRejectReason('');
+    fetchData();
   };
 
   const suspendAdvisor = async (advisor: Advisor) => {
@@ -91,7 +153,8 @@ export default function AdminDashboard() {
       supabase.from('advisors').update({ status: 'suspended' }).eq('id', advisor.id),
       supabase.from('profiles').update({ role: 'trader' }).eq('id', advisor.user_id),
     ]);
-    toast.success('Advisor suspended'); fetchData();
+    toast.success('Advisor suspended');
+    fetchData();
   };
 
   const exportCsv = (data: any[], filename: string) => {
@@ -105,31 +168,28 @@ export default function AdminDashboard() {
     URL.revokeObjectURL(url);
   };
 
-  if (authLoading || verifying) return <div className="flex min-h-screen items-center justify-center bg-off-white"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>;
+  // Loading / Auth states
+  if (authLoading || verifying) return (
+    <div className="flex min-h-screen items-center justify-center bg-muted">
+      <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+    </div>
+  );
 
   if (!isVerifiedAdmin) return (
-    <div className="min-h-screen flex flex-col bg-off-white"><Navbar />
-      <div className="flex-1 flex items-center justify-center px-4">
-        <div className="tc-card-static p-8 text-center max-w-md border-destructive/30">
-          <ShieldAlert className="mx-auto h-16 w-16 text-destructive" />
-          <h2 className="mt-4 text-xl font-bold text-destructive">Access Denied</h2>
-          <p className="mt-2 text-sm text-muted-foreground">You do not have permission to access this page.</p>
-          <Button className="mt-6 tc-btn-click" variant="outline" onClick={() => navigate('/')}>Go Home</Button>
-        </div>
+    <div className="min-h-screen flex items-center justify-center bg-muted px-4">
+      <div className="bg-card rounded-2xl border border-border p-8 text-center max-w-md shadow-lg">
+        <ShieldAlert className="mx-auto h-16 w-16 text-destructive" />
+        <h2 className="mt-4 text-xl font-bold text-destructive">Access Denied</h2>
+        <p className="mt-2 text-sm text-muted-foreground">You do not have permission to access this page.</p>
+        <Button className="mt-6" variant="outline" onClick={() => navigate('/')}>Go Home</Button>
       </div>
     </div>
   );
 
   const totalRevenue = payments.reduce((sum, p) => sum + (p.amount_paid || 0), 0);
-  const tabs = [
-    { key: 'pending' as const, label: `Pending (${pendingAdvisors.length})` },
-    { key: 'advisors' as const, label: 'All Advisors' },
-    { key: 'users' as const, label: 'All Users' },
-    { key: 'payments' as const, label: 'Payments' },
-    { key: 'legal' as const, label: 'Legal Records' },
-    { key: 'requests' as const, label: `Requests (${deletionRequests.filter(r => r.status === 'pending').length})` },
-    { key: 'referrals' as const, label: 'Referrals' },
-  ];
+  const approvedCount = allAdvisors.filter(a => a.status === 'approved').length;
+  const pendingRequestCount = deletionRequests.filter(r => r.status === 'pending').length;
+  const activeSubCount = payments.filter(p => p.status === 'active').length;
 
   const filteredAdvisorLegal = advisorLegal.filter((r: any) =>
     !legalSearch || r.full_name?.toLowerCase().includes(legalSearch.toLowerCase()) || r.sebi_reg_no?.toLowerCase().includes(legalSearch.toLowerCase())
@@ -138,49 +198,320 @@ export default function AdminDashboard() {
     !legalSearch || r.full_name?.toLowerCase().includes(legalSearch.toLowerCase()) || r.email?.toLowerCase().includes(legalSearch.toLowerCase())
   );
 
+  const today = new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+
+  // Build recent activity from real data
+  const recentActivity: { icon: typeof Users; iconBg: string; iconColor: string; text: string; detail: string; time: string }[] = [];
+  users.slice(0, 2).forEach(u => {
+    recentActivity.push({
+      icon: Users, iconBg: 'bg-[hsl(213,100%,94%)]', iconColor: 'text-secondary',
+      text: 'New user registered', detail: u.full_name || u.email || 'Unknown', time: formatDate(u.created_at),
+    });
+  });
+  payments.slice(0, 2).forEach(p => {
+    recentActivity.push({
+      icon: CreditCard, iconBg: 'bg-[hsl(var(--light-green))]', iconColor: 'text-primary',
+      text: 'New subscription', detail: `₹${(p.amount_paid || 0).toLocaleString('en-IN')}`, time: formatDate(p.created_at),
+    });
+  });
+  pendingAdvisors.slice(0, 1).forEach(a => {
+    recentActivity.push({
+      icon: UserPlus, iconBg: 'bg-[hsl(var(--light-green))]', iconColor: 'text-primary',
+      text: 'New advisor application', detail: a.full_name, time: formatDate(a.created_at),
+    });
+  });
+
+  const quickActions = [
+    { icon: UserPlus, label: 'Add Advisor', onClick: () => setTab('pending') },
+    { icon: Mail, label: 'View Contacts', onClick: () => setTab('requests') },
+    { icon: FileText, label: 'Legal Records', onClick: () => setTab('legal') },
+    { icon: BarChart3, label: 'Revenue Report', onClick: () => setTab('payments') },
+  ];
+
+  // Status pill helper
+  const statusPill = (status: string) => {
+    if (status === 'approved' || status === 'active') return 'bg-[hsl(var(--light-green))] text-primary';
+    if (status === 'pending') return 'bg-muted text-muted-foreground';
+    return 'bg-muted text-muted-foreground';
+  };
+
   return (
-    <div className="min-h-screen flex flex-col bg-off-white">
-      <Navbar />
-      <div className="container mx-auto px-4 py-8 flex-1">
-        <div className="mb-6 flex items-center gap-3">
-          <ShieldAlert className="h-6 w-6 text-secondary" />
-          <h1 className="tc-page-title text-3xl">Admin Dashboard</h1>
-          <span className="tc-badge-admin">ADMIN</span>
+    <div className="flex min-h-screen" style={{ background: '#F0F2F5' }}>
+      {/* ===== SIDEBAR ===== */}
+      <aside className="w-[240px] min-w-[240px] bg-foreground sticky top-0 h-screen flex flex-col overflow-y-auto">
+        {/* Logo */}
+        <div className="px-5 py-6 border-b border-white/[0.08]">
+          <div className="text-[20px] font-extrabold text-white">
+            Trade<span style={{ color: '#69F0AE' }}>Circle</span>
+          </div>
+          <div className="text-[10px] text-white/40 tracking-[3px] uppercase mt-1">Admin Console</div>
         </div>
 
-        {/* Stats */}
-        <div className="mb-8 grid grid-cols-2 gap-4 sm:grid-cols-4">
-          <div className="tc-card-static p-5"><p className="tc-small">Pending Approvals</p><p className="text-2xl font-bold text-[hsl(var(--warning))]">{pendingAdvisors.length}</p></div>
-          <div className="tc-card-static p-5"><p className="tc-small">Approved Advisors</p><p className="text-2xl font-bold text-primary">{allAdvisors.filter(a => a.status === 'approved').length}</p></div>
-          <div className="tc-card-static p-5"><p className="tc-small">Total Users</p><p className="text-2xl font-bold text-secondary">{users.length}</p></div>
-          <div className="tc-card-static p-5"><p className="tc-small">Total Revenue</p><p className="text-2xl font-bold tc-amount">₹{totalRevenue.toLocaleString('en-IN')}</p></div>
-        </div>
-
-        {/* Tabs */}
-        <div className="mb-6 flex gap-2 overflow-x-auto">
-          {tabs.map(t => (
-            <Button key={t.key} variant={tab === t.key ? 'default' : 'outline'} size="sm" className="tc-btn-click min-h-[44px]" onClick={() => setTab(t.key)}>{t.label}</Button>
+        {/* Nav */}
+        <nav className="flex-1 px-3 py-4">
+          {NAV_SECTIONS.map(section => (
+            <div key={section.label} className="mb-4">
+              <div className="text-[10px] text-white/30 tracking-[2px] uppercase px-2 mb-1.5">{section.label}</div>
+              {section.items.map(item => {
+                const isActive = tab === item.key;
+                const badgeCount = item.key === 'pending' ? pendingAdvisors.length :
+                  item.key === 'requests' ? pendingRequestCount : 0;
+                return (
+                  <button
+                    key={item.key}
+                    onClick={() => setTab(item.key)}
+                    className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] text-[13px] font-medium mb-0.5 transition-all duration-150 cursor-pointer ${
+                      isActive
+                        ? 'bg-white/10 text-white font-semibold border-l-[3px]'
+                        : 'text-white/60 hover:bg-white/[0.06] hover:text-white/90 border-l-[3px] border-transparent'
+                    }`}
+                    style={isActive ? { borderLeftColor: '#69F0AE' } : {}}
+                  >
+                    <item.icon size={18} />
+                    <span className="flex-1 text-left">{item.label}</span>
+                    {item.hasBadge && badgeCount > 0 && (
+                      <span className="w-5 h-5 rounded-full bg-destructive text-white text-[10px] font-bold flex items-center justify-center">
+                        {badgeCount}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
           ))}
+        </nav>
+
+        {/* Admin profile */}
+        <div className="px-3 py-4 border-t border-white/[0.08]">
+          <div className="flex items-center gap-3">
+            <AdminAvatar name={profile?.full_name || 'A'} size={36} />
+            <div className="min-w-0">
+              <div className="text-[13px] font-bold text-white truncate">{profile?.full_name || 'Admin'}</div>
+              <div className="text-[11px] text-white/40">Super Admin</div>
+            </div>
+          </div>
+        </div>
+      </aside>
+
+      {/* ===== MAIN CONTENT ===== */}
+      <main className="flex-1 overflow-y-auto p-7">
+        {/* Header */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-[24px] font-extrabold text-foreground">{PAGE_TITLES[tab]}</h1>
+            <p className="text-[13px] text-muted-foreground mt-0.5">{today}</p>
+          </div>
+          <div className="flex items-center gap-1.5 bg-[hsl(var(--light-green))] border border-primary rounded-full px-4 py-1.5">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+            </span>
+            <span className="text-[13px] text-primary font-semibold">Platform Live</span>
+          </div>
         </div>
 
-        {loading && <div className="py-8 text-center text-muted-foreground">Loading data...</div>}
+        {loading && <div className="py-20 text-center text-muted-foreground">Loading data...</div>}
 
+        {/* ===== DASHBOARD TAB ===== */}
+        {tab === 'dashboard' && !loading && (
+          <>
+            {/* Stats Grid */}
+            <div className="grid grid-cols-4 gap-4 mb-6">
+              {/* Pending */}
+              <div className="bg-card rounded-2xl p-5 border border-border border-l-4 border-l-[hsl(var(--warning))] shadow-sm cursor-pointer" onClick={() => setTab('pending')}>
+                <div className="flex items-center justify-between">
+                  <span className="text-[12px] text-muted-foreground font-semibold">Pending Approvals</span>
+                  <Clock size={18} className="text-[hsl(var(--warning))]" />
+                </div>
+                <p className="text-[40px] font-black text-foreground tracking-tight mt-2 leading-none">{pendingAdvisors.length}</p>
+                <p className="text-[11px] text-[hsl(var(--warning))] mt-2 flex items-center gap-1">
+                  Needs review today <ChevronRight size={12} />
+                </p>
+              </div>
+
+              {/* Approved */}
+              <div className="bg-card rounded-2xl p-5 border border-border border-l-4 border-l-primary shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-[12px] text-muted-foreground font-semibold">Approved Advisors</span>
+                  <UserCheck size={18} className="text-primary" />
+                </div>
+                <p className="text-[40px] font-black text-foreground tracking-tight mt-2 leading-none">{approvedCount}</p>
+                <p className="text-[11px] text-primary mt-2">Active on platform</p>
+              </div>
+
+              {/* Users */}
+              <div className="bg-card rounded-2xl p-5 border border-border border-l-4 border-l-secondary shadow-sm">
+                <div className="flex items-center justify-between">
+                  <span className="text-[12px] text-muted-foreground font-semibold">Total Users</span>
+                  <Users size={18} className="text-secondary" />
+                </div>
+                <p className="text-[40px] font-black text-foreground tracking-tight mt-2 leading-none">{users.length}</p>
+                <p className="text-[11px] text-secondary mt-2">Registered traders</p>
+              </div>
+
+              {/* Revenue */}
+              <div className="rounded-2xl p-5 shadow-lg relative overflow-hidden text-white" style={{ background: 'linear-gradient(135deg, hsl(214,89%,34%), hsl(214,72%,42%))' }}>
+                <span className="absolute -right-2 -bottom-4 text-[100px] font-black opacity-[0.06] leading-none select-none">₹</span>
+                <div className="flex items-center justify-between relative z-10">
+                  <span className="text-[12px] text-white/70 font-semibold">Total Revenue</span>
+                  <IndianRupee size={18} className="text-white" />
+                </div>
+                <p className="text-[36px] font-black tracking-tight mt-2 leading-none relative z-10">₹{totalRevenue.toLocaleString('en-IN')}</p>
+                <p className="text-[11px] text-white/60 mt-2 relative z-10">Platform commission earned</p>
+              </div>
+            </div>
+
+            {/* Main content grid */}
+            <div className="grid grid-cols-[1fr_380px] gap-5">
+              {/* Left column */}
+              <div className="space-y-5">
+                {/* Pending Approvals Card */}
+                <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
+                  <div className="flex items-center justify-between px-5 py-4 bg-muted border-b border-border">
+                    <span className="text-[15px] font-bold text-foreground">⏳ Pending Approvals</span>
+                    <span className="bg-[hsl(45,100%,94%)] border border-[hsl(var(--warning))] rounded-full px-2.5 py-0.5 text-[12px] font-semibold text-foreground">
+                      {pendingAdvisors.length} waiting
+                    </span>
+                  </div>
+                  {pendingAdvisors.length === 0 ? (
+                    <div className="py-10 text-center">
+                      <CheckCircle size={32} className="mx-auto text-primary" />
+                      <p className="text-[14px] text-muted-foreground mt-2">All caught up!</p>
+                    </div>
+                  ) : (
+                    pendingAdvisors.map(a => (
+                      <div key={a.id} className="px-5 py-4 border-b border-muted last:border-0 flex items-center gap-3.5">
+                        <AdminAvatar name={a.full_name} />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[15px] font-bold text-foreground capitalize">{a.full_name}</p>
+                          <p className="text-[12px] text-muted-foreground">SEBI: {a.sebi_reg_no}</p>
+                          <p className="text-[11px] text-muted-foreground">Applied {formatDate(a.created_at)}</p>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg px-4 text-[13px] font-semibold" onClick={() => approveAdvisor(a)}>Approve</Button>
+                          <Button size="sm" variant="outline" className="rounded-lg px-4 text-[13px] font-semibold" onClick={() => setExpandedAdvisor(expandedAdvisor === a.id ? null : a.id)}>Review</Button>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Recent Activity */}
+                <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
+                  <div className="px-5 py-4 border-b border-border">
+                    <span className="text-[15px] font-bold text-foreground">Recent Activity</span>
+                  </div>
+                  {recentActivity.length === 0 ? (
+                    <div className="py-10 text-center text-muted-foreground text-[13px]">No recent activity</div>
+                  ) : (
+                    recentActivity.slice(0, 5).map((act, i) => (
+                      <div key={i} className="px-5 py-3 border-b border-muted last:border-0 flex items-center gap-3">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${act.iconBg}`}>
+                          <act.icon size={14} className={act.iconColor} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[13px] font-semibold text-foreground">{act.text}</p>
+                          <p className="text-[12px] text-muted-foreground truncate">{act.detail}</p>
+                        </div>
+                        <span className="text-[11px] text-muted-foreground whitespace-nowrap">{act.time}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              {/* Right column */}
+              <div className="space-y-5">
+                {/* Platform Health */}
+                <div className="bg-card rounded-2xl border border-border p-5 shadow-sm">
+                  <h3 className="text-[15px] font-bold text-foreground mb-4">Platform Health</h3>
+                  {[
+                    { label: 'Advisor Approval Rate', value: allAdvisors.length ? `${Math.round((approvedCount / allAdvisors.length) * 100)}%` : '0%', pct: allAdvisors.length ? (approvedCount / allAdvisors.length) * 100 : 0, color: 'bg-primary' },
+                    { label: 'Active Subscriptions', value: `${activeSubCount} / ${users.length} users`, pct: users.length ? (activeSubCount / users.length) * 100 : 0, color: 'bg-primary' },
+                    { label: 'Signal Activity', value: `${allAdvisors.length} advisors`, pct: 40, color: 'bg-secondary' },
+                    { label: 'Revenue This Month', value: `₹${totalRevenue.toLocaleString('en-IN')}`, pct: 75, color: 'bg-primary' },
+                  ].map((m, i) => (
+                    <div key={i} className="mb-3.5 last:mb-0">
+                      <div className="flex justify-between mb-1">
+                        <span className="text-[12px] text-muted-foreground">{m.label}</span>
+                        <span className="text-[12px] font-bold text-foreground">{m.value}</span>
+                      </div>
+                      <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full transition-all ${m.color}`} style={{ width: `${Math.min(m.pct, 100)}%` }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Quick Actions */}
+                <div className="bg-card rounded-2xl border border-border p-5 shadow-sm">
+                  <h3 className="text-[15px] font-bold text-foreground mb-3.5">Quick Actions</h3>
+                  <div className="grid grid-cols-2 gap-2.5">
+                    {quickActions.map((qa, i) => (
+                      <button
+                        key={i}
+                        onClick={qa.onClick}
+                        className="bg-muted border border-border rounded-xl p-3.5 text-center cursor-pointer transition-all hover:bg-[hsl(var(--light-green))] hover:border-primary group"
+                      >
+                        <qa.icon size={24} className="mx-auto text-primary" />
+                        <span className="text-[12px] font-semibold text-foreground mt-1.5 block">{qa.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* System Info */}
+                <div className="bg-foreground rounded-2xl p-5 text-white">
+                  <h3 className="text-[14px] font-bold text-white/80 mb-3.5">System Info</h3>
+                  {[
+                    { label: 'Platform', value: 'TradeCircle v1.0' },
+                    { label: 'Operator', value: 'STREZONIC PVT LTD' },
+                    { label: 'CIN', value: 'U62099MH2025PTC453360' },
+                  ].map((row, i) => (
+                    <div key={i} className="flex justify-between mb-2.5">
+                      <span className="text-[11px] text-white/40">{row.label}</span>
+                      <span className="text-[12px] font-semibold">{row.value}</span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between">
+                    <span className="text-[11px] text-white/40">Environment</span>
+                    <span className="text-[12px] font-semibold flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-[#69F0AE] inline-block" />
+                      Production
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ===== PENDING TAB ===== */}
         {tab === 'pending' && !loading && (
           <div className="space-y-4">
-            {pendingAdvisors.length === 0 && <div className="tc-card-static p-12 text-center"><p className="text-muted-foreground">No pending applications 🎉</p></div>}
+            {pendingAdvisors.length === 0 && (
+              <div className="bg-card rounded-2xl border border-border p-12 text-center shadow-sm">
+                <CheckCircle size={40} className="mx-auto text-primary" />
+                <p className="text-[16px] font-bold text-foreground mt-3">All caught up!</p>
+                <p className="text-[13px] text-muted-foreground mt-1">No pending applications</p>
+              </div>
+            )}
             {pendingAdvisors.map(a => (
-              <div key={a.id} className="tc-card-static p-5">
+              <div key={a.id} className="bg-card rounded-2xl border border-border p-5 shadow-sm">
                 <div className="flex items-center justify-between">
-                  <div>
-                    <p className="tc-card-title text-lg">{a.full_name}</p>
-                    <p className="tc-small">SEBI: {a.sebi_reg_no} • Applied: {new Date(a.created_at!).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</p>
+                  <div className="flex items-center gap-3">
+                    <AdminAvatar name={a.full_name} />
+                    <div>
+                      <p className="text-[16px] font-bold text-foreground capitalize">{a.full_name}</p>
+                      <p className="text-[13px] text-muted-foreground">SEBI: {a.sebi_reg_no} • Applied: {formatDate(a.created_at)}</p>
+                    </div>
                   </div>
-                  <Button variant="outline" size="sm" className="tc-btn-click" onClick={() => setExpandedAdvisor(expandedAdvisor === a.id ? null : a.id)}>
+                  <Button variant="outline" size="sm" className="rounded-lg" onClick={() => setExpandedAdvisor(expandedAdvisor === a.id ? null : a.id)}>
                     {expandedAdvisor === a.id ? 'Collapse' : 'Review'}
                   </Button>
                 </div>
                 {expandedAdvisor === a.id && (
-                  <div className="mt-4 space-y-4 border-t pt-4">
+                  <div className="mt-4 space-y-4 border-t border-border pt-4">
                     <div className="grid gap-3 sm:grid-cols-2">
                       {[
                         { label: 'Email', value: a.email },
@@ -190,19 +521,19 @@ export default function AdminDashboard() {
                         { label: 'Strategy', value: a.strategy_type || '-' },
                         { label: 'Address', value: a.address || '-' },
                       ].map(item => (
-                        <div key={item.label} className="rounded-lg bg-off-white p-3">
-                          <p className="tc-small">{item.label}</p>
-                          <p className="font-medium text-sm">{item.value}</p>
+                        <div key={item.label} className="rounded-xl bg-muted p-3">
+                          <p className="text-[11px] text-muted-foreground font-semibold uppercase">{item.label}</p>
+                          <p className="font-medium text-[14px] text-foreground mt-0.5">{item.value}</p>
                         </div>
                       ))}
                     </div>
-                    {a.bio && <div className="rounded-lg bg-off-white p-3"><p className="tc-small">Bio</p><p className="text-sm">{a.bio}</p></div>}
+                    {a.bio && <div className="rounded-xl bg-muted p-3"><p className="text-[11px] text-muted-foreground font-semibold uppercase">Bio</p><p className="text-[14px] text-foreground mt-0.5">{a.bio}</p></div>}
                     <div className="flex gap-2 items-end flex-wrap">
-                      <Button onClick={() => approveAdvisor(a)} className="tc-btn-click font-semibold">✓ Approve</Button>
+                      <Button onClick={() => approveAdvisor(a)} className="bg-primary hover:bg-primary/90 font-semibold rounded-lg">✓ Approve</Button>
                       <div className="flex-1 min-w-[200px]">
-                        <Input placeholder="Rejection reason (required)..." value={rejectReason} onChange={e => setRejectReason(e.target.value)} className="tc-input-focus" />
+                        <Input placeholder="Rejection reason (required)..." value={rejectReason} onChange={e => setRejectReason(e.target.value)} className="rounded-lg" />
                       </div>
-                      <Button variant="destructive" className="tc-btn-click font-semibold" onClick={() => rejectAdvisor(a.id)}>✕ Reject</Button>
+                      <Button variant="destructive" className="font-semibold rounded-lg" onClick={() => rejectAdvisor(a.id)}>✕ Reject</Button>
                     </div>
                   </div>
                 )}
@@ -211,19 +542,35 @@ export default function AdminDashboard() {
           </div>
         )}
 
+        {/* ===== ADVISORS TAB ===== */}
         {tab === 'advisors' && !loading && (
-          <div className="tc-card-static overflow-x-auto">
+          <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
             <table className="w-full text-sm">
-              <thead><tr className="border-b bg-off-white text-left"><th className="p-3 font-medium text-muted-foreground">Name</th><th className="p-3 font-medium text-muted-foreground">SEBI No</th><th className="p-3 font-medium text-muted-foreground">Strategy</th><th className="p-3 font-medium text-muted-foreground">Status</th><th className="p-3 font-medium text-muted-foreground">Actions</th></tr></thead>
+              <thead>
+                <tr className="bg-muted border-b border-border text-left">
+                  <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Name</th>
+                  <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">SEBI No</th>
+                  <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Strategy</th>
+                  <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Status</th>
+                  <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Actions</th>
+                </tr>
+              </thead>
               <tbody>
                 {allAdvisors.map((a, i) => (
-                  <tr key={a.id} className={`border-b last:border-0 ${i % 2 === 1 ? 'bg-off-white' : ''}`}>
-                    <td className="p-3 font-medium">{a.full_name}</td>
-                    <td className="p-3 font-mono text-xs">{a.sebi_reg_no}</td>
-                    <td className="p-3"><span className="tc-badge-strategy">{a.strategy_type}</span></td>
-                    <td className="p-3"><span className={a.status === 'approved' ? 'tc-badge-active' : a.status === 'rejected' ? 'tc-badge-rejected' : 'tc-badge-pending'}>{a.status}</span></td>
-                    <td className="p-3">
-                      {a.status === 'approved' && <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10 tc-btn-click" onClick={() => suspendAdvisor(a)}>Suspend</Button>}
+                  <tr key={a.id} className={`border-b border-muted last:border-0 ${i % 2 === 1 ? 'bg-muted/50' : ''}`}>
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        <AdminAvatar name={a.full_name} size={32} />
+                        <span className="font-semibold text-foreground capitalize">{a.full_name}</span>
+                      </div>
+                    </td>
+                    <td className="p-4 font-mono text-[12px] text-muted-foreground">{a.sebi_reg_no}</td>
+                    <td className="p-4"><span className="bg-[hsl(var(--light-blue))] text-secondary px-2.5 py-1 rounded-full text-[12px] font-semibold">{a.strategy_type || '-'}</span></td>
+                    <td className="p-4"><span className={`px-2.5 py-1 rounded-full text-[12px] font-semibold ${statusPill(a.status || '')}`}>{a.status}</span></td>
+                    <td className="p-4">
+                      {a.status === 'approved' && (
+                        <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10 rounded-lg text-[12px]" onClick={() => suspendAdvisor(a)}>Suspend</Button>
+                      )}
                     </td>
                   </tr>
                 ))}
@@ -232,17 +579,36 @@ export default function AdminDashboard() {
           </div>
         )}
 
+        {/* ===== USERS TAB ===== */}
         {tab === 'users' && !loading && (
-          <div className="tc-card-static overflow-x-auto">
+          <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
             <table className="w-full text-sm">
-              <thead><tr className="border-b bg-off-white text-left"><th className="p-3 font-medium text-muted-foreground">Name</th><th className="p-3 font-medium text-muted-foreground">Email</th><th className="p-3 font-medium text-muted-foreground">Role</th><th className="p-3 font-medium text-muted-foreground">Joined</th></tr></thead>
+              <thead>
+                <tr className="bg-muted border-b border-border text-left">
+                  <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Name</th>
+                  <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Email</th>
+                  <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Role</th>
+                  <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Joined</th>
+                </tr>
+              </thead>
               <tbody>
                 {users.map((u: any, i: number) => (
-                  <tr key={u.id} className={`border-b last:border-0 ${i % 2 === 1 ? 'bg-off-white' : ''}`}>
-                    <td className="p-3 font-medium">{u.full_name || '-'}</td>
-                    <td className="p-3 text-muted-foreground">{u.email}</td>
-                    <td className="p-3"><span className={u.role === 'admin' ? 'tc-badge-admin' : u.role === 'advisor' ? 'tc-badge-sebi' : 'tc-badge-strategy'}>{u.role}</span></td>
-                    <td className="p-3">{u.created_at ? new Date(u.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</td>
+                  <tr key={u.id} className={`border-b border-muted last:border-0 ${i % 2 === 1 ? 'bg-muted/50' : ''}`}>
+                    <td className="p-4">
+                      <div className="flex items-center gap-3">
+                        <AdminAvatar name={u.full_name || u.email || '?'} size={32} />
+                        <span className="font-semibold text-foreground">{u.full_name || '-'}</span>
+                      </div>
+                    </td>
+                    <td className="p-4 text-muted-foreground">{u.email}</td>
+                    <td className="p-4">
+                      <span className={`px-2.5 py-1 rounded-full text-[12px] font-semibold ${
+                        u.role === 'admin' ? 'bg-secondary text-secondary-foreground' :
+                        u.role === 'advisor' ? 'bg-[hsl(var(--light-green))] text-primary' :
+                        'bg-muted text-muted-foreground'
+                      }`}>{u.role || 'trader'}</span>
+                    </td>
+                    <td className="p-4 text-muted-foreground">{formatDate(u.created_at)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -250,65 +616,90 @@ export default function AdminDashboard() {
           </div>
         )}
 
+        {/* ===== PAYMENTS TAB ===== */}
         {tab === 'payments' && !loading && (
-          <div className="tc-card-static overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead><tr className="border-b bg-off-white text-left"><th className="p-3 font-medium text-muted-foreground">User</th><th className="p-3 font-medium text-muted-foreground">Advisor</th><th className="p-3 font-medium text-muted-foreground">Group</th><th className="p-3 font-medium text-muted-foreground">Amount</th><th className="p-3 font-medium text-muted-foreground">Date</th><th className="p-3 font-medium text-muted-foreground">Status</th></tr></thead>
-              <tbody>
-                {payments.length === 0 && <tr><td colSpan={6} className="p-12 text-center text-muted-foreground">No payments yet</td></tr>}
-                {payments.map((p: any, i: number) => (
-                  <tr key={p.id} className={`border-b last:border-0 ${i % 2 === 1 ? 'bg-off-white' : ''}`}>
-                    <td className="p-3 font-medium">{p.profiles?.full_name}</td>
-                    <td className="p-3">{p.advisors?.full_name}</td>
-                    <td className="p-3">{p.groups?.name}</td>
-                    <td className="p-3 tc-amount">₹{(p.amount_paid || 0).toLocaleString('en-IN')}</td>
-                    <td className="p-3">{p.created_at ? new Date(p.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</td>
-                    <td className="p-3"><span className={p.status === 'active' ? 'tc-badge-active' : 'tc-badge-pending'}>{p.status}</span></td>
+          <div className="space-y-4">
+            <div className="flex justify-end">
+              <Button variant="outline" size="sm" className="gap-2 rounded-lg" onClick={() => exportCsv(payments, 'payments')}>
+                <Download size={14} /> Export CSV
+              </Button>
+            </div>
+            <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-muted border-b border-border text-left">
+                    <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">User</th>
+                    <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Advisor</th>
+                    <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Group</th>
+                    <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Amount</th>
+                    <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Date</th>
+                    <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Status</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {payments.length === 0 && <tr><td colSpan={6} className="p-12 text-center text-muted-foreground">No payments yet</td></tr>}
+                  {payments.map((p: any, i: number) => (
+                    <tr key={p.id} className={`border-b border-muted last:border-0 ${i % 2 === 1 ? 'bg-muted/50' : ''}`}>
+                      <td className="p-4 font-semibold text-foreground">{p.profiles?.full_name}</td>
+                      <td className="p-4 text-muted-foreground">{p.advisors?.full_name}</td>
+                      <td className="p-4 text-muted-foreground">{p.groups?.name}</td>
+                      <td className="p-4 font-bold text-primary">₹{(p.amount_paid || 0).toLocaleString('en-IN')}</td>
+                      <td className="p-4 text-muted-foreground">{formatDate(p.created_at)}</td>
+                      <td className="p-4"><span className={`px-2.5 py-1 rounded-full text-[12px] font-semibold ${statusPill(p.status || '')}`}>{p.status}</span></td>
+                    </tr>
+                  ))}
+                  {payments.length > 0 && (
+                    <tr className="bg-muted font-bold">
+                      <td className="p-4" colSpan={3}>Total</td>
+                      <td className="p-4 text-primary">₹{totalRevenue.toLocaleString('en-IN')}</td>
+                      <td colSpan={2} />
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         )}
 
+        {/* ===== LEGAL TAB ===== */}
         {tab === 'legal' && !loading && (
           <div className="space-y-4">
             <div className="flex flex-wrap gap-2 items-center">
-              <Button variant={legalTab === 'advisor' ? 'default' : 'outline'} size="sm" className="tc-btn-click" onClick={() => setLegalTab('advisor')}>Advisor Acceptances</Button>
-              <Button variant={legalTab === 'user' ? 'default' : 'outline'} size="sm" className="tc-btn-click" onClick={() => setLegalTab('user')}>User Acceptances</Button>
+              <Button variant={legalTab === 'advisor' ? 'default' : 'outline'} size="sm" className="rounded-lg" onClick={() => setLegalTab('advisor')}>Advisor Acceptances</Button>
+              <Button variant={legalTab === 'user' ? 'default' : 'outline'} size="sm" className="rounded-lg" onClick={() => setLegalTab('user')}>User Acceptances</Button>
               <div className="flex-1" />
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search by name..." value={legalSearch} onChange={e => setLegalSearch(e.target.value)} className="pl-9 w-56 tc-input-focus" />
+                <Input placeholder="Search by name..." value={legalSearch} onChange={e => setLegalSearch(e.target.value)} className="pl-9 w-56 rounded-lg" />
               </div>
-              <Button variant="outline" size="sm" className="tc-btn-click gap-1" onClick={() => exportCsv(legalTab === 'advisor' ? filteredAdvisorLegal : filteredUserLegal, `${legalTab}-legal-records`)}>
+              <Button variant="outline" size="sm" className="gap-1 rounded-lg" onClick={() => exportCsv(legalTab === 'advisor' ? filteredAdvisorLegal : filteredUserLegal, `${legalTab}-legal-records`)}>
                 <Download className="h-4 w-4" /> Export CSV
               </Button>
             </div>
 
             {legalTab === 'advisor' && (
-              <div className="tc-card-static overflow-x-auto">
+              <div className="bg-card rounded-2xl border border-border overflow-x-auto shadow-sm">
                 <table className="w-full text-sm">
-                  <thead><tr className="border-b bg-off-white text-left">
-                    <th className="p-3 font-medium text-muted-foreground">Name</th>
-                    <th className="p-3 font-medium text-muted-foreground">SEBI No</th>
-                    <th className="p-3 font-medium text-muted-foreground">CB 1 ✅</th>
-                    <th className="p-3 font-medium text-muted-foreground">CB 2 ✅</th>
-                    <th className="p-3 font-medium text-muted-foreground">IP Address</th>
-                    <th className="p-3 font-medium text-muted-foreground">Submitted At</th>
-                    <th className="p-3 font-medium text-muted-foreground">Status</th>
+                  <thead><tr className="bg-muted border-b border-border text-left">
+                    <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Name</th>
+                    <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">SEBI No</th>
+                    <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">CB 1</th>
+                    <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">CB 2</th>
+                    <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">IP</th>
+                    <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Submitted</th>
+                    <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Status</th>
                   </tr></thead>
                   <tbody>
                     {filteredAdvisorLegal.length === 0 && <tr><td colSpan={7} className="p-12 text-center text-muted-foreground">No records</td></tr>}
                     {filteredAdvisorLegal.map((r: any, i: number) => (
-                      <tr key={r.id} className={`border-b last:border-0 ${i % 2 === 1 ? 'bg-off-white' : ''}`}>
-                        <td className="p-3 font-medium">{r.full_name}</td>
-                        <td className="p-3 font-mono text-xs">{r.sebi_reg_no}</td>
-                        <td className="p-3">{r.checkbox_1_sebi_responsibility ? '✅' : '❌'}</td>
-                        <td className="p-3">{r.checkbox_2_indemnity ? '✅' : '❌'}</td>
-                        <td className="p-3 font-mono text-xs">{r.ip_address || '-'}</td>
-                        <td className="p-3">{r.form_submitted_at ? new Date(r.form_submitted_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}</td>
-                        <td className="p-3"><span className={r.status === 'approved' ? 'tc-badge-active' : r.status === 'rejected' ? 'tc-badge-rejected' : 'tc-badge-pending'}>{r.status}</span></td>
+                      <tr key={r.id} className={`border-b border-muted last:border-0 ${i % 2 === 1 ? 'bg-muted/50' : ''}`}>
+                        <td className="p-4 font-semibold text-foreground">{r.full_name}</td>
+                        <td className="p-4 font-mono text-[12px] text-muted-foreground">{r.sebi_reg_no}</td>
+                        <td className="p-4">{r.checkbox_1_sebi_responsibility ? '✅' : '❌'}</td>
+                        <td className="p-4">{r.checkbox_2_indemnity ? '✅' : '❌'}</td>
+                        <td className="p-4 font-mono text-[12px] text-muted-foreground">{r.ip_address || '-'}</td>
+                        <td className="p-4 text-muted-foreground">{r.form_submitted_at ? new Date(r.form_submitted_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}</td>
+                        <td className="p-4"><span className={`px-2.5 py-1 rounded-full text-[12px] font-semibold ${statusPill(r.status)}`}>{r.status}</span></td>
                       </tr>
                     ))}
                   </tbody>
@@ -317,26 +708,26 @@ export default function AdminDashboard() {
             )}
 
             {legalTab === 'user' && (
-              <div className="tc-card-static overflow-x-auto">
+              <div className="bg-card rounded-2xl border border-border overflow-x-auto shadow-sm">
                 <table className="w-full text-sm">
-                  <thead><tr className="border-b bg-off-white text-left">
-                    <th className="p-3 font-medium text-muted-foreground">Name</th>
-                    <th className="p-3 font-medium text-muted-foreground">Email</th>
-                    <th className="p-3 font-medium text-muted-foreground">Type</th>
-                    <th className="p-3 font-medium text-muted-foreground">Page</th>
-                    <th className="p-3 font-medium text-muted-foreground">IP</th>
-                    <th className="p-3 font-medium text-muted-foreground">Accepted At</th>
+                  <thead><tr className="bg-muted border-b border-border text-left">
+                    <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Name</th>
+                    <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Email</th>
+                    <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Type</th>
+                    <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Page</th>
+                    <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">IP</th>
+                    <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Accepted</th>
                   </tr></thead>
                   <tbody>
                     {filteredUserLegal.length === 0 && <tr><td colSpan={6} className="p-12 text-center text-muted-foreground">No records</td></tr>}
                     {filteredUserLegal.map((r: any, i: number) => (
-                      <tr key={r.id} className={`border-b last:border-0 ${i % 2 === 1 ? 'bg-off-white' : ''}`}>
-                        <td className="p-3 font-medium">{r.full_name || '-'}</td>
-                        <td className="p-3 text-muted-foreground">{r.email || '-'}</td>
-                        <td className="p-3"><span className="tc-badge-strategy">{r.acceptance_type}</span></td>
-                        <td className="p-3 text-xs max-w-[200px] truncate">{r.page_url || '-'}</td>
-                        <td className="p-3 font-mono text-xs">{r.ip_address || '-'}</td>
-                        <td className="p-3">{r.accepted_at ? new Date(r.accepted_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}</td>
+                      <tr key={r.id} className={`border-b border-muted last:border-0 ${i % 2 === 1 ? 'bg-muted/50' : ''}`}>
+                        <td className="p-4 font-semibold text-foreground">{r.full_name || '-'}</td>
+                        <td className="p-4 text-muted-foreground">{r.email || '-'}</td>
+                        <td className="p-4"><span className="bg-[hsl(var(--light-blue))] text-secondary px-2.5 py-1 rounded-full text-[12px] font-semibold">{r.acceptance_type}</span></td>
+                        <td className="p-4 text-[12px] max-w-[200px] truncate text-muted-foreground">{r.page_url || '-'}</td>
+                        <td className="p-4 font-mono text-[12px] text-muted-foreground">{r.ip_address || '-'}</td>
+                        <td className="p-4 text-muted-foreground">{r.accepted_at ? new Date(r.accepted_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -346,39 +737,41 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* DELETION REQUESTS TAB */}
-        {tab === 'requests' && (
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="tc-section-title text-xl">Deletion / Removal Requests</h2>
-              <Button variant="outline" size="sm" className="gap-2" onClick={() => exportCsv(deletionRequests, 'deletion-requests')}>
-                <Download className="h-4 w-4" /> Export CSV
+        {/* ===== REQUESTS TAB ===== */}
+        {tab === 'requests' && !loading && (
+          <div className="space-y-4">
+            <div className="flex justify-end">
+              <Button variant="outline" size="sm" className="gap-2 rounded-lg" onClick={() => exportCsv(deletionRequests, 'deletion-requests')}>
+                <Download size={14} /> Export CSV
               </Button>
             </div>
-            <div className="tc-card-static overflow-x-auto">
+            <div className="bg-card rounded-2xl border border-border overflow-x-auto shadow-sm">
               <table className="w-full text-sm">
-                <thead><tr className="border-b bg-off-white text-left">
-                  <th className="p-3 font-medium text-muted-foreground">Type</th>
-                  <th className="p-3 font-medium text-muted-foreground">Name</th>
-                  <th className="p-3 font-medium text-muted-foreground">Email</th>
-                  <th className="p-3 font-medium text-muted-foreground">Group</th>
-                  <th className="p-3 font-medium text-muted-foreground">Status</th>
-                  <th className="p-3 font-medium text-muted-foreground">Date</th>
-                  <th className="p-3 font-medium text-muted-foreground">Actions</th>
+                <thead><tr className="bg-muted border-b border-border text-left">
+                  <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Type</th>
+                  <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Name</th>
+                  <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Email</th>
+                  <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Group</th>
+                  <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Status</th>
+                  <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Date</th>
+                  <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Actions</th>
                 </tr></thead>
                 <tbody>
                   {deletionRequests.length === 0 && <tr><td colSpan={7} className="p-12 text-center text-muted-foreground">No requests</td></tr>}
                   {deletionRequests.map((r: any, i: number) => (
-                    <tr key={r.id} className={`border-b last:border-0 ${i % 2 === 1 ? 'bg-off-white' : ''}`}>
-                      <td className="p-3"><span className="tc-badge-strategy capitalize">{r.request_type?.replace(/_/g, ' ')}</span></td>
-                      <td className="p-3 font-medium">{r.advisor_name || '-'}</td>
-                      <td className="p-3 text-muted-foreground">{r.email || '-'}</td>
-                      <td className="p-3">{r.group_name || '-'}</td>
-                      <td className="p-3"><span className={`text-xs font-medium px-2 py-0.5 rounded-full ${r.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : r.status === 'approved' ? 'tc-badge-active' : 'tc-badge-rejected'}`}>{r.status}</span></td>
-                      <td className="p-3">{r.created_at ? new Date(r.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</td>
-                      <td className="p-3">
-                        <Button variant="outline" size="sm" onClick={() => { const el = document.createElement('textarea'); el.value = r.reason || ''; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); toast.success('Reason copied to clipboard'); }}>
-                          View Reason
+                    <tr key={r.id} className={`border-b border-muted last:border-0 ${i % 2 === 1 ? 'bg-muted/50' : ''}`}>
+                      <td className="p-4"><span className="bg-[hsl(var(--light-blue))] text-secondary px-2.5 py-1 rounded-full text-[12px] font-semibold capitalize">{r.request_type?.replace(/_/g, ' ')}</span></td>
+                      <td className="p-4 font-semibold text-foreground">{r.advisor_name || '-'}</td>
+                      <td className="p-4 text-muted-foreground">{r.email || '-'}</td>
+                      <td className="p-4 text-muted-foreground">{r.group_name || '-'}</td>
+                      <td className="p-4"><span className={`px-2.5 py-1 rounded-full text-[12px] font-semibold ${statusPill(r.status)}`}>{r.status}</span></td>
+                      <td className="p-4 text-muted-foreground">{formatDate(r.created_at)}</td>
+                      <td className="p-4">
+                        <Button variant="outline" size="sm" className="rounded-lg text-[12px]" onClick={() => {
+                          navigator.clipboard.writeText(r.reason || '');
+                          toast.success('Reason copied to clipboard');
+                        }}>
+                          <Eye size={14} className="mr-1" /> View Reason
                         </Button>
                       </td>
                     </tr>
@@ -389,12 +782,11 @@ export default function AdminDashboard() {
           </div>
         )}
 
-        {/* REFERRALS TAB */}
+        {/* ===== REFERRALS TAB ===== */}
         {tab === 'referrals' && !loading && (
           <AdminReferralTab />
         )}
-      </div>
-      
+      </main>
     </div>
   );
 }
