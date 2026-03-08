@@ -17,6 +17,22 @@ type Advisor = Tables<'advisors'>;
 type Group = Tables<'groups'>;
 type Signal = Tables<'signals'>;
 
+function FollowButton({ groupId, groupName }: { groupId: string; groupName: string }) {
+  const { following, loading, toggleFollow } = useFollow(groupId);
+  if (loading) return null;
+  return (
+    <Button
+      variant={following ? 'outline' : 'ghost'}
+      size="sm"
+      className={`gap-1.5 text-xs ${following ? 'border-primary text-primary' : 'text-muted-foreground'}`}
+      onClick={toggleFollow}
+    >
+      <Heart className={`h-3.5 w-3.5 ${following ? 'fill-primary text-primary' : ''}`} />
+      {following ? `Following ${groupName}` : `Follow ${groupName}`}
+    </Button>
+  );
+}
+
 export default function AdvisorProfile() {
   const { id } = useParams<{ id: string }>();
   const { user, profile } = useAuth();
