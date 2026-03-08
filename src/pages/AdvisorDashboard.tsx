@@ -9,9 +9,10 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
-import { BarChart3, Radio, Users, UserCircle, IndianRupee, TrendingUp, Clock, CheckCircle2, XCircle, AlertTriangle, MessageSquare, ImageIcon, X } from 'lucide-react';
+import { BarChart3, Radio, Users, UserCircle, IndianRupee, TrendingUp, Clock, CheckCircle2, XCircle, AlertTriangle, MessageSquare, ImageIcon, X, Globe, Lock } from 'lucide-react';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Advisor = Tables<'advisors'>;
@@ -32,13 +33,13 @@ export default function AdvisorDashboard() {
 
   // Post forms
   const [postMode, setPostMode] = useState<'choose' | 'message' | 'signal'>('choose');
-  const [messageForm, setMessageForm] = useState({ groupId: '', text: '' });
+  const [messageForm, setMessageForm] = useState({ groupId: '', text: '', isPublic: false });
   const [messageImage, setMessageImage] = useState<File | null>(null);
   const [messageImagePreview, setMessageImagePreview] = useState<string | null>(null);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [posting, setPosting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [signalForm, setSignalForm] = useState({ groupId: '', instrument: '', signalType: 'BUY', entryPrice: '', targetPrice: '', stopLoss: '', timeframe: 'Intraday', notes: '' });
+  const [signalForm, setSignalForm] = useState({ groupId: '', instrument: '', signalType: 'BUY', entryPrice: '', targetPrice: '', stopLoss: '', timeframe: 'Intraday', notes: '', isPublic: false });
 
   // Feed view
   const [feedGroupId, setFeedGroupId] = useState<string | null>(null);
@@ -125,11 +126,12 @@ export default function AdvisorDashboard() {
       target_price: 0,
       stop_loss: 0,
       timeframe: '',
+      is_public: messageForm.isPublic,
     });
 
     if (error) { toast.error(error.message); }
     else { toast.success('Update posted!'); }
-    setMessageForm({ groupId: messageForm.groupId, text: '' });
+    setMessageForm({ groupId: messageForm.groupId, text: '', isPublic: false });
     setMessageImage(null);
     setMessageImagePreview(null);
     setUploadProgress(0);
@@ -151,6 +153,7 @@ export default function AdvisorDashboard() {
       stop_loss: parseFloat(signalForm.stopLoss),
       timeframe: signalForm.timeframe,
       notes: signalForm.notes,
+      is_public: signalForm.isPublic,
     }).select().single();
 
     if (error) { toast.error(error.message); setPosting(false); return; }
@@ -167,7 +170,7 @@ export default function AdvisorDashboard() {
     } catch (err) {
       console.error('Telegram send error:', err);
     }
-    setSignalForm({ groupId: signalForm.groupId, instrument: '', signalType: 'BUY', entryPrice: '', targetPrice: '', stopLoss: '', timeframe: 'Intraday', notes: '' });
+    setSignalForm({ groupId: signalForm.groupId, instrument: '', signalType: 'BUY', entryPrice: '', targetPrice: '', stopLoss: '', timeframe: 'Intraday', notes: '', isPublic: false });
     setPosting(false);
     fetchData();
   };
@@ -398,6 +401,16 @@ export default function AdvisorDashboard() {
                     )}
                     {uploadProgress > 0 && uploadProgress < 100 && <Progress value={uploadProgress} className="mt-2 h-2" />}
                   </div>
+                  <div className="flex items-center justify-between rounded-lg border p-3 bg-muted/30">
+                    <div className="flex items-center gap-2">
+                      {messageForm.isPublic ? <Globe className="h-4 w-4 text-primary" /> : <Lock className="h-4 w-4 text-muted-foreground" />}
+                      <div>
+                        <p className="text-sm font-medium">{messageForm.isPublic ? 'Public' : 'Subscribers Only'}</p>
+                        <p className="text-[11px] text-muted-foreground">{messageForm.isPublic ? 'Visible to followers in their feed' : 'Only paid subscribers can see this'}</p>
+                      </div>
+                    </div>
+                    <Switch checked={messageForm.isPublic} onCheckedChange={v => setMessageForm({ ...messageForm, isPublic: v })} />
+                  </div>
                   <Button className="w-full font-semibold bg-secondary hover:bg-secondary/90 text-secondary-foreground" onClick={postMessage} disabled={posting || !messageForm.groupId || !messageForm.text.trim()}>
                     {posting ? 'Posting...' : '📝 Post Update'}
                   </Button>
@@ -444,6 +457,16 @@ export default function AdvisorDashboard() {
                     </div>
                   </div>
                   <div><Label>Notes (optional)</Label><Textarea value={signalForm.notes} onChange={e => setSignalForm({ ...signalForm, notes: e.target.value })} /></div>
+                  <div className="flex items-center justify-between rounded-lg border p-3 bg-muted/30">
+                    <div className="flex items-center gap-2">
+                      {signalForm.isPublic ? <Globe className="h-4 w-4 text-primary" /> : <Lock className="h-4 w-4 text-muted-foreground" />}
+                      <div>
+                        <p className="text-sm font-medium">{signalForm.isPublic ? 'Public' : 'Subscribers Only'}</p>
+                        <p className="text-[11px] text-muted-foreground">{signalForm.isPublic ? 'Visible to followers (blurred for non-subs)' : 'Only paid subscribers can see this'}</p>
+                      </div>
+                    </div>
+                    <Switch checked={signalForm.isPublic} onCheckedChange={v => setSignalForm({ ...signalForm, isPublic: v })} />
+                  </div>
                   <Button className="w-full font-semibold" onClick={postSignal} disabled={posting || !signalForm.groupId || !signalForm.instrument || !signalForm.entryPrice}>
                     {posting ? 'Posting...' : '📊 Post Signal'}
                   </Button>

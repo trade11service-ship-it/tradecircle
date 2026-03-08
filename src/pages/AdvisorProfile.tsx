@@ -8,13 +8,30 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
-import { Shield, Users, ArrowRight } from 'lucide-react';
+import { Shield, Users, ArrowRight, Heart } from 'lucide-react';
 import type { Tables } from '@/integrations/supabase/types';
 import { SUBSCRIPTION_RISK_TEXT, getDeviceInfo, getIpAddress } from '@/lib/legalTexts';
+import { useFollow } from '@/hooks/useFollow';
 
 type Advisor = Tables<'advisors'>;
 type Group = Tables<'groups'>;
 type Signal = Tables<'signals'>;
+
+function FollowButton({ groupId, groupName }: { groupId: string; groupName: string }) {
+  const { following, loading, toggleFollow } = useFollow(groupId);
+  if (loading) return null;
+  return (
+    <Button
+      variant={following ? 'outline' : 'ghost'}
+      size="sm"
+      className={`gap-1.5 text-xs ${following ? 'border-primary text-primary' : 'text-muted-foreground'}`}
+      onClick={toggleFollow}
+    >
+      <Heart className={`h-3.5 w-3.5 ${following ? 'fill-primary text-primary' : ''}`} />
+      {following ? `Following ${groupName}` : `Follow ${groupName}`}
+    </Button>
+  );
+}
 
 export default function AdvisorProfile() {
   const { id } = useParams<{ id: string }>();
@@ -99,6 +116,7 @@ export default function AdvisorProfile() {
 
   const isOwner = user && advisor && advisor.user_id === user.id;
   const isSubscribedToAny = groups.some(g => subscribedGroupIds.includes(g.id));
+  const firstGroupId = groups[0]?.id || '';
 
   return (
     <div className="min-h-screen flex flex-col bg-off-white">
@@ -122,16 +140,24 @@ export default function AdvisorProfile() {
                 </div>
                 {advisor.bio && <p className="mt-3 text-muted-foreground max-w-xl">{advisor.bio}</p>}
               </div>
-              {groups.length > 0 && (
-                <div className="text-right shrink-0">
-                  <p className="tc-small">Starting from</p>
-                  <p className="text-2xl tc-amount">₹{Math.min(...groups.map(g => g.monthly_price))}/mo</p>
-                </div>
-              )}
+              <div className="flex flex-col items-end gap-2 shrink-0">
+                {groups.length > 0 && (
+                  <div className="text-right">
+                    <p className="tc-small">Starting from</p>
+                    <p className="text-2xl tc-amount">₹{Math.min(...groups.map(g => g.monthly_price))}/mo</p>
+                  </div>
+                )}
+                {/* Follow buttons for each group */}
+                {!isOwner && groups.map(g => (
+                  <FollowButton key={g.id} groupId={g.id} groupName={g.name} />
+                ))}
+              </div>
             </div>
           </div>
         </div>
       </section>
+
+  
 
       <div className="container mx-auto px-4 py-10">
         <div className="grid gap-8 lg:grid-cols-3">

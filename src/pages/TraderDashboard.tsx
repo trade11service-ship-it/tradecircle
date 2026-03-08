@@ -3,12 +3,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { GroupFeed } from '@/components/GroupFeed';
+import { FollowFeed } from '@/components/FollowFeed';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
-import { Bell, BellOff, Send, BarChart3, ExternalLink, CheckCircle2, AlertTriangle, RotateCcw, Shield, User, Loader2 } from 'lucide-react';
+import { Bell, BellOff, Send, BarChart3, ExternalLink, CheckCircle2, AlertTriangle, RotateCcw, Shield, User, Loader2, Rss } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { Tables } from '@/integrations/supabase/types';
 
@@ -35,7 +36,7 @@ export default function TraderDashboard() {
   const { user, profile } = useAuth();
   const [subscriptions, setSubscriptions] = useState<(Subscription & { group: GroupInfo })[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'signals' | 'telegram'>('signals');
+  const [activeTab, setActiveTab] = useState<'signals' | 'telegram' | 'feed'>('signals');
   const [telegramSettings, setTelegramSettings] = useState<Record<string, TelegramSetting>>({});
   const [telegramConnected, setTelegramConnected] = useState(false);
   const [telegramUsername, setTelegramUsername] = useState('');
@@ -228,13 +229,24 @@ export default function TraderDashboard() {
           <Button variant={activeTab === 'signals' ? 'default' : 'outline'} size="sm" className="gap-1.5 tc-btn-click min-h-[44px] flex-1 sm:flex-none" onClick={() => setActiveTab('signals')}>
             <BarChart3 className="h-4 w-4" /> Signals
           </Button>
+          <Button variant={activeTab === 'feed' ? 'default' : 'outline'} size="sm" className="gap-1.5 tc-btn-click min-h-[44px] flex-1 sm:flex-none" onClick={() => setActiveTab('feed')}>
+            <Rss className="h-4 w-4" /> Feed
+          </Button>
           <Button variant={activeTab === 'telegram' ? 'default' : 'outline'} size="sm" className="gap-1.5 tc-btn-click min-h-[44px] flex-1 sm:flex-none" onClick={() => setActiveTab('telegram')}>
             <Send className="h-4 w-4" /> Telegram
             {activeAlerts > 0 && <span className="flex h-5 w-5 items-center justify-center rounded-full bg-light-green text-xs font-bold text-primary">{activeAlerts}</span>}
           </Button>
         </div>
 
-        {activeTab === 'telegram' ? (
+        {activeTab === 'feed' ? (
+          <div>
+            <div className="mb-4 md:mb-6">
+              <h2 className="tc-section-title text-lg md:text-xl">Following Feed</h2>
+              <p className="tc-small mt-1">Public posts from groups you follow</p>
+            </div>
+            <FollowFeed />
+          </div>
+        ) : activeTab === 'telegram' ? (
           <div>
             <div className="mb-4 md:mb-6">
               <h2 className="tc-section-title text-lg md:text-xl">Telegram Alert Settings</h2>
