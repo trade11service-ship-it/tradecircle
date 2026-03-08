@@ -344,6 +344,49 @@ export default function AdminDashboard() {
             )}
           </div>
         )}
+
+        {/* DELETION REQUESTS TAB */}
+        {tab === 'requests' && (
+          <div>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="tc-section-title text-xl">Deletion / Removal Requests</h2>
+              <Button variant="outline" size="sm" className="gap-2" onClick={() => exportCsv(deletionRequests, 'deletion-requests')}>
+                <Download className="h-4 w-4" /> Export CSV
+              </Button>
+            </div>
+            <div className="tc-card-static overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead><tr className="border-b bg-off-white text-left">
+                  <th className="p-3 font-medium text-muted-foreground">Type</th>
+                  <th className="p-3 font-medium text-muted-foreground">Name</th>
+                  <th className="p-3 font-medium text-muted-foreground">Email</th>
+                  <th className="p-3 font-medium text-muted-foreground">Group</th>
+                  <th className="p-3 font-medium text-muted-foreground">Status</th>
+                  <th className="p-3 font-medium text-muted-foreground">Date</th>
+                  <th className="p-3 font-medium text-muted-foreground">Actions</th>
+                </tr></thead>
+                <tbody>
+                  {deletionRequests.length === 0 && <tr><td colSpan={7} className="p-12 text-center text-muted-foreground">No requests</td></tr>}
+                  {deletionRequests.map((r: any, i: number) => (
+                    <tr key={r.id} className={`border-b last:border-0 ${i % 2 === 1 ? 'bg-off-white' : ''}`}>
+                      <td className="p-3"><span className="tc-badge-strategy capitalize">{r.request_type?.replace(/_/g, ' ')}</span></td>
+                      <td className="p-3 font-medium">{r.advisor_name || '-'}</td>
+                      <td className="p-3 text-muted-foreground">{r.email || '-'}</td>
+                      <td className="p-3">{r.group_name || '-'}</td>
+                      <td className="p-3"><span className={`text-xs font-medium px-2 py-0.5 rounded-full ${r.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : r.status === 'approved' ? 'tc-badge-active' : 'tc-badge-rejected'}`}>{r.status}</span></td>
+                      <td className="p-3">{r.created_at ? new Date(r.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}</td>
+                      <td className="p-3">
+                        <Button variant="outline" size="sm" onClick={() => { const el = document.createElement('textarea'); el.value = r.reason || ''; document.body.appendChild(el); el.select(); document.execCommand('copy'); document.body.removeChild(el); toast.success('Reason copied to clipboard'); }}>
+                          View Reason
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
       </div>
       <Footer />
     </div>
