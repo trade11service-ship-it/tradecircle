@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Navbar } from '@/components/Navbar';
+import { Footer } from '@/components/Footer';
 import { SignalCard } from '@/components/SignalCard';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
+import { Shield, Users, ArrowRight } from 'lucide-react';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Advisor = Tables<'advisors'>;
@@ -23,15 +24,14 @@ export default function AdvisorProfile() {
   const [todaySignals, setTodaySignals] = useState<Signal[]>([]);
   const [subscribedGroupIds, setSubscribedGroupIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+  const [subscribing, setSubscribing] = useState<string | null>(null);
+  const [signalTab, setSignalTab] = useState<'all' | 'past' | 'today'>('all');
 
-  useEffect(() => {
-    if (id) fetchData();
-  }, [id, user]);
+  useEffect(() => { if (id) fetchData(); }, [id, user]);
 
   const fetchData = async () => {
     const { data: adv } = await supabase.from('advisors').select('*').eq('id', id!).single();
     setAdvisor(adv);
-
     const { data: grps } = await supabase.from('groups').select('*').eq('advisor_id', id!).eq('is_active', true);
     if (grps) {
       const withSubs = await Promise.all(grps.map(async g => {
@@ -40,117 +40,104 @@ export default function AdvisorProfile() {
       }));
       setGroups(withSubs);
     }
-
-    // Past signals
     const { data: pastSigs } = await supabase.from('signals').select('*').eq('advisor_id', id!).lt('signal_date', new Date().toISOString().split('T')[0]).order('signal_date', { ascending: false }).limit(20);
     setSignals(pastSigs || []);
-
-    // Today's signals (will be filtered by RLS)
     const today = new Date().toISOString().split('T')[0];
     const { data: todaySigs } = await supabase.from('signals').select('*').eq('advisor_id', id!).eq('signal_date', today).order('created_at', { ascending: false });
     setTodaySignals(todaySigs || []);
-
-    // Check subscriptions
     if (user) {
       const { data: subs } = await supabase.from('subscriptions').select('group_id').eq('user_id', user.id).eq('status', 'active');
       setSubscribedGroupIds((subs || []).map(s => s.group_id));
     }
-
     setLoading(false);
   };
 
-  const [subscribing, setSubscribing] = useState<string | null>(null);
-
   const handleSubscribe = async (group: Group) => {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
+    if (!user) { navigate('/login'); return; }
     setSubscribing(group.id);
     try {
       const { data: session } = await supabase.auth.getSession();
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/initiate-payment`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${session?.session?.access_token}`,
-        },
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.session?.access_token}` },
         body: JSON.stringify({ group_id: group.id, origin_url: window.location.origin }),
       });
       const result = await res.json();
-      if (res.ok && result.payment_url) {
-        window.location.href = result.payment_url;
-      } else {
-        toast.error(result.error || 'Failed to initiate payment');
-      }
-    } catch (err) {
-      toast.error('Payment initiation failed');
-    } finally {
-      setSubscribing(null);
-    }
+      if (res.ok && result.payment_url) window.location.href = result.payment_url;
+      else toast.error(result.error || 'Failed to initiate payment');
+    } catch { toast.error('Payment initiation failed'); }
+    finally { setSubscribing(null); }
   };
 
-  if (loading) return <div className="min-h-screen bg-background"><Navbar /><div className="p-8 text-center">Loading...</div></div>;
-  if (!advisor) return <div className="min-h-screen bg-background"><Navbar /><div className="p-8 text-center">Advisor not found</div></div>;
+  if (loading) return <div className="min-h-screen bg-off-white"><Navbar /><div className="flex items-center justify-center py-20"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div></div>;
+  if (!advisor) return <div className="min-h-screen bg-off-white"><Navbar /><div className="py-20 text-center text-muted-foreground">Advisor not found</div></div>;
 
   const isSubscribedToAny = groups.some(g => subscribedGroupIds.includes(g.id));
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen flex flex-col bg-off-white">
       <Navbar />
-      <div className="container mx-auto px-4 py-8">
-        <div className="grid gap-8 lg:grid-cols-3">
-          {/* Left column */}
-          <div className="lg:col-span-1">
-            <div className="rounded-lg border bg-card p-6">
-              <div className="flex items-center gap-4">
-                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-muted text-2xl font-bold">
-                  {advisor.profile_photo_url ? (
-                    <img src={advisor.profile_photo_url} alt={advisor.full_name} className="h-20 w-20 rounded-full object-cover" />
-                  ) : advisor.full_name.charAt(0)}
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold">{advisor.full_name}</h1>
-                  <div className="flex items-center gap-1 mt-1">
-                    <Badge className="bg-primary text-primary-foreground text-xs">✓ SEBI: {advisor.sebi_reg_no}</Badge>
-                  </div>
-                </div>
-              </div>
-              <div className="mt-4 flex gap-2">
-                <Badge variant="secondary">{advisor.strategy_type}</Badge>
-              </div>
-              {advisor.bio && <p className="mt-4 text-sm text-muted-foreground">{advisor.bio}</p>}
-            </div>
 
-            {/* Groups */}
-            <div className="mt-4 space-y-3">
-              <h3 className="font-semibold">Signal Groups</h3>
-              {groups.length === 0 && (
-                <div className="rounded-lg border border-dashed bg-muted/30 p-4 text-center">
-                  <p className="text-sm text-muted-foreground">This advisor hasn't created any signal groups yet.</p>
-                  <p className="text-xs text-muted-foreground mt-1">Check back later for subscription options.</p>
+      {/* Top Hero Card */}
+      <section className="tc-section pb-0">
+        <div className="container mx-auto">
+          <div className="tc-card-static p-8">
+            <div className="flex flex-col md:flex-row md:items-center gap-6">
+              <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-muted text-3xl font-bold overflow-hidden">
+                {advisor.profile_photo_url ? (
+                  <img src={advisor.profile_photo_url} alt={advisor.full_name} className="h-24 w-24 rounded-full object-cover" />
+                ) : advisor.full_name.charAt(0)}
+              </div>
+              <div className="flex-1">
+                <h1 className="tc-page-title text-3xl">{advisor.full_name}</h1>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <span className="tc-badge-sebi"><Shield className="h-3 w-3" /> SEBI: {advisor.sebi_reg_no}</span>
+                  <span className="tc-badge-strategy">{advisor.strategy_type}</span>
+                </div>
+                {advisor.bio && <p className="mt-3 text-muted-foreground max-w-xl">{advisor.bio}</p>}
+              </div>
+              {groups.length > 0 && (
+                <div className="text-right shrink-0">
+                  <p className="tc-small">Starting from</p>
+                  <p className="text-2xl tc-amount">₹{Math.min(...groups.map(g => g.monthly_price))}/mo</p>
                 </div>
               )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <div className="container mx-auto px-4 py-10">
+        <div className="grid gap-8 lg:grid-cols-3">
+          {/* Left: Groups */}
+          <div className="lg:col-span-1">
+            <h2 className="tc-section-title text-xl mb-4">Available Groups</h2>
+            {groups.length === 0 && (
+              <div className="tc-card-static p-6 text-center border-dashed">
+                <p className="text-sm text-muted-foreground">This advisor hasn't created any signal groups yet.</p>
+              </div>
+            )}
+            <div className="space-y-4">
               {groups.map(group => (
-                <div key={group.id} className="rounded-lg border bg-card p-4">
+                <div key={group.id} className="tc-card p-5">
                   <div className="flex items-center gap-3">
                     {group.dp_url ? (
-                      <img src={group.dp_url} alt={group.name} className="h-10 w-10 rounded-full object-cover" />
+                      <img src={group.dp_url} alt={group.name} className="h-12 w-12 rounded-full object-cover" />
                     ) : (
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted font-bold">{group.name.charAt(0)}</div>
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-light-green font-bold text-primary">{group.name.charAt(0)}</div>
                     )}
                     <div>
-                      <p className="font-medium">{group.name}</p>
-                      <p className="text-sm text-muted-foreground">{group.subCount} subscribers</p>
+                      <p className="tc-card-title">{group.name}</p>
+                      <p className="tc-small flex items-center gap-1"><Users className="h-3 w-3" /> {group.subCount} subscribers</p>
                     </div>
                   </div>
-                  {group.description && <p className="mt-2 text-xs text-muted-foreground">{group.description}</p>}
-                  <p className="mt-2 text-lg font-bold">₹{group.monthly_price}/month</p>
+                  {group.description && <p className="mt-2 tc-small">{group.description}</p>}
+                  <p className="mt-3 text-xl tc-amount">₹{group.monthly_price}/month</p>
                   {subscribedGroupIds.includes(group.id) ? (
-                    <Badge className="mt-2 bg-primary text-primary-foreground">✓ Subscribed</Badge>
+                    <span className="tc-badge-active mt-3 inline-block">✓ Subscribed</span>
                   ) : (
-                    <Button className="mt-2 w-full" size="sm" onClick={() => handleSubscribe(group)} disabled={subscribing === group.id}>
-                      {subscribing === group.id ? 'Processing...' : `Subscribe Now — ₹${group.monthly_price}/mo`}
+                    <Button className="mt-3 w-full font-semibold tc-btn-click" size="sm" onClick={() => handleSubscribe(group)} disabled={subscribing === group.id}>
+                      {subscribing === group.id ? 'Processing...' : `Subscribe ₹${group.monthly_price}/mo`}
                     </Button>
                   )}
                 </div>
@@ -158,39 +145,46 @@ export default function AdvisorProfile() {
             </div>
           </div>
 
-          {/* Right column - Signals */}
+          {/* Right: Signals */}
           <div className="lg:col-span-2">
-            {/* Today's signals */}
-            <div className="mb-6">
-              <h3 className="mb-3 text-lg font-semibold">Today's Signals</h3>
-              {!user || !isSubscribedToAny ? (
-                <div className="space-y-3">
-                  <SignalCard signal={{} as Signal} locked />
-                  <SignalCard signal={{} as Signal} locked />
-                </div>
-              ) : todaySignals.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No signals posted today yet.</p>
-              ) : (
-                <div className="space-y-3">
-                  {todaySignals.map(s => <SignalCard key={s.id} signal={s} />)}
-                </div>
-              )}
+            <h2 className="tc-section-title text-xl mb-4">Signal History</h2>
+            <div className="flex gap-2 mb-6">
+              {[{ key: 'all', label: 'All Signals' }, { key: 'past', label: 'Past' }, { key: 'today', label: 'Today (Subscribers Only)' }].map(t => (
+                <Button key={t.key} variant={signalTab === t.key ? 'default' : 'outline'} size="sm" className="tc-btn-click" onClick={() => setSignalTab(t.key as any)}>{t.label}</Button>
+              ))}
             </div>
 
-            {/* Past signals */}
-            <div>
-              <h3 className="mb-3 text-lg font-semibold">Past Signals</h3>
-              {signals.length === 0 ? (
-                <p className="text-sm text-muted-foreground">No past signals yet.</p>
-              ) : (
-                <div className="space-y-3">
-                  {signals.map(s => <SignalCard key={s.id} signal={s} />)}
-                </div>
-              )}
-            </div>
+            {(signalTab === 'today' || signalTab === 'all') && (
+              <div className="mb-6">
+                {signalTab === 'all' && <h3 className="tc-card-title mb-3">Today's Signals</h3>}
+                {!user || !isSubscribedToAny ? (
+                  <div className="space-y-3">
+                    <SignalCard signal={{} as Signal} locked />
+                    <SignalCard signal={{} as Signal} locked />
+                  </div>
+                ) : todaySignals.length === 0 ? (
+                  <p className="tc-small">No signals posted today yet.</p>
+                ) : (
+                  <div className="space-y-3">{todaySignals.map(s => <SignalCard key={s.id} signal={s} />)}</div>
+                )}
+              </div>
+            )}
+
+            {(signalTab === 'past' || signalTab === 'all') && (
+              <div>
+                {signalTab === 'all' && <h3 className="tc-card-title mb-3">Past Signals</h3>}
+                {signals.length === 0 ? (
+                  <p className="tc-small">No past signals yet.</p>
+                ) : (
+                  <div className="space-y-3">{signals.map(s => <SignalCard key={s.id} signal={s} />)}</div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 }

@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,13 +7,13 @@
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 0 0% 7%;
+    --foreground: 240 25% 14%;
 
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 7%;
+    --card-foreground: 240 25% 14%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 7%;
+    --popover-foreground: 240 25% 14%;
 
     --primary: 123 56% 24%;
     --primary-foreground: 0 0% 100%;
@@ -19,59 +21,72 @@
     --secondary: 214 89% 34%;
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
+    --muted: 210 17% 98%;
+    --muted-foreground: 220 9% 46%;
 
-    --accent: 0 0% 96%;
-    --accent-foreground: 0 0% 7%;
+    --accent: 210 17% 98%;
+    --accent-foreground: 240 25% 14%;
 
     --destructive: 0 72% 47%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
     --ring: 123 56% 24%;
 
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    --sidebar-background: 0 0% 98%;
-    --sidebar-foreground: 0 0% 7%;
-    --sidebar-primary: 123 56% 24%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 96%;
-    --sidebar-accent-foreground: 0 0% 7%;
-    --sidebar-border: 0 0% 90%;
-    --sidebar-ring: 123 56% 24%;
+    --sidebar-background: 214 89% 34%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 214 89% 34%;
+    --sidebar-accent: 214 89% 40%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 214 89% 45%;
+    --sidebar-ring: 0 0% 100%;
+
+    --light-green: 120 52% 93%;
+    --light-blue: 213 100% 94%;
+    --off-white: 210 17% 98%;
+    --grey-text: 220 9% 46%;
+    --small-text: 220 9% 64%;
+    --warning: 45 100% 51%;
+    --warning-foreground: 240 25% 14%;
   }
 
   .dark {
-    --background: 0 0% 7%;
+    --background: 240 25% 14%;
     --foreground: 0 0% 96%;
-    --card: 0 0% 10%;
+    --card: 240 20% 18%;
     --card-foreground: 0 0% 96%;
-    --popover: 0 0% 10%;
+    --popover: 240 20% 18%;
     --popover-foreground: 0 0% 96%;
-    --primary: 123 56% 24%;
+    --primary: 123 56% 30%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 214 89% 34%;
+    --secondary: 214 89% 45%;
     --secondary-foreground: 0 0% 100%;
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 60%;
-    --accent: 0 0% 15%;
+    --muted: 240 20% 22%;
+    --muted-foreground: 220 9% 64%;
+    --accent: 240 20% 22%;
     --accent-foreground: 0 0% 96%;
     --destructive: 0 72% 47%;
     --destructive-foreground: 0 0% 100%;
-    --border: 0 0% 20%;
-    --input: 0 0% 20%;
-    --ring: 123 56% 24%;
-    --sidebar-background: 0 0% 7%;
+    --border: 240 20% 25%;
+    --input: 240 20% 25%;
+    --ring: 123 56% 30%;
+    --sidebar-background: 214 89% 25%;
     --sidebar-foreground: 0 0% 96%;
-    --sidebar-primary: 123 56% 24%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 0 0% 15%;
+    --sidebar-primary: 0 0% 100%;
+    --sidebar-primary-foreground: 214 89% 34%;
+    --sidebar-accent: 214 89% 30%;
     --sidebar-accent-foreground: 0 0% 96%;
-    --sidebar-border: 0 0% 20%;
-    --sidebar-ring: 123 56% 24%;
+    --sidebar-border: 214 89% 35%;
+    --sidebar-ring: 0 0% 100%;
+    --light-green: 120 30% 20%;
+    --light-blue: 213 50% 20%;
+    --off-white: 240 20% 16%;
+    --grey-text: 220 9% 64%;
+    --small-text: 220 9% 50%;
   }
 }
 
@@ -82,5 +97,85 @@
   body {
     @apply bg-background text-foreground;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-size: 15px;
+  }
+}
+
+@layer components {
+  .tc-card {
+    @apply bg-card rounded-xl border border-border shadow-[0_2px_16px_rgba(0,0,0,0.06)] transition-all duration-200 ease-out;
+  }
+  .tc-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.10);
+  }
+  .tc-card-static {
+    @apply bg-card rounded-xl border border-border shadow-[0_2px_16px_rgba(0,0,0,0.06)];
+  }
+  .tc-page-title {
+    @apply text-4xl font-extrabold text-foreground tracking-tight;
+  }
+  .tc-section-title {
+    @apply text-[28px] font-bold text-foreground;
+  }
+  .tc-card-title {
+    @apply text-lg font-semibold text-foreground;
+  }
+  .tc-body {
+    @apply text-[15px] text-muted-foreground;
+  }
+  .tc-small {
+    @apply text-[13px] text-[hsl(var(--small-text))];
+  }
+  .tc-amount {
+    @apply font-bold text-primary;
+  }
+  .tc-section {
+    @apply py-20 px-4;
+  }
+  .tc-section-alt {
+    @apply py-20 px-4 bg-[hsl(var(--off-white))];
+  }
+  .tc-btn-click:active {
+    transform: scale(0.98);
+  }
+  .tc-badge-sebi {
+    @apply inline-flex items-center gap-1 rounded-full border border-primary bg-[hsl(var(--light-green))] px-2.5 py-1 text-xs font-semibold text-primary;
+  }
+  .tc-badge-strategy {
+    @apply inline-flex items-center rounded-full bg-[hsl(var(--light-blue))] px-2.5 py-1 text-xs font-semibold text-secondary;
+  }
+  .tc-badge-active {
+    @apply inline-flex items-center rounded-full bg-[hsl(var(--light-green))] px-2.5 py-1 text-xs font-semibold text-primary;
+  }
+  .tc-badge-pending {
+    @apply inline-flex items-center rounded-full bg-[hsl(45,100%,94%)] px-2.5 py-1 text-xs font-semibold text-[hsl(45,96%,53%)];
+  }
+  .tc-badge-rejected {
+    @apply inline-flex items-center rounded-full bg-[hsl(0,100%,95%)] px-2.5 py-1 text-xs font-semibold text-destructive;
+  }
+  .tc-badge-admin {
+    @apply inline-flex items-center rounded-full bg-secondary px-2.5 py-1 text-xs font-semibold text-secondary-foreground;
+  }
+  .tc-input-focus:focus {
+    @apply border-primary ring-1 ring-primary;
+  }
+}
+
+@layer utilities {
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
+    20%, 40%, 60%, 80% { transform: translateX(4px); }
+  }
+  .animate-shake {
+    animation: shake 0.5s ease-in-out;
+  }
+  @keyframes green-flash {
+    0% { background-color: hsl(123 56% 24% / 0.2); }
+    100% { background-color: transparent; }
+  }
+  .animate-green-flash {
+    animation: green-flash 0.6s ease-out;
   }
 }
