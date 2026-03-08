@@ -34,6 +34,18 @@ export default function AdvisorDashboard() {
     if (user) fetchData();
   }, [user]);
 
+  // Realtime: refresh when new subscription comes in
+  useEffect(() => {
+    if (!advisor) return;
+    const channel = supabase.channel('advisor-subs-realtime')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'subscriptions', filter: `advisor_id=eq.${advisor.id}` }, () => {
+        toast.info('New subscriber joined!');
+        fetchData();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [advisor]);
+
   const fetchData = async () => {
     const { data: adv } = await supabase.from('advisors').select('*').eq('user_id', user!.id).single();
     setAdvisor(adv);
