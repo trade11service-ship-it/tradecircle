@@ -129,31 +129,13 @@ export default function Landing() {
             </Button>
           </Link>
 
-          {/* Social Proof Line */}
-          <div className="mt-5 flex items-center justify-center gap-2">
-            <div className="flex -space-x-2">
-              {[
-                { bg: 'bg-primary', letter: 'A' },
-                { bg: 'bg-secondary', letter: 'R' },
-                { bg: 'bg-[hsl(214,60%,45%)]', letter: 'S' },
-                { bg: 'bg-[hsl(123,40%,35%)]', letter: 'M' },
-              ].map((av, i) => (
-                <div key={i} className={`flex h-7 w-7 items-center justify-center rounded-full ${av.bg} text-[10px] font-bold text-primary-foreground ring-2 ring-background`}>
-                  {av.letter}
-                </div>
-              ))}
-            </div>
-            <span className="text-[13px] font-medium text-muted-foreground">
-              <span className="font-bold text-primary">500+</span> traders joined this month
-            </span>
-          </div>
-
-          {/* Authority Footer Note */}
-          <div className="mt-4 flex items-center justify-center gap-1.5">
-            <Lock className="h-3 w-3 text-[hsl(var(--small-text))]" />
-            <span className="text-[10px] tracking-wide text-[hsl(var(--small-text))]">
-              Operated by STREZONIC PRIVATE LIMITED · CIN: U62099MH2025PTC453360
-            </span>
+          {/* Trust Highlights */}
+          <div className="mt-5 flex flex-wrap items-center justify-center gap-3 text-[12px] font-medium text-muted-foreground">
+            <span className="inline-flex items-center gap-1"><ShieldCheck className="h-3.5 w-3.5 text-primary" /> SEBI Compliant</span>
+            <span className="text-border">•</span>
+            <span className="inline-flex items-center gap-1"><Bell className="h-3.5 w-3.5 text-secondary" /> Instant Telegram Signals</span>
+            <span className="text-border">•</span>
+            <span className="inline-flex items-center gap-1"><CreditCard className="h-3.5 w-3.5 text-primary" /> Cancel Anytime</span>
           </div>
         </div>
       </section>
