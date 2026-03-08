@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
+
 import { GroupFeed } from '@/components/GroupFeed';
 import { ReferralLinkCard } from '@/components/ReferralLinkCard';
 import { ReferralStatsTab } from '@/components/ReferralStatsTab';
@@ -180,7 +180,7 @@ export default function AdvisorDashboard() {
   };
 
   if (loading) return <div className="min-h-screen bg-background"><Navbar /><div className="flex items-center justify-center py-20"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div></div>;
-  if (!advisor) return <div className="min-h-screen bg-background"><Navbar /><div className="py-20 text-center text-muted-foreground">No advisor profile found.</div><Footer /></div>;
+  if (!advisor) return <div className="min-h-screen bg-background"><Navbar /><div className="py-20 text-center text-muted-foreground">No advisor profile found.</div></div>;
 
   if (advisor.status === 'pending') return (
     <div className="min-h-screen flex flex-col bg-background"><Navbar />
@@ -191,7 +191,6 @@ export default function AdvisorDashboard() {
           <p className="mt-2 text-muted-foreground">We'll notify you once your SEBI verification is complete.</p>
         </div>
       </div>
-      <Footer />
     </div>
   );
 
@@ -204,7 +203,6 @@ export default function AdvisorDashboard() {
           {advisor.rejection_reason && <p className="mt-2 text-muted-foreground">Reason: {advisor.rejection_reason}</p>}
         </div>
       </div>
-      <Footer />
     </div>
   );
 
@@ -694,7 +692,6 @@ export default function AdvisorDashboard() {
           </div>
         )}
       </div>
-      <Footer />
     </div>
   );
 }

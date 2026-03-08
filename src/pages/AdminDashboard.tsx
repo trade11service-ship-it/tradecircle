@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useAuth } from '@/lib/auth';
@@ -117,7 +117,6 @@ export default function AdminDashboard() {
           <Button className="mt-6 tc-btn-click" variant="outline" onClick={() => navigate('/')}>Go Home</Button>
         </div>
       </div>
-      <Footer />
     </div>
   );
 
@@ -395,7 +394,7 @@ export default function AdminDashboard() {
           <AdminReferralTab />
         )}
       </div>
-      <Footer />
+      
     </div>
   );
 }
