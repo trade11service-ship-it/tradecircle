@@ -3,6 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { GroupFeed } from '@/components/GroupFeed';
+import { ReferralLinkCard } from '@/components/ReferralLinkCard';
+import { ReferralStatsTab } from '@/components/ReferralStatsTab';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
-import { BarChart3, Radio, Users, UserCircle, IndianRupee, TrendingUp, Clock, CheckCircle2, XCircle, AlertTriangle, MessageSquare, ImageIcon, X, Globe, Lock } from 'lucide-react';
+import { BarChart3, Radio, Users, UserCircle, IndianRupee, TrendingUp, Clock, CheckCircle2, XCircle, AlertTriangle, MessageSquare, ImageIcon, X, Globe, Lock, Gift } from 'lucide-react';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Advisor = Tables<'advisors'>;
@@ -25,7 +27,7 @@ export default function AdvisorDashboard() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [subscribers, setSubscribers] = useState<any[]>([]);
   const [signals, setSignals] = useState<Signal[]>([]);
-  const [tab, setTab] = useState<'groups' | 'post' | 'signals_history' | 'subscribers' | 'revenue' | 'profile'>('groups');
+  const [tab, setTab] = useState<'groups' | 'post' | 'signals_history' | 'subscribers' | 'revenue' | 'referrals' | 'profile'>('groups');
   const [loading, setLoading] = useState(true);
   const [groupForm, setGroupForm] = useState({ name: '', description: '', monthlyPrice: '' });
   const [groupDp, setGroupDp] = useState<File | null>(null);
@@ -229,6 +231,7 @@ export default function AdvisorDashboard() {
     { key: 'signals_history' as const, label: 'My Signals', icon: TrendingUp },
     { key: 'subscribers' as const, label: 'Subscribers', icon: Users },
     { key: 'revenue' as const, label: 'Revenue', icon: IndianRupee },
+    { key: 'referrals' as const, label: 'Referrals', icon: Gift },
     { key: 'profile' as const, label: 'Profile', icon: UserCircle },
   ];
 
@@ -310,6 +313,7 @@ export default function AdvisorDashboard() {
                         <p className="text-xs text-muted-foreground">Earnings</p>
                       </div>
                     </div>
+                    <ReferralLinkCard groupId={g.id} groupName={g.name} advisorId={advisor.id} advisorName={advisor.full_name} />
                   </div>
                 );
               })}
@@ -658,6 +662,11 @@ export default function AdvisorDashboard() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* REFERRALS TAB */}
+        {tab === 'referrals' && (
+          <ReferralStatsTab advisorId={advisor.id} />
         )}
 
         {/* PROFILE TAB */}

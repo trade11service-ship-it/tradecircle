@@ -333,6 +333,189 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_links: {
+        Row: {
+          advisor_id: string
+          created_at: string | null
+          group_id: string
+          id: string
+          is_active: boolean | null
+          referral_code: string
+          total_clicks: number | null
+          total_conversions: number | null
+          total_revenue_generated: number | null
+          total_signups: number | null
+        }
+        Insert: {
+          advisor_id: string
+          created_at?: string | null
+          group_id: string
+          id?: string
+          is_active?: boolean | null
+          referral_code: string
+          total_clicks?: number | null
+          total_conversions?: number | null
+          total_revenue_generated?: number | null
+          total_signups?: number | null
+        }
+        Update: {
+          advisor_id?: string
+          created_at?: string | null
+          group_id?: string
+          id?: string
+          is_active?: boolean | null
+          referral_code?: string
+          total_clicks?: number | null
+          total_conversions?: number | null
+          total_revenue_generated?: number | null
+          total_signups?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_links_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "advisors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_links_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referral_signups: {
+        Row: {
+          advisor_id: string
+          converted_to_paid: boolean | null
+          group_id: string
+          id: string
+          is_referral_active: boolean | null
+          platform_fee_percent: number | null
+          referral_code: string
+          signed_up_at: string | null
+          subscription_id: string | null
+          user_id: string
+        }
+        Insert: {
+          advisor_id: string
+          converted_to_paid?: boolean | null
+          group_id: string
+          id?: string
+          is_referral_active?: boolean | null
+          platform_fee_percent?: number | null
+          referral_code: string
+          signed_up_at?: string | null
+          subscription_id?: string | null
+          user_id: string
+        }
+        Update: {
+          advisor_id?: string
+          converted_to_paid?: boolean | null
+          group_id?: string
+          id?: string
+          is_referral_active?: boolean | null
+          platform_fee_percent?: number | null
+          referral_code?: string
+          signed_up_at?: string | null
+          subscription_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_signups_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "advisors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_signups_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_signups_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      referral_visits: {
+        Row: {
+          advisor_id: string
+          converted_to_paid: boolean | null
+          converted_to_signup: boolean | null
+          group_id: string
+          id: string
+          referral_code: string
+          user_agent: string | null
+          user_id: string | null
+          visited_at: string | null
+          visitor_ip: string | null
+        }
+        Insert: {
+          advisor_id: string
+          converted_to_paid?: boolean | null
+          converted_to_signup?: boolean | null
+          group_id: string
+          id?: string
+          referral_code: string
+          user_agent?: string | null
+          user_id?: string | null
+          visited_at?: string | null
+          visitor_ip?: string | null
+        }
+        Update: {
+          advisor_id?: string
+          converted_to_paid?: boolean | null
+          converted_to_signup?: boolean | null
+          group_id?: string
+          id?: string
+          referral_code?: string
+          user_agent?: string | null
+          user_id?: string | null
+          visited_at?: string | null
+          visitor_ip?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_visits_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "advisors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_visits_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_visits_referral_code_fkey"
+            columns: ["referral_code"]
+            isOneToOne: false
+            referencedRelation: "referral_links"
+            referencedColumns: ["referral_code"]
+          },
+          {
+            foreignKeyName: "referral_visits_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       signal_deliveries: {
         Row: {
           advisor_id: string
@@ -476,9 +659,13 @@ export type Database = {
           amount_paid: number | null
           created_at: string | null
           end_date: string | null
+          from_referral: boolean | null
           group_id: string
           id: string
+          platform_fee_percent: number | null
           razorpay_payment_id: string | null
+          referral_advisor_id: string | null
+          referral_code: string | null
           start_date: string | null
           status: string | null
           user_id: string
@@ -488,9 +675,13 @@ export type Database = {
           amount_paid?: number | null
           created_at?: string | null
           end_date?: string | null
+          from_referral?: boolean | null
           group_id: string
           id?: string
+          platform_fee_percent?: number | null
           razorpay_payment_id?: string | null
+          referral_advisor_id?: string | null
+          referral_code?: string | null
           start_date?: string | null
           status?: string | null
           user_id: string
@@ -500,9 +691,13 @@ export type Database = {
           amount_paid?: number | null
           created_at?: string | null
           end_date?: string | null
+          from_referral?: boolean | null
           group_id?: string
           id?: string
+          platform_fee_percent?: number | null
           razorpay_payment_id?: string | null
+          referral_advisor_id?: string | null
+          referral_code?: string | null
           start_date?: string | null
           status?: string | null
           user_id?: string
@@ -643,6 +838,15 @@ export type Database = {
       get_advisor_subscriber_count: {
         Args: { _advisor_id: string }
         Returns: number
+      }
+      increment_referral_clicks: { Args: { _code: string }; Returns: undefined }
+      increment_referral_conversions: {
+        Args: { _code: string; _revenue: number }
+        Returns: undefined
+      }
+      increment_referral_signups: {
+        Args: { _code: string }
+        Returns: undefined
       }
       is_admin: { Args: { _user_id: string }; Returns: boolean }
     }
