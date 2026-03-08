@@ -63,6 +63,9 @@ export default function AdminDashboard() {
     setAdvisorLegal(advLegal.data || []);
     setUserLegal(usrLegal.data || []);
 
+    const { data: delReqs } = await supabase.from('deletion_requests').select('*').order('created_at', { ascending: false });
+    setDeletionRequests(delReqs || []);
+
     setLoading(false);
   };
 
@@ -124,6 +127,7 @@ export default function AdminDashboard() {
     { key: 'users' as const, label: 'All Users' },
     { key: 'payments' as const, label: 'Payments' },
     { key: 'legal' as const, label: 'Legal Records' },
+    { key: 'requests' as const, label: `Requests (${deletionRequests.filter(r => r.status === 'pending').length})` },
   ];
 
   const filteredAdvisorLegal = advisorLegal.filter((r: any) =>
