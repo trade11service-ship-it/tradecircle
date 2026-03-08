@@ -3,12 +3,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { GroupFeed } from '@/components/GroupFeed';
+import { FollowFeed } from '@/components/FollowFeed';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
-import { Bell, BellOff, Send, BarChart3, ExternalLink, CheckCircle2, AlertTriangle, RotateCcw, Shield, User, Loader2 } from 'lucide-react';
+import { Bell, BellOff, Send, BarChart3, ExternalLink, CheckCircle2, AlertTriangle, RotateCcw, Shield, User, Loader2, Rss } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { Tables } from '@/integrations/supabase/types';
 
@@ -35,7 +36,7 @@ export default function TraderDashboard() {
   const { user, profile } = useAuth();
   const [subscriptions, setSubscriptions] = useState<(Subscription & { group: GroupInfo })[]>([]);
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'signals' | 'telegram'>('signals');
+  const [activeTab, setActiveTab] = useState<'signals' | 'telegram' | 'feed'>('signals');
   const [telegramSettings, setTelegramSettings] = useState<Record<string, TelegramSetting>>({});
   const [telegramConnected, setTelegramConnected] = useState(false);
   const [telegramUsername, setTelegramUsername] = useState('');
