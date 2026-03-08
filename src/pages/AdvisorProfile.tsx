@@ -5,7 +5,7 @@ import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { SignalCard } from '@/components/SignalCard';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
+
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
 import { Shield, Users, ArrowRight, Heart } from 'lucide-react';
