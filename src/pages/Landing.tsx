@@ -29,12 +29,10 @@ export default function Landing() {
       .select('*, groups(monthly_price)')
       .eq('status', 'approved');
     if (advisorsData) {
-      // Use a public-friendly count approach - count via groups since subscriptions has RLS
       const withSubs = await Promise.all(advisorsData.map(async (a) => {
-        // For subscriber count, we query with service key is not possible from client
-        // Instead use a workaround: count subscriptions visible to current user or show groups count
-        const { count } = await supabase.from('subscriptions').select('*', { count: 'exact', head: true }).eq('advisor_id', a.id).eq('status', 'active');
-        return { ...a, subCount: count || 0 };
+        // Use security definer function for public subscriber count
+        const { data: countData } = await supabase.rpc('get_advisor_subscriber_count', { _advisor_id: a.id });
+        return { ...a, subCount: (countData as number) || 0 };
       }));
       setAdvisors(withSubs as any);
     }
