@@ -10,7 +10,7 @@ import type { Tables } from '@/integrations/supabase/types';
 import {
   LayoutDashboard, Clock, UserCheck, Users, CreditCard, Gift, FileText, Mail,
   ShieldAlert, IndianRupee, Search, Download, CheckCircle, UserPlus, BarChart3,
-  ChevronRight, Lock, Shield, Eye,
+  ChevronRight, Lock, Shield, Eye, ExternalLink,
 } from 'lucide-react';
 
 type Advisor = Tables<'advisors'>;
@@ -280,6 +280,17 @@ export default function AdminDashboard() {
             </div>
           ))}
         </nav>
+
+        {/* Go to Website */}
+        <div className="px-3 pb-2">
+          <button
+            onClick={() => navigate('/')}
+            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] text-[13px] font-medium text-white/60 hover:bg-white/[0.06] hover:text-white/90 transition-all duration-150 cursor-pointer"
+          >
+            <ExternalLink size={18} />
+            <span>Go to Website</span>
+          </button>
+        </div>
 
         {/* Admin profile */}
         <div className="px-3 py-4 border-t border-white/[0.08]">
