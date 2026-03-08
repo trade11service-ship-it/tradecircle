@@ -1,4 +1,5 @@
 import type { Tables } from '@/integrations/supabase/types';
+import { Lock } from 'lucide-react';
 
 type Signal = Tables<'signals'>;
 
@@ -12,16 +13,16 @@ interface SignalCardProps {
 export function SignalCard({ signal, groupName, advisorName, locked }: SignalCardProps) {
   if (locked) {
     return (
-      <div className="relative tc-card-static p-4">
-        <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-muted/80 backdrop-blur-sm">
-          <div className="text-center">
-            <span className="text-2xl">🔒</span>
-            <p className="mt-1 text-sm text-muted-foreground">Subscribe to see today's signals</p>
-          </div>
-        </div>
-        <div className="blur-sm">
-          <p className="font-semibold">HIDDEN SIGNAL</p>
+      <div className="relative overflow-hidden rounded-xl border-[1.5px] border-border bg-card">
+        <div className="pointer-events-none blur-[6px] p-4">
+          <p className="font-semibold text-foreground">HIDDEN SIGNAL</p>
           <p className="text-sm text-muted-foreground">Entry: ₹XXXX | Target: ₹XXXX | SL: ₹XXXX</p>
+        </div>
+        <div className="absolute inset-0 flex flex-col items-center justify-center bg-card/85 backdrop-blur-[2px]">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-border bg-muted">
+            <Lock className="h-[22px] w-[22px] text-primary" />
+          </div>
+          <p className="mt-2 text-sm text-muted-foreground">Subscribe to see today's signals</p>
         </div>
       </div>
     );
@@ -36,56 +37,73 @@ export function SignalCard({ signal, groupName, advisorName, locked }: SignalCar
   const isBuy = signal.signal_type === 'BUY';
   const isMessage = signal.post_type === 'message';
 
+  // Result bar color
+  const barColor =
+    signal.result === 'WIN' ? 'bg-primary' :
+    signal.result === 'LOSS' ? 'bg-[hsl(var(--small-text))]' :
+    'bg-[hsl(var(--warning))]';
+
+  // Result badge
+  const resultBadge = signal.result === 'WIN'
+    ? { bg: 'bg-light-green', text: 'text-primary', label: '✓ WIN' }
+    : signal.result === 'LOSS'
+    ? { bg: 'bg-muted', text: 'text-[hsl(var(--small-text))]', label: '✗ Loss' }
+    : { bg: 'bg-[hsl(45,100%,94%)]', text: 'text-[hsl(25,100%,40%)]', label: '⏳ Open' };
+
   if (isMessage) {
     return (
-      <div className="tc-card-static p-4 overflow-hidden">
-        <div className="flex-1">
-          {(groupName || advisorName) && (
-            <p className="mb-2 tc-small">{groupName} • {advisorName}</p>
-          )}
-          {signal.message_text && <p className="text-sm">{signal.message_text}</p>}
-          {signal.image_url && <img src={signal.image_url} alt="Post" className="mt-2 rounded-lg max-h-64 object-cover" />}
-          <p className="mt-2 tc-small">{formatDate(signal.signal_date)}</p>
-          <p className="mt-2 text-[11px] italic text-muted-foreground">Past performance ≠ future results. Trade at your own risk.</p>
-        </div>
+      <div className="overflow-hidden rounded-xl border-[1.5px] border-border bg-card p-4">
+        {(groupName || advisorName) && (
+          <p className="mb-2 text-[11px] text-[hsl(var(--small-text))]">{groupName} • {advisorName}</p>
+        )}
+        {signal.message_text && <p className="text-sm text-foreground">{signal.message_text}</p>}
+        {signal.image_url && <img src={signal.image_url} alt="Post" className="mt-2 rounded-lg max-h-64 object-cover" />}
+        <p className="mt-2 text-[11px] text-[hsl(var(--small-text))]">{formatDate(signal.signal_date)}</p>
+        <p className="mt-2 text-[11px] italic text-muted-foreground">Past performance ≠ future results. Trade at your own risk.</p>
       </div>
     );
   }
 
   return (
-    <div className="tc-card-static p-4 overflow-hidden">
-      <div className="flex">
-        <div className={`w-1 rounded-full mr-3 self-stretch ${isBuy ? 'bg-primary' : 'bg-destructive'}`} />
-        <div className="flex-1">
-          {(groupName || advisorName) && (
-            <p className="mb-2 tc-small">{groupName} • {advisorName}</p>
-          )}
-          <div className="flex items-center justify-between">
-            <p className="tc-card-title">{signal.instrument}</p>
-            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold ${isBuy ? 'bg-[hsl(var(--light-green))] text-primary' : 'bg-[hsl(0,100%,95%)] text-destructive'}`}>
-              {signal.signal_type}
-            </span>
-          </div>
-          <div className="mt-2 grid grid-cols-3 gap-2 text-sm">
-            <div><span className="text-muted-foreground">Entry:</span> <span className="tc-amount">₹{signal.entry_price}</span></div>
-            <div><span className="text-muted-foreground">Target:</span> <span className="tc-amount">₹{signal.target_price}</span></div>
-            <div><span className="text-muted-foreground">SL:</span> <span className="font-bold text-destructive">₹{signal.stop_loss}</span></div>
-          </div>
-          <div className="mt-2 flex items-center gap-2 flex-wrap">
-            <span className="tc-badge-strategy">{signal.timeframe}</span>
-            <span className={
-              signal.result === 'WIN' ? 'tc-badge-active' :
-              signal.result === 'LOSS' ? 'tc-badge-rejected' :
-              'tc-badge-pending'
-            }>
-              {signal.result}
-            </span>
-            <span className="ml-auto tc-small">{formatDate(signal.signal_date)}</span>
-          </div>
-          {signal.notes && <p className="mt-2 tc-small">{signal.notes}</p>}
-          <p className="mt-2 text-[11px] italic text-muted-foreground">Past performance ≠ future results. Trade at your own risk.</p>
-        </div>
+    <div className="relative overflow-hidden rounded-xl border-[1.5px] border-border bg-card p-4 pl-[18px]">
+      {/* Left color bar */}
+      <div className={`absolute left-0 top-0 bottom-0 w-1 ${barColor}`} />
+
+      {(groupName || advisorName) && (
+        <p className="mb-2 text-[11px] text-[hsl(var(--small-text))]">{groupName} • {advisorName}</p>
+      )}
+
+      {/* Instrument + Type */}
+      <div className="flex items-center justify-between">
+        <p className="text-[15px] font-bold text-foreground">{signal.instrument}</p>
+        <span className={`rounded px-2 py-0.5 text-[11px] font-bold ${
+          isBuy
+            ? 'bg-light-green text-primary'
+            : 'bg-[hsl(45,100%,94%)] text-[hsl(25,100%,40%)]'
+        }`}>
+          {signal.signal_type}
+        </span>
       </div>
+
+      {/* Entry / Target / SL */}
+      <div className="mt-2 flex gap-4 text-xs text-muted-foreground">
+        <span>Entry ₹{signal.entry_price}</span>
+        <span>Target ₹{signal.target_price}</span>
+        <span>SL ₹{signal.stop_loss}</span>
+      </div>
+
+      {/* Result + Date */}
+      <div className="mt-2 flex items-center justify-between">
+        <span className="text-[11px] text-[hsl(var(--small-text))]">{formatDate(signal.signal_date)}</span>
+        {signal.result && (
+          <span className={`rounded px-2 py-0.5 text-[11px] font-bold ${resultBadge.bg} ${resultBadge.text}`}>
+            {resultBadge.label}
+          </span>
+        )}
+      </div>
+
+      {signal.notes && <p className="mt-2 text-[11px] text-[hsl(var(--small-text))]">{signal.notes}</p>}
+      <p className="mt-2 text-[11px] italic text-muted-foreground">Past performance ≠ future results. Trade at your own risk.</p>
     </div>
   );
 }
