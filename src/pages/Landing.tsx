@@ -5,19 +5,23 @@ import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Star, Search, Shield, CreditCard, Bell, MessageCircle, Eye, Ban, IndianRupee, ArrowRight } from 'lucide-react';
+import { Star, Search, Shield, CreditCard, Bell, ArrowRight } from 'lucide-react';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
+import { useAuth } from '@/lib/auth';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Advisor = Tables<'advisors'>;
 
 export default function Landing() {
+  const { user } = useAuth();
   const [advisors, setAdvisors] = useState<(Advisor & { groups: { monthly_price: number }[]; subCount: number })[]>([]);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('All');
   const [loading, setLoading] = useState(true);
+  const [subscribedGroups, setSubscribedGroups] = useState<any[]>([]);
 
   useEffect(() => { fetchAdvisors(); }, []);
+  useEffect(() => { if (user) fetchSubscribedGroups(); }, [user]);
 
   const fetchAdvisors = async () => {
     const { data: advisorsData } = await supabase
@@ -32,6 +36,15 @@ export default function Landing() {
       setAdvisors(withSubs as any);
     }
     setLoading(false);
+  };
+
+  const fetchSubscribedGroups = async () => {
+    const { data } = await supabase
+      .from('subscriptions')
+      .select('*, groups!inner(id, name, monthly_price, advisor_id, advisors!inner(full_name, profile_photo_url, sebi_reg_no, strategy_type))')
+      .eq('user_id', user!.id)
+      .eq('status', 'active');
+    setSubscribedGroups(data || []);
   };
 
   const filtered = advisors.filter(a => {
@@ -91,6 +104,51 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* My Subscriptions - shown for logged in users who have subs */}
+      {user && subscribedGroups.length > 0 && (
+        <section className="tc-section pb-8">
+          <div className="container mx-auto">
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <h2 className="tc-section-title">Your Active Subscriptions</h2>
+                <p className="mt-1 text-muted-foreground">Quick access to your subscribed advisors</p>
+              </div>
+              <Link to="/dashboard">
+                <Button variant="outline" size="sm" className="tc-btn-click border-primary text-primary hover:bg-light-green">
+                  Go to Dashboard <ArrowRight className="ml-1 h-3 w-3" />
+                </Button>
+              </Link>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {subscribedGroups.map((sub: any) => (
+                <div key={sub.id} className="tc-card p-5 border-l-4 border-l-primary">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground overflow-hidden">
+                      {sub.groups.advisors.profile_photo_url ? (
+                        <img src={sub.groups.advisors.profile_photo_url} alt="" className="h-11 w-11 rounded-full object-cover" />
+                      ) : (
+                        sub.groups.advisors.full_name.charAt(0).toUpperCase()
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="tc-card-title truncate">{sub.groups.name}</p>
+                      <p className="tc-small truncate">by {sub.groups.advisors.full_name}</p>
+                    </div>
+                    <span className="tc-badge-active text-xs">Active</span>
+                  </div>
+                  <div className="mt-3 flex items-center justify-between">
+                    <span className="tc-badge-sebi text-xs"><Shield className="h-3 w-3" /> {sub.groups.advisors.sebi_reg_no}</span>
+                    <Link to="/dashboard">
+                      <Button size="sm" variant="ghost" className="text-xs text-primary tc-btn-click">View Signals →</Button>
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* How It Works */}
       <section id="how-it-works" className="tc-section">
         <div className="container mx-auto text-center">
@@ -115,59 +173,8 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Why TradeCircle */}
-      <section className="tc-section-alt">
-        <div className="container mx-auto text-center">
-          <h2 className="tc-section-title">Why TradeCircle?</h2>
-          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {[
-              { icon: '🛡️', title: 'Only SEBI Registered', desc: 'Every advisor is manually verified for valid SEBI registration before listing.' },
-              { icon: '📊', title: 'Transparent Past Performance', desc: 'Full signal history with WIN/LOSS records visible to everyone.' },
-              { icon: '🔔', title: 'Telegram Alerts Built-In', desc: 'Get trading signals delivered to your Telegram instantly.' },
-              { icon: '🚫', title: 'We Are Just a Listing Platform', desc: 'We don\'t give advice. We connect you with verified professionals.' },
-              { icon: '💬', title: 'Direct Advisor Access', desc: 'Subscribe directly to advisors you trust, no middlemen.' },
-              { icon: '₹', title: 'Fair Transparent Pricing', desc: 'Clear monthly pricing. Cancel anytime. No hidden charges.' },
-            ].map((item, i) => (
-              <div key={i} className="tc-card p-6 text-left">
-                <span className="text-2xl">{item.icon}</span>
-                <h3 className="mt-3 tc-card-title">{item.title}</h3>
-                <p className="mt-2 text-sm text-muted-foreground">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Pain Point */}
-      <section className="bg-secondary px-4 py-20">
-        <div className="container mx-auto max-w-2xl text-center text-secondary-foreground">
-          <h2 className="text-[28px] font-bold">You've probably been there...</h2>
-          <div className="mt-8 space-y-3 text-left">
-            {[
-              'Lost money following unverified Telegram gurus',
-              'Paid for tips with zero accountability',
-              'Got promises with no track record to show',
-            ].map((item, i) => (
-              <div key={i} className="flex items-center gap-3 text-lg">
-                <span className="text-destructive font-bold">✗</span>
-                <span className="opacity-90">{item}</span>
-              </div>
-            ))}
-          </div>
-          <div className="my-8 h-0.5 w-24 mx-auto bg-primary rounded-full" />
-          <p className="text-lg font-medium opacity-90">
-            TradeCircle fixes this. SEBI registered. Accountable. Transparent.
-          </p>
-          <a href="#advisors">
-            <Button size="lg" className="mt-6 bg-card text-foreground hover:bg-card/90 tc-btn-click font-semibold">
-              Find Your Advisor <ArrowRight className="ml-1 h-4 w-4" />
-            </Button>
-          </a>
-        </div>
-      </section>
-
       {/* Top Advisors */}
-      <section id="advisors" className="tc-section">
+      <section id="advisors" className="tc-section-alt">
         <div className="container mx-auto">
           <div className="mb-8 text-center">
             <h2 className="tc-section-title">Top Advisors</h2>
@@ -235,6 +242,57 @@ export default function Landing() {
               })}
             </div>
           )}
+        </div>
+      </section>
+
+      {/* Why TradeCircle */}
+      <section className="tc-section">
+        <div className="container mx-auto text-center">
+          <h2 className="tc-section-title">Why TradeCircle?</h2>
+          <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              { icon: '🛡️', title: 'Only SEBI Registered', desc: 'Every advisor is manually verified for valid SEBI registration before listing.' },
+              { icon: '📊', title: 'Transparent Past Performance', desc: 'Full signal history with WIN/LOSS records visible to everyone.' },
+              { icon: '🔔', title: 'Telegram Alerts Built-In', desc: 'Get trading signals delivered to your Telegram instantly.' },
+              { icon: '🚫', title: 'We Are Just a Listing Platform', desc: 'We don\'t give advice. We connect you with verified professionals.' },
+              { icon: '💬', title: 'Direct Advisor Access', desc: 'Subscribe directly to advisors you trust, no middlemen.' },
+              { icon: '₹', title: 'Fair Transparent Pricing', desc: 'Clear monthly pricing. Cancel anytime. No hidden charges.' },
+            ].map((item, i) => (
+              <div key={i} className="tc-card p-6 text-left">
+                <span className="text-2xl">{item.icon}</span>
+                <h3 className="mt-3 tc-card-title">{item.title}</h3>
+                <p className="mt-2 text-sm text-muted-foreground">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Pain Point */}
+      <section className="bg-secondary px-4 py-20">
+        <div className="container mx-auto max-w-2xl text-center text-secondary-foreground">
+          <h2 className="text-[28px] font-bold">You've probably been there...</h2>
+          <div className="mt-8 space-y-3 text-left">
+            {[
+              'Lost money following unverified Telegram gurus',
+              'Paid for tips with zero accountability',
+              'Got promises with no track record to show',
+            ].map((item, i) => (
+              <div key={i} className="flex items-center gap-3 text-lg">
+                <span className="text-destructive font-bold">✗</span>
+                <span className="opacity-90">{item}</span>
+              </div>
+            ))}
+          </div>
+          <div className="my-8 h-0.5 w-24 mx-auto bg-primary rounded-full" />
+          <p className="text-lg font-medium opacity-90">
+            TradeCircle fixes this. SEBI registered. Accountable. Transparent.
+          </p>
+          <a href="#advisors">
+            <Button size="lg" className="mt-6 bg-card text-foreground hover:bg-card/90 tc-btn-click font-semibold">
+              Find Your Advisor <ArrowRight className="ml-1 h-4 w-4" />
+            </Button>
+          </a>
         </div>
       </section>
 
