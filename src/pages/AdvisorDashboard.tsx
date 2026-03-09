@@ -700,18 +700,49 @@ export default function AdvisorDashboard() {
               <div className="grid grid-cols-3 gap-3 text-center">
                 <div className="rounded-xl bg-muted p-3">
                   <p className="text-[10px] text-[hsl(var(--small-text))] uppercase font-bold tracking-wider">Collections</p>
-                  <p className="text-lg font-bold text-foreground mt-1">₹{thisMonthRevenue.toLocaleString('en-IN')}</p>
+                  <p className="text-lg font-bold text-foreground mt-1">₹{Math.round(monthGross).toLocaleString('en-IN')}</p>
                 </div>
                 <div className="rounded-xl bg-muted p-3">
                   <p className="text-[10px] text-[hsl(var(--small-text))] uppercase font-bold tracking-wider">Deductions</p>
-                  <p className="text-lg font-bold text-muted-foreground mt-1">₹{Math.round(thisMonthRevenue - afterFees(thisMonthRevenue)).toLocaleString('en-IN')}</p>
+                  <p className="text-lg font-bold text-muted-foreground mt-1">₹{Math.round(monthGross - monthNet).toLocaleString('en-IN')}</p>
                 </div>
                 <div className="rounded-xl bg-light-green p-3">
                   <p className="text-[10px] text-[hsl(var(--small-text))] uppercase font-bold tracking-wider">Your Earnings</p>
-                  <p className="text-lg font-bold text-primary mt-1">₹{Math.round(afterFees(thisMonthRevenue)).toLocaleString('en-IN')}</p>
+                  <p className="text-lg font-bold text-primary mt-1">₹{Math.round(monthNet).toLocaleString('en-IN')}</p>
                 </div>
               </div>
             </div>
+
+            {/* Daily Earnings Breakdown */}
+            {dailyEarnings.length > 0 && (
+              <div className="rounded-2xl border-[1.5px] border-border bg-card p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+                <h3 className="font-bold mb-3 text-foreground">Daily Earnings Log</h3>
+                <div className="overflow-hidden rounded-xl border border-border">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-muted">
+                        <th className="px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Date</th>
+                        <th className="px-4 py-2.5 text-right text-[11px] font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Collected</th>
+                        <th className="px-4 py-2.5 text-right text-[11px] font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">GST</th>
+                        <th className="px-4 py-2.5 text-right text-[11px] font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Fee</th>
+                        <th className="px-4 py-2.5 text-right text-[11px] font-bold uppercase tracking-wider text-primary">Net</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dailyEarnings.slice(0, 30).map((e, i) => (
+                        <tr key={i} className="border-t border-muted">
+                          <td className="px-4 py-2.5 font-medium text-foreground">{new Date(e.earning_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                          <td className="px-4 py-2.5 text-right text-foreground">₹{Math.round(e.gross_revenue).toLocaleString('en-IN')}</td>
+                          <td className="px-4 py-2.5 text-right text-muted-foreground">-₹{Math.round(e.gst_amount).toLocaleString('en-IN')}</td>
+                          <td className="px-4 py-2.5 text-right text-muted-foreground">-₹{Math.round(e.platform_fee).toLocaleString('en-IN')}</td>
+                          <td className="px-4 py-2.5 text-right font-bold text-primary">₹{Math.round(e.net_earning).toLocaleString('en-IN')}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
 
             <div className="rounded-2xl border-[1.5px] border-border bg-card p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
               <h3 className="font-bold mb-3 text-foreground">Per Group Earnings</h3>
