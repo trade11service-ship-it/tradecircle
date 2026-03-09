@@ -89,7 +89,7 @@ export default function AdvisorDashboard() {
       const { data } = await supabase.storage.from('kyc-documents').upload(`groups/${advisor.id}/${Date.now()}.${groupDp.name.split('.').pop()}`, groupDp);
       if (data) dpUrl = supabase.storage.from('kyc-documents').getPublicUrl(data.path).data.publicUrl;
     }
-    const { data: newGroup, error } = await supabase.from('groups').insert({ advisor_id: advisor.id, name: groupForm.name, description: groupForm.description, monthly_price: parseInt(groupForm.monthlyPrice), dp_url: dpUrl }).select().single();
+    const { data: newGroup, error } = await supabase.from('groups').insert({ advisor_id: advisor.id, name: sanitizeText(groupForm.name), description: sanitizeTextarea(groupForm.description), monthly_price: parseInt(groupForm.monthlyPrice) || 0, dp_url: dpUrl }).select().single();
     if (error) { toast.error(error.message); return; }
     toast.info('Creating payment link...');
     const { data: session } = await supabase.auth.getSession();
@@ -132,7 +132,7 @@ export default function AdvisorDashboard() {
       group_id: messageForm.groupId,
       advisor_id: advisor.id,
       post_type: 'message',
-      message_text: messageForm.text,
+      message_text: sanitizeTextarea(messageForm.text),
       image_url: imageUrl,
       instrument: '',
       signal_type: '',
@@ -160,13 +160,13 @@ export default function AdvisorDashboard() {
       group_id: signalForm.groupId,
       advisor_id: advisor.id,
       post_type: 'signal',
-      instrument: signalForm.instrument,
+      instrument: sanitizeText(signalForm.instrument),
       signal_type: signalForm.signalType,
-      entry_price: parseFloat(signalForm.entryPrice),
-      target_price: parseFloat(signalForm.targetPrice),
-      stop_loss: parseFloat(signalForm.stopLoss),
+      entry_price: parseFloat(sanitizeNumeric(signalForm.entryPrice)) || 0,
+      target_price: parseFloat(sanitizeNumeric(signalForm.targetPrice)) || 0,
+      stop_loss: parseFloat(sanitizeNumeric(signalForm.stopLoss)) || 0,
       timeframe: signalForm.timeframe,
-      notes: signalForm.notes,
+      notes: sanitizeTextarea(signalForm.notes),
       is_public: signalForm.isPublic,
     }).select().single();
 
