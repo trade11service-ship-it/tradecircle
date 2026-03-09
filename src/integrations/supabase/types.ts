@@ -14,6 +14,50 @@ export type Database = {
   }
   public: {
     Tables: {
+      advisor_daily_earnings: {
+        Row: {
+          advisor_id: string
+          created_at: string | null
+          earning_date: string
+          gross_revenue: number
+          gst_amount: number
+          id: string
+          net_earning: number
+          platform_fee: number
+          subscription_count: number
+        }
+        Insert: {
+          advisor_id: string
+          created_at?: string | null
+          earning_date?: string
+          gross_revenue?: number
+          gst_amount?: number
+          id?: string
+          net_earning?: number
+          platform_fee?: number
+          subscription_count?: number
+        }
+        Update: {
+          advisor_id?: string
+          created_at?: string | null
+          earning_date?: string
+          gross_revenue?: number
+          gst_amount?: number
+          id?: string
+          net_earning?: number
+          platform_fee?: number
+          subscription_count?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "advisor_daily_earnings_advisor_id_fkey"
+            columns: ["advisor_id"]
+            isOneToOne: false
+            referencedRelation: "advisors"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       advisor_legal_acceptances: {
         Row: {
           advisor_id: string
@@ -835,6 +879,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_advisor_earnings: {
+        Args: { _advisor_id: string; _month?: string }
+        Returns: Json
+      }
       get_advisor_signal_stats: { Args: { _advisor_id: string }; Returns: Json }
       get_advisor_subscriber_count: {
         Args: { _advisor_id: string }
