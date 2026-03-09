@@ -15,11 +15,13 @@ import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
 import { BarChart3, Radio, Users, UserCircle, IndianRupee, TrendingUp, Clock, CheckCircle2, XCircle, AlertTriangle, MessageSquare, ImageIcon, X, Globe, Lock, Gift, Plus, Shield } from 'lucide-react';
+import { sanitizeText, sanitizeTextarea, sanitizeNumeric, sanitizeAlphanumeric } from '@/lib/sanitize';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Advisor = Tables<'advisors'>;
 type Group = Tables<'groups'>;
 type Signal = Tables<'signals'>;
+type DailyEarning = { earning_date: string; gross_revenue: number; gst_amount: number; platform_fee: number; net_earning: number; subscription_count: number };
 
 export default function AdvisorDashboard() {
   const { user } = useAuth();
@@ -27,6 +29,8 @@ export default function AdvisorDashboard() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [subscribers, setSubscribers] = useState<any[]>([]);
   const [signals, setSignals] = useState<Signal[]>([]);
+  const [dailyEarnings, setDailyEarnings] = useState<DailyEarning[]>([]);
+  const [earningsSummary, setEarningsSummary] = useState<any>(null);
   const [tab, setTab] = useState<'groups' | 'post' | 'signals_history' | 'subscribers' | 'revenue' | 'referrals' | 'profile'>('groups');
   const [loading, setLoading] = useState(true);
   const [groupForm, setGroupForm] = useState({ name: '', description: '', monthlyPrice: '' });
@@ -60,14 +64,20 @@ export default function AdvisorDashboard() {
     const adv = advList?.find(a => a.status === 'approved') || advList?.[0] || null;
     setAdvisor(adv);
     if (adv) {
-      const [grpsRes, subsRes, sigsRes] = await Promise.all([
+      const [grpsRes, subsRes, sigsRes, earningsRes] = await Promise.all([
         supabase.from('groups').select('*').eq('advisor_id', adv.id),
-        supabase.from('subscriptions').select('*, profiles!inner(full_name, email), groups!inner(name)').eq('advisor_id', adv.id).order('created_at', { ascending: false }),
+        supabase.from('subscriptions').select('*, profiles(full_name, email), groups!inner(name)').eq('advisor_id', adv.id).order('created_at', { ascending: false }),
         supabase.from('signals').select('*').eq('advisor_id', adv.id).order('created_at', { ascending: false }),
+        supabase.from('advisor_daily_earnings').select('*').eq('advisor_id', adv.id).order('earning_date', { ascending: false }),
       ]);
       setGroups(grpsRes.data || []);
       setSubscribers(subsRes.data || []);
       setSignals(sigsRes.data || []);
+      setDailyEarnings((earningsRes.data as any[]) || []);
+
+      // Also fetch summary via RPC
+      const { data: summary } = await supabase.rpc('get_advisor_earnings', { _advisor_id: adv.id });
+      setEarningsSummary(summary);
     }
     setLoading(false);
   };
@@ -79,7 +89,7 @@ export default function AdvisorDashboard() {
       const { data } = await supabase.storage.from('kyc-documents').upload(`groups/${advisor.id}/${Date.now()}.${groupDp.name.split('.').pop()}`, groupDp);
       if (data) dpUrl = supabase.storage.from('kyc-documents').getPublicUrl(data.path).data.publicUrl;
     }
-    const { data: newGroup, error } = await supabase.from('groups').insert({ advisor_id: advisor.id, name: groupForm.name, description: groupForm.description, monthly_price: parseInt(groupForm.monthlyPrice), dp_url: dpUrl }).select().single();
+    const { data: newGroup, error } = await supabase.from('groups').insert({ advisor_id: advisor.id, name: sanitizeText(groupForm.name), description: sanitizeTextarea(groupForm.description), monthly_price: parseInt(groupForm.monthlyPrice) || 0, dp_url: dpUrl }).select().single();
     if (error) { toast.error(error.message); return; }
     toast.info('Creating payment link...');
     const { data: session } = await supabase.auth.getSession();
@@ -122,7 +132,7 @@ export default function AdvisorDashboard() {
       group_id: messageForm.groupId,
       advisor_id: advisor.id,
       post_type: 'message',
-      message_text: messageForm.text,
+      message_text: sanitizeTextarea(messageForm.text),
       image_url: imageUrl,
       instrument: '',
       signal_type: '',
@@ -150,13 +160,13 @@ export default function AdvisorDashboard() {
       group_id: signalForm.groupId,
       advisor_id: advisor.id,
       post_type: 'signal',
-      instrument: signalForm.instrument,
+      instrument: sanitizeText(signalForm.instrument),
       signal_type: signalForm.signalType,
-      entry_price: parseFloat(signalForm.entryPrice),
-      target_price: parseFloat(signalForm.targetPrice),
-      stop_loss: parseFloat(signalForm.stopLoss),
+      entry_price: parseFloat(sanitizeNumeric(signalForm.entryPrice)) || 0,
+      target_price: parseFloat(sanitizeNumeric(signalForm.targetPrice)) || 0,
+      stop_loss: parseFloat(sanitizeNumeric(signalForm.stopLoss)) || 0,
       timeframe: signalForm.timeframe,
-      notes: signalForm.notes,
+      notes: sanitizeTextarea(signalForm.notes),
       is_public: signalForm.isPublic,
     }).select().single();
 
@@ -208,9 +218,14 @@ export default function AdvisorDashboard() {
 
   const activeSubs = subscribers.filter(s => s.status === 'active');
   const totalSubs = activeSubs.length;
-  const totalRevenue = subscribers.reduce((sum, s) => sum + (s.amount_paid || 0), 0);
-  const thisMonthSubs = subscribers.filter(s => { const d = new Date(s.created_at); const now = new Date(); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); });
-  const thisMonthRevenue = thisMonthSubs.reduce((sum, s) => sum + (s.amount_paid || 0), 0);
+
+  // Use earningsSummary from DB (reliable, server-side calculated)
+  const totalRevenue = earningsSummary?.total_gross ?? subscribers.reduce((sum, s) => sum + (s.amount_paid || 0), 0);
+  const totalNetEarnings = earningsSummary?.total_net ?? 0;
+  const totalGST = earningsSummary?.total_gst ?? 0;
+  const totalPlatformFee = earningsSummary?.total_platform_fee ?? 0;
+  const monthGross = earningsSummary?.month_gross ?? 0;
+  const monthNet = earningsSummary?.month_net ?? 0;
 
   const afterGST = (amount: number) => amount * 0.82;
   const afterFees = (amount: number) => afterGST(amount) * 0.70;
@@ -280,8 +295,8 @@ export default function AdvisorDashboard() {
             <span className="pointer-events-none absolute -bottom-5 -right-2.5 text-[120px] font-black leading-none text-white/[0.06]">₹</span>
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20"><IndianRupee className="h-5 w-5" /></div>
             <p className="mt-3 text-xs text-white/80">Your Earnings</p>
-            <p className="text-[32px] font-black tracking-tight">₹{Math.round(afterFees(totalRevenue)).toLocaleString('en-IN')}</p>
-            <p className="text-[11px] text-white/60">This month: ₹{Math.round(afterFees(thisMonthRevenue)).toLocaleString('en-IN')}</p>
+            <p className="text-[32px] font-black tracking-tight">₹{Math.round(totalNetEarnings).toLocaleString('en-IN')}</p>
+            <p className="text-[11px] text-white/60">This month: ₹{Math.round(monthNet).toLocaleString('en-IN')}</p>
           </div>
         </div>
 
@@ -659,23 +674,23 @@ export default function AdvisorDashboard() {
               <div className="space-y-3">
                 <div className="flex justify-between items-center py-3 border-b border-border">
                   <span className="text-muted-foreground">Total Collections</span>
-                  <span className="text-xl font-bold text-foreground">₹{totalRevenue.toLocaleString('en-IN')}</span>
+                  <span className="text-xl font-bold text-foreground">₹{Math.round(totalRevenue).toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex justify-between items-center py-2">
                   <span className="text-muted-foreground flex items-center gap-1"><AlertTriangle className="h-3.5 w-3.5" /> GST (18%)</span>
-                  <span className="text-muted-foreground font-semibold">- ₹{Math.round(gstAmount(totalRevenue)).toLocaleString('en-IN')}</span>
+                  <span className="text-muted-foreground font-semibold">- ₹{Math.round(totalGST).toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b border-border">
                   <span className="text-muted-foreground">After GST</span>
-                  <span className="font-semibold text-foreground">₹{Math.round(afterGST(totalRevenue)).toLocaleString('en-IN')}</span>
+                  <span className="font-semibold text-foreground">₹{Math.round(totalRevenue - totalGST).toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex justify-between items-center py-2">
-                  <span className="text-muted-foreground">TradeCircle Fee (30%)</span>
-                  <span className="text-muted-foreground font-semibold">- ₹{Math.round(tcFee(totalRevenue)).toLocaleString('en-IN')}</span>
+                  <span className="text-muted-foreground">TradeCircle Fee</span>
+                  <span className="text-muted-foreground font-semibold">- ₹{Math.round(totalPlatformFee).toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex justify-between items-center py-3 rounded-xl bg-light-green px-4 -mx-1">
                   <span className="font-bold text-foreground text-lg">Your Earnings</span>
-                  <span className="text-2xl font-black text-primary">₹{Math.round(afterFees(totalRevenue)).toLocaleString('en-IN')}</span>
+                  <span className="text-2xl font-black text-primary">₹{Math.round(totalNetEarnings).toLocaleString('en-IN')}</span>
                 </div>
               </div>
             </div>
@@ -685,18 +700,49 @@ export default function AdvisorDashboard() {
               <div className="grid grid-cols-3 gap-3 text-center">
                 <div className="rounded-xl bg-muted p-3">
                   <p className="text-[10px] text-[hsl(var(--small-text))] uppercase font-bold tracking-wider">Collections</p>
-                  <p className="text-lg font-bold text-foreground mt-1">₹{thisMonthRevenue.toLocaleString('en-IN')}</p>
+                  <p className="text-lg font-bold text-foreground mt-1">₹{Math.round(monthGross).toLocaleString('en-IN')}</p>
                 </div>
                 <div className="rounded-xl bg-muted p-3">
                   <p className="text-[10px] text-[hsl(var(--small-text))] uppercase font-bold tracking-wider">Deductions</p>
-                  <p className="text-lg font-bold text-muted-foreground mt-1">₹{Math.round(thisMonthRevenue - afterFees(thisMonthRevenue)).toLocaleString('en-IN')}</p>
+                  <p className="text-lg font-bold text-muted-foreground mt-1">₹{Math.round(monthGross - monthNet).toLocaleString('en-IN')}</p>
                 </div>
                 <div className="rounded-xl bg-light-green p-3">
                   <p className="text-[10px] text-[hsl(var(--small-text))] uppercase font-bold tracking-wider">Your Earnings</p>
-                  <p className="text-lg font-bold text-primary mt-1">₹{Math.round(afterFees(thisMonthRevenue)).toLocaleString('en-IN')}</p>
+                  <p className="text-lg font-bold text-primary mt-1">₹{Math.round(monthNet).toLocaleString('en-IN')}</p>
                 </div>
               </div>
             </div>
+
+            {/* Daily Earnings Breakdown */}
+            {dailyEarnings.length > 0 && (
+              <div className="rounded-2xl border-[1.5px] border-border bg-card p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+                <h3 className="font-bold mb-3 text-foreground">Daily Earnings Log</h3>
+                <div className="overflow-hidden rounded-xl border border-border">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-muted">
+                        <th className="px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Date</th>
+                        <th className="px-4 py-2.5 text-right text-[11px] font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Collected</th>
+                        <th className="px-4 py-2.5 text-right text-[11px] font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">GST</th>
+                        <th className="px-4 py-2.5 text-right text-[11px] font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Fee</th>
+                        <th className="px-4 py-2.5 text-right text-[11px] font-bold uppercase tracking-wider text-primary">Net</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {dailyEarnings.slice(0, 30).map((e, i) => (
+                        <tr key={i} className="border-t border-muted">
+                          <td className="px-4 py-2.5 font-medium text-foreground">{new Date(e.earning_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
+                          <td className="px-4 py-2.5 text-right text-foreground">₹{Math.round(e.gross_revenue).toLocaleString('en-IN')}</td>
+                          <td className="px-4 py-2.5 text-right text-muted-foreground">-₹{Math.round(e.gst_amount).toLocaleString('en-IN')}</td>
+                          <td className="px-4 py-2.5 text-right text-muted-foreground">-₹{Math.round(e.platform_fee).toLocaleString('en-IN')}</td>
+                          <td className="px-4 py-2.5 text-right font-bold text-primary">₹{Math.round(e.net_earning).toLocaleString('en-IN')}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
 
             <div className="rounded-2xl border-[1.5px] border-border bg-card p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
               <h3 className="font-bold mb-3 text-foreground">Per Group Earnings</h3>
