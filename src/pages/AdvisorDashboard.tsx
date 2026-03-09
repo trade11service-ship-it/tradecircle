@@ -15,11 +15,13 @@ import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
 import { BarChart3, Radio, Users, UserCircle, IndianRupee, TrendingUp, Clock, CheckCircle2, XCircle, AlertTriangle, MessageSquare, ImageIcon, X, Globe, Lock, Gift, Plus, Shield } from 'lucide-react';
+import { sanitizeText, sanitizeTextarea, sanitizeNumeric, sanitizeAlphanumeric } from '@/lib/sanitize';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Advisor = Tables<'advisors'>;
 type Group = Tables<'groups'>;
 type Signal = Tables<'signals'>;
+type DailyEarning = { earning_date: string; gross_revenue: number; gst_amount: number; platform_fee: number; net_earning: number; subscription_count: number };
 
 export default function AdvisorDashboard() {
   const { user } = useAuth();
