@@ -295,8 +295,8 @@ export default function AdvisorDashboard() {
             <span className="pointer-events-none absolute -bottom-5 -right-2.5 text-[120px] font-black leading-none text-white/[0.06]">₹</span>
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20"><IndianRupee className="h-5 w-5" /></div>
             <p className="mt-3 text-xs text-white/80">Your Earnings</p>
-            <p className="text-[32px] font-black tracking-tight">₹{Math.round(afterFees(totalRevenue)).toLocaleString('en-IN')}</p>
-            <p className="text-[11px] text-white/60">This month: ₹{Math.round(afterFees(thisMonthRevenue)).toLocaleString('en-IN')}</p>
+            <p className="text-[32px] font-black tracking-tight">₹{Math.round(totalNetEarnings).toLocaleString('en-IN')}</p>
+            <p className="text-[11px] text-white/60">This month: ₹{Math.round(monthNet).toLocaleString('en-IN')}</p>
           </div>
         </div>
 
@@ -674,23 +674,23 @@ export default function AdvisorDashboard() {
               <div className="space-y-3">
                 <div className="flex justify-between items-center py-3 border-b border-border">
                   <span className="text-muted-foreground">Total Collections</span>
-                  <span className="text-xl font-bold text-foreground">₹{totalRevenue.toLocaleString('en-IN')}</span>
+                  <span className="text-xl font-bold text-foreground">₹{Math.round(totalRevenue).toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex justify-between items-center py-2">
                   <span className="text-muted-foreground flex items-center gap-1"><AlertTriangle className="h-3.5 w-3.5" /> GST (18%)</span>
-                  <span className="text-muted-foreground font-semibold">- ₹{Math.round(gstAmount(totalRevenue)).toLocaleString('en-IN')}</span>
+                  <span className="text-muted-foreground font-semibold">- ₹{Math.round(totalGST).toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b border-border">
                   <span className="text-muted-foreground">After GST</span>
-                  <span className="font-semibold text-foreground">₹{Math.round(afterGST(totalRevenue)).toLocaleString('en-IN')}</span>
+                  <span className="font-semibold text-foreground">₹{Math.round(totalRevenue - totalGST).toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex justify-between items-center py-2">
-                  <span className="text-muted-foreground">TradeCircle Fee (30%)</span>
-                  <span className="text-muted-foreground font-semibold">- ₹{Math.round(tcFee(totalRevenue)).toLocaleString('en-IN')}</span>
+                  <span className="text-muted-foreground">TradeCircle Fee</span>
+                  <span className="text-muted-foreground font-semibold">- ₹{Math.round(totalPlatformFee).toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex justify-between items-center py-3 rounded-xl bg-light-green px-4 -mx-1">
                   <span className="font-bold text-foreground text-lg">Your Earnings</span>
-                  <span className="text-2xl font-black text-primary">₹{Math.round(afterFees(totalRevenue)).toLocaleString('en-IN')}</span>
+                  <span className="text-2xl font-black text-primary">₹{Math.round(totalNetEarnings).toLocaleString('en-IN')}</span>
                 </div>
               </div>
             </div>
