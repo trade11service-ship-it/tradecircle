@@ -64,14 +64,20 @@ export default function AdvisorDashboard() {
     const adv = advList?.find(a => a.status === 'approved') || advList?.[0] || null;
     setAdvisor(adv);
     if (adv) {
-      const [grpsRes, subsRes, sigsRes] = await Promise.all([
+      const [grpsRes, subsRes, sigsRes, earningsRes] = await Promise.all([
         supabase.from('groups').select('*').eq('advisor_id', adv.id),
-        supabase.from('subscriptions').select('*, profiles!inner(full_name, email), groups!inner(name)').eq('advisor_id', adv.id).order('created_at', { ascending: false }),
+        supabase.from('subscriptions').select('*, profiles(full_name, email), groups!inner(name)').eq('advisor_id', adv.id).order('created_at', { ascending: false }),
         supabase.from('signals').select('*').eq('advisor_id', adv.id).order('created_at', { ascending: false }),
+        supabase.from('advisor_daily_earnings').select('*').eq('advisor_id', adv.id).order('earning_date', { ascending: false }),
       ]);
       setGroups(grpsRes.data || []);
       setSubscribers(subsRes.data || []);
       setSignals(sigsRes.data || []);
+      setDailyEarnings((earningsRes.data as any[]) || []);
+
+      // Also fetch summary via RPC
+      const { data: summary } = await supabase.rpc('get_advisor_earnings', { _advisor_id: adv.id });
+      setEarningsSummary(summary);
     }
     setLoading(false);
   };
