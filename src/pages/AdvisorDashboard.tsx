@@ -29,6 +29,8 @@ export default function AdvisorDashboard() {
   const [groups, setGroups] = useState<Group[]>([]);
   const [subscribers, setSubscribers] = useState<any[]>([]);
   const [signals, setSignals] = useState<Signal[]>([]);
+  const [dailyEarnings, setDailyEarnings] = useState<DailyEarning[]>([]);
+  const [earningsSummary, setEarningsSummary] = useState<any>(null);
   const [tab, setTab] = useState<'groups' | 'post' | 'signals_history' | 'subscribers' | 'revenue' | 'referrals' | 'profile'>('groups');
   const [loading, setLoading] = useState(true);
   const [groupForm, setGroupForm] = useState({ name: '', description: '', monthlyPrice: '' });
