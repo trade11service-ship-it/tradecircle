@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { sanitizeName, sanitizePhone, sanitizeText, sanitizeTextarea } from '@/lib/sanitize';
 import { supabase } from '@/integrations/supabase/client';
 import { Navbar } from '@/components/Navbar';
 
@@ -77,7 +78,7 @@ export default function Profile() {
 
   const handleSaveProfile = async () => {
     setLoading(true);
-    const { error } = await supabase.from('profiles').update({ full_name: form.fullName, phone: form.phone, telegram_username: form.telegramUsername }).eq('id', user!.id);
+    const { error } = await supabase.from('profiles').update({ full_name: sanitizeName(form.fullName), phone: sanitizePhone(form.phone), telegram_username: sanitizeText(form.telegramUsername) }).eq('id', user!.id);
     if (error) toast.error(error.message);
     else { toast.success('Profile updated'); setEditing(false); }
     setLoading(false);

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { sanitizeText, sanitizeTextarea, sanitizeAlphanumeric, sanitizePhone } from '@/lib/sanitize';
 import { supabase } from '@/integrations/supabase/client';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
@@ -89,12 +90,12 @@ export default function AdvisorRegister() {
     }
     setLoading(true);
     try {
-      if (form.phone) await supabase.from('profiles').update({ phone: form.phone }).eq('id', user.id);
+      if (form.phone) await supabase.from('profiles').update({ phone: sanitizePhone(form.phone) }).eq('id', user.id);
       const { data: advData, error: advError } = await supabase.from('advisors').insert({
         user_id: user.id, full_name: profile?.full_name || '', email: profile?.email || user.email || '',
-        phone: form.phone || profile?.phone || '', sebi_reg_no: form.sebiRegNo, bio: form.bio,
-        strategy_type: form.strategyType, aadhaar_no: form.aadhaarNo, pan_no: form.panNo,
-        address: form.address, status: 'pending',
+        phone: sanitizePhone(form.phone || profile?.phone || ''), sebi_reg_no: sanitizeAlphanumeric(form.sebiRegNo), bio: sanitizeTextarea(form.bio),
+        strategy_type: sanitizeText(form.strategyType), aadhaar_no: sanitizeAlphanumeric(form.aadhaarNo), pan_no: sanitizeAlphanumeric(form.panNo),
+        address: sanitizeText(form.address), status: 'pending',
       }).select('id').single();
       if (advError) throw advError;
 

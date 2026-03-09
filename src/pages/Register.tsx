@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { sanitizeText, sanitizeName, sanitizeEmail, sanitizePhone, isValidEmail, isValidPhone } from '@/lib/sanitize';
 import { supabase } from '@/integrations/supabase/client';
 import { lovable } from '@/integrations/lovable/index';
 import { Navbar } from '@/components/Navbar';
@@ -41,12 +42,18 @@ export default function Register() {
     e.preventDefault();
     if (!termsAccepted) { toast.error('Please accept the terms to proceed'); return; }
     if (form.password.length < 6) { toast.error('Password must be at least 6 characters'); return; }
+    const cleanEmail = sanitizeEmail(form.email);
+    const cleanName = sanitizeName(form.fullName);
+    const cleanPhone = sanitizePhone(form.phone);
+    if (!isValidEmail(cleanEmail)) { toast.error('Please enter a valid email address'); return; }
+    if (cleanPhone && !isValidPhone(cleanPhone)) { toast.error('Please enter a valid 10-digit phone number'); return; }
+    if (!cleanName) { toast.error('Please enter your full name'); return; }
     setLoading(true);
     const { data, error } = await supabase.auth.signUp({
-      email: form.email,
+      email: cleanEmail,
       password: form.password,
       options: {
-        data: { full_name: form.fullName, role: 'trader' },
+        data: { full_name: cleanName, role: 'trader' },
         emailRedirectTo: window.location.origin,
       },
     });
