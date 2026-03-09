@@ -218,9 +218,14 @@ export default function AdvisorDashboard() {
 
   const activeSubs = subscribers.filter(s => s.status === 'active');
   const totalSubs = activeSubs.length;
-  const totalRevenue = subscribers.reduce((sum, s) => sum + (s.amount_paid || 0), 0);
-  const thisMonthSubs = subscribers.filter(s => { const d = new Date(s.created_at); const now = new Date(); return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear(); });
-  const thisMonthRevenue = thisMonthSubs.reduce((sum, s) => sum + (s.amount_paid || 0), 0);
+
+  // Use earningsSummary from DB (reliable, server-side calculated)
+  const totalRevenue = earningsSummary?.total_gross ?? subscribers.reduce((sum, s) => sum + (s.amount_paid || 0), 0);
+  const totalNetEarnings = earningsSummary?.total_net ?? 0;
+  const totalGST = earningsSummary?.total_gst ?? 0;
+  const totalPlatformFee = earningsSummary?.total_platform_fee ?? 0;
+  const monthGross = earningsSummary?.month_gross ?? 0;
+  const monthNet = earningsSummary?.month_net ?? 0;
 
   const afterGST = (amount: number) => amount * 0.82;
   const afterFees = (amount: number) => afterGST(amount) * 0.70;
