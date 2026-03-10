@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/lib/auth";
+import { BottomNav } from "@/components/BottomNav";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -23,6 +24,7 @@ import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import Refund from "./pages/Refund";
 import ReferralLanding from "./pages/ReferralLanding";
+import Groups from "./pages/Groups";
 
 const queryClient = new QueryClient();
 
@@ -47,26 +49,30 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <ScrollToTop />
-          <Routes>
-            <Route path="/" element={<Landing />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/reset-password" element={<ResetPassword />} />
-            <Route path="/advisor-register" element={<AdvisorRegister />} />
-            <Route path="/advisor/:id" element={<AdvisorProfile />} />
-            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-            <Route path="/dashboard" element={<ProtectedRoute><TraderDashboard /></ProtectedRoute>} />
-            <Route path="/advisor/dashboard" element={<ProtectedRoute><AdvisorDashboard /></ProtectedRoute>} />
-            <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-            <Route path="/payment-success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
-            <Route path="/disclaimer" element={<Disclaimer />} />
-            <Route path="/terms" element={<Terms />} />
-            <Route path="/privacy" element={<Privacy />} />
-            <Route path="/refund" element={<Refund />} />
-            <Route path="/join/:code" element={<ReferralLanding />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <div className="pb-14 md:pb-0">
+            <Routes>
+              <Route path="/" element={<Landing />} />
+              <Route path="/groups" element={<Groups />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/advisor-register" element={<AdvisorRegister />} />
+              <Route path="/advisor/:id" element={<AdvisorProfile />} />
+              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              <Route path="/dashboard" element={<ProtectedRoute><TraderDashboard /></ProtectedRoute>} />
+              <Route path="/advisor/dashboard" element={<ProtectedRoute><AdvisorDashboard /></ProtectedRoute>} />
+              <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+              <Route path="/payment-success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
+              <Route path="/disclaimer" element={<Disclaimer />} />
+              <Route path="/terms" element={<Terms />} />
+              <Route path="/privacy" element={<Privacy />} />
+              <Route path="/refund" element={<Refund />} />
+              <Route path="/join/:code" element={<ReferralLanding />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </div>
+          <BottomNav />
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
