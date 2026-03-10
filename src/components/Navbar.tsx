@@ -1,7 +1,7 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
-import { Menu, X, User, LogOut, ChevronDown } from 'lucide-react';
+import { User, LogOut, ChevronDown } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import {
   DropdownMenu,
@@ -15,7 +15,6 @@ export function Navbar() {
   const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -31,22 +30,18 @@ export function Navbar() {
   };
 
   const isActive = (path: string) => location.pathname === path;
-
   const linkClass = (path: string) =>
     `text-sm transition-colors ${isActive(path) ? 'font-semibold text-primary' : 'text-muted-foreground hover:text-foreground'}`;
 
   return (
-    <nav className={`sticky top-0 z-50 h-16 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 transition-shadow ${scrolled ? 'shadow-md' : ''}`}>
+    <nav className={`sticky top-0 z-50 h-14 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 transition-shadow ${scrolled ? 'shadow-md' : ''}`}>
       <div className="container mx-auto flex h-full items-center justify-between px-4">
-        <Link to="/" className="text-xl font-extrabold text-foreground">Trade<span className="text-primary">Circle</span></Link>
+        <Link to="/" className="text-lg font-extrabold text-foreground">Trade<span className="text-primary">Circle</span></Link>
 
         {/* Desktop nav */}
-        <div className="hidden items-center gap-6 md:flex">
+        <div className="hidden items-center gap-5 md:flex">
           <Link to="/" className={linkClass('/')}>Home</Link>
-          <Link to="/#advisors" className="text-sm text-muted-foreground transition-colors hover:text-foreground">Browse Advisors</Link>
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-[hsl(120,52%,93%)] px-2.5 py-0.5 text-[11px] font-semibold text-primary">
-            <span className="h-1.5 w-1.5 rounded-full bg-primary" /> Platform Active
-          </span>
+          <Link to="/groups" className={linkClass('/groups')}>Discover</Link>
           {user ? (
             <>
               <Link to={getDashboardLink()} className={linkClass(getDashboardLink())}>Dashboard</Link>
@@ -78,36 +73,7 @@ export function Navbar() {
             </div>
           )}
         </div>
-
-        {/* Mobile menu button */}
-        <button className="md:hidden" onClick={() => setMenuOpen(!menuOpen)}>
-          {menuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-        </button>
       </div>
-
-      {/* Mobile menu */}
-      {menuOpen && (
-        <div className="border-t bg-card px-4 py-4 md:hidden">
-          <div className="flex flex-col gap-3">
-            <Link to="/" className="text-sm font-medium" onClick={() => setMenuOpen(false)}>Home</Link>
-            <Link to="/#advisors" className="text-sm font-medium" onClick={() => setMenuOpen(false)}>Browse Advisors</Link>
-            {user ? (
-              <>
-                <Link to={getDashboardLink()} className="text-sm font-medium" onClick={() => setMenuOpen(false)}>Dashboard</Link>
-                <Link to="/profile" className="text-sm font-medium" onClick={() => setMenuOpen(false)}>My Profile</Link>
-                <Button variant="outline" size="sm" className="min-h-[44px]" onClick={() => { signOut(); navigate('/'); setMenuOpen(false); }}>
-                  <LogOut className="mr-2 h-4 w-4" /> Logout
-                </Button>
-              </>
-            ) : (
-              <div className="flex gap-2">
-                <Link to="/login" className="flex-1" onClick={() => setMenuOpen(false)}><Button variant="outline" size="sm" className="w-full min-h-[44px] border-2 border-primary text-primary">Sign In</Button></Link>
-                <Link to="/register" className="flex-1" onClick={() => setMenuOpen(false)}><Button size="sm" className="w-full min-h-[44px]">Sign Up</Button></Link>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </nav>
   );
 }
