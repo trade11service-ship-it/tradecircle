@@ -3,11 +3,12 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
+import { GroupFeed } from '@/components/GroupFeed';
 import { SignalCard } from '@/components/SignalCard';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
-import { Shield, Users, Heart, Share2, Bell, BarChart2, Lock, CheckCircle } from 'lucide-react';
+import { Shield, Users, Heart, Share2, Bell, BarChart2, Lock, CheckCircle, Calendar, TrendingUp } from 'lucide-react';
 import type { Tables } from '@/integrations/supabase/types';
 import { SUBSCRIPTION_RISK_TEXT, getDeviceInfo, getIpAddress } from '@/lib/legalTexts';
 import { useFollow } from '@/hooks/useFollow';
@@ -16,18 +17,28 @@ type Advisor = Pick<Tables<'advisors'>, 'id' | 'full_name' | 'email' | 'phone' |
 type Group = Tables<'groups'>;
 type Signal = Tables<'signals'>;
 
+const toTitleCase = (s: string) => s.replace(/\b\w/g, c => c.toUpperCase());
+
+const formatRelativeDate = (date: string | null) => {
+  if (!date) return '';
+  const d = new Date(date);
+  const now = new Date();
+  const diff = now.getTime() - d.getTime();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today.getTime() - 86400000);
+  const dateOnly = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  
+  const time = d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+  if (dateOnly.getTime() === today.getTime()) return `Today ${time}`;
+  if (dateOnly.getTime() === yesterday.getTime()) return `Yesterday ${time}`;
+  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) + ` ${time}`;
+};
+
 function FollowButton({ groupId }: { groupId: string }) {
   const { following, loading, toggleFollow } = useFollow(groupId);
   if (loading) return null;
   return (
-    <button
-      onClick={toggleFollow}
-      className={`flex h-10 flex-1 items-center justify-center gap-2 rounded-[10px] border-[1.5px] text-[13px] font-semibold transition-all ${
-        following
-          ? 'border-[hsl(0,60%,80%)] bg-[hsl(0,100%,97%)] text-[hsl(0,60%,45%)]'
-          : 'border-border bg-card text-muted-foreground'
-      }`}
-    >
+    <button onClick={toggleFollow} className={`flex h-10 flex-1 items-center justify-center gap-2 rounded-[10px] border-[1.5px] text-[13px] font-semibold transition-all ${following ? 'border-destructive/30 bg-destructive/5 text-destructive' : 'border-border bg-card text-muted-foreground'}`}>
       <Heart className={`h-3.5 w-3.5 ${following ? 'fill-current' : ''}`} />
       {following ? 'Following' : 'Follow'}
     </button>
@@ -36,18 +47,11 @@ function FollowButton({ groupId }: { groupId: string }) {
 
 function ShareButton() {
   const handleShare = async () => {
-    try {
-      await navigator.share({ url: window.location.href, title: document.title });
-    } catch {
-      await navigator.clipboard.writeText(window.location.href);
-      toast.success('Link copied!');
-    }
+    try { await navigator.share({ url: window.location.href, title: document.title }); }
+    catch { await navigator.clipboard.writeText(window.location.href); toast.success('Link copied!'); }
   };
   return (
-    <button
-      onClick={handleShare}
-      className="flex h-10 w-10 min-w-[40px] items-center justify-center rounded-[10px] border-[1.5px] border-border bg-card text-muted-foreground transition-colors hover:bg-muted"
-    >
+    <button onClick={handleShare} className="flex h-10 w-10 min-w-[40px] items-center justify-center rounded-[10px] border-[1.5px] border-border bg-card text-muted-foreground transition-colors hover:bg-muted">
       <Share2 className="h-4 w-4" />
     </button>
   );
@@ -64,9 +68,8 @@ export default function AdvisorProfile() {
   const [subscribedGroupIds, setSubscribedGroupIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [subscribing, setSubscribing] = useState<string | null>(null);
-  const [signalTab, setSignalTab] = useState<'all' | 'past' | 'today'>('all');
+  const [activeTab, setActiveTab] = useState<'feed' | 'track' | 'about'>('feed');
   const [riskAlreadyAccepted, setRiskAlreadyAccepted] = useState(false);
-  const [bioExpanded, setBioExpanded] = useState(false);
   const [signalStats, setSignalStats] = useState<{ total_signals: number; win_count: number; loss_count: number; resolved_count: number }>({ total_signals: 0, win_count: 0, loss_count: 0, resolved_count: 0 });
   const [totalSubs, setTotalSubs] = useState(0);
 
@@ -93,7 +96,7 @@ export default function AdvisorProfile() {
     if (statsData) setSignalStats(statsData as any);
     if (subCountData) setTotalSubs(subCountData as number);
 
-    const { data: pastSigs } = await supabase.from('signals').select('*').eq('advisor_id', id!).lt('signal_date', new Date().toISOString().split('T')[0]).order('signal_date', { ascending: false }).limit(20);
+    const { data: pastSigs } = await supabase.from('signals').select('*').eq('advisor_id', id!).lt('signal_date', new Date().toISOString().split('T')[0]).order('signal_date', { ascending: false }).limit(50);
     setSignals(pastSigs || []);
     const today = new Date().toISOString().split('T')[0];
     const { data: todaySigs } = await supabase.from('signals').select('*').eq('advisor_id', id!).eq('signal_date', today).order('created_at', { ascending: false });
@@ -108,9 +111,7 @@ export default function AdvisorProfile() {
       } else {
         setSubscribedGroupIds(subIds);
       }
-      const { data: acceptance } = await supabase
-        .from('user_legal_acceptances').select('id')
-        .eq('user_id', user.id).eq('acceptance_type', 'subscription_risk').limit(1);
+      const { data: acceptance } = await supabase.from('user_legal_acceptances').select('id').eq('user_id', user.id).eq('acceptance_type', 'subscription_risk').limit(1);
       if (acceptance && acceptance.length > 0) setRiskAlreadyAccepted(true);
     }
     setLoading(false);
@@ -153,263 +154,314 @@ export default function AdvisorProfile() {
   );
 
   if (!advisor) return (
-    <div className="min-h-screen bg-muted">
-      <Navbar />
-      <div className="py-20 text-center text-muted-foreground">Advisor not found</div>
-    </div>
+    <div className="min-h-screen bg-muted"><Navbar /><div className="py-20 text-center text-muted-foreground">Advisor not found</div></div>
   );
 
   const isOwner = user && advisor && advisor.user_id === user.id;
   const isSubscribedToAny = groups.some(g => subscribedGroupIds.includes(g.id));
   const firstGroupId = groups[0]?.id || '';
-
-  const winRate = signalStats.resolved_count > 0
-    ? Math.round((signalStats.win_count / signalStats.resolved_count) * 100)
-    : null;
-
-  const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+  const winRate = signalStats.resolved_count > 0 ? Math.round((signalStats.win_count / signalStats.resolved_count) * 100) : null;
+  const allSignals = [...todaySignals, ...signals];
+  const signalOnlyPosts = allSignals.filter(s => s.post_type === 'signal');
 
   return (
     <div className="min-h-screen flex flex-col bg-muted">
       <Navbar />
 
-      {/* SECTION 1: Profile Hero Card */}
-      <section className="bg-card rounded-b-3xl shadow-[0_4px_20px_rgba(0,0,0,0.06)] mb-4">
-        {/* Gradient strip */}
-        <div className="h-20 bg-gradient-to-br from-secondary to-primary" />
-
-        <div className="px-5 pb-7">
-          {/* Avatar */}
-          <div className="relative -mt-8 w-[72px]">
-            <div className="flex h-[72px] w-[72px] items-center justify-center rounded-full border-[3px] border-card bg-gradient-to-br from-primary to-secondary text-[28px] font-extrabold text-primary-foreground shadow-[0_4px_12px_rgba(0,0,0,0.15)] overflow-hidden">
-              {advisor.profile_photo_url ? (
-                <img src={advisor.profile_photo_url} alt={advisor.full_name} className="h-full w-full object-cover" />
-              ) : (
-                advisor.full_name.charAt(0).toUpperCase()
-              )}
+      {/* Profile Hero */}
+      <section className="bg-card shadow-sm">
+        <div className="h-16 bg-gradient-to-br from-secondary to-primary" />
+        <div className="px-4 pb-4 -mt-6">
+          <div className="flex items-end gap-3">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full border-[3px] border-card bg-gradient-to-br from-primary to-secondary text-2xl font-extrabold text-primary-foreground shadow-lg overflow-hidden">
+              {advisor.profile_photo_url ? <img src={advisor.profile_photo_url} alt={advisor.full_name} className="h-full w-full object-cover" /> : toTitleCase(advisor.full_name).charAt(0)}
             </div>
-            {/* Verified badge */}
-            <div className="absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full border-2 border-card bg-primary">
-              <CheckCircle className="h-2.5 w-2.5 text-primary-foreground" />
+            <div className="flex-1 min-w-0 pb-1">
+              <h1 className="text-lg font-extrabold text-foreground truncate">{toTitleCase(advisor.full_name)}</h1>
+              <p className="text-[11px] text-muted-foreground">TradeCircle Verified</p>
             </div>
           </div>
 
-          {/* Name */}
-          <h1 className="mt-2.5 text-[22px] font-extrabold text-foreground capitalize">
-            {advisor.full_name}
-          </h1>
-
           {/* Badges */}
-          <div className="mt-1.5 flex flex-wrap items-center gap-2">
-            <span className="inline-flex items-center gap-1 rounded-full border border-primary bg-light-green px-3 py-1 text-[11px] font-bold text-primary">
-              <Shield className="h-3 w-3" /> SEBI {advisor.sebi_reg_no.length > 12 ? advisor.sebi_reg_no.slice(0, 8) + '…' : advisor.sebi_reg_no}
+          <div className="mt-2 flex flex-wrap gap-2">
+            <span className="inline-flex items-center gap-1 rounded-full border border-primary bg-primary/5 px-2.5 py-0.5 text-[11px] font-bold text-primary">
+              <Shield className="h-3 w-3" /> SEBI {advisor.sebi_reg_no}
             </span>
             {advisor.strategy_type && (
-              <span className="inline-flex rounded-full border border-secondary bg-light-blue px-3 py-1 text-[11px] font-semibold text-secondary">
-                {advisor.strategy_type}
-              </span>
+              <span className="inline-flex rounded-full border border-secondary bg-secondary/5 px-2.5 py-0.5 text-[11px] font-semibold text-secondary">{advisor.strategy_type}</span>
             )}
           </div>
 
-          {/* Stats Row */}
-          <div className="mt-4 grid grid-cols-4 gap-0 rounded-xl bg-muted p-3.5">
+          {/* Stats */}
+          <div className="mt-3 grid grid-cols-4 gap-0 rounded-xl bg-muted p-3">
             {[
-              { value: winRate !== null ? `${winRate}%` : '—', label: 'Win Rate', color: 'text-primary' },
+              { value: winRate !== null ? `${winRate}%` : '—', label: 'Accuracy', color: 'text-primary' },
               { value: signalStats.total_signals, label: 'Signals', color: 'text-foreground' },
               { value: totalSubs, label: 'Members', color: 'text-secondary' },
-              { value: '—', label: 'Rating', color: 'text-[hsl(var(--warning))]' },
+              { value: groups.length, label: 'Groups', color: 'text-foreground' },
             ].map((stat, i) => (
               <div key={i} className={`text-center ${i > 0 ? 'border-l border-border' : ''}`}>
-                <p className={`text-lg font-bold ${stat.color}`}>{stat.value}</p>
-                <p className="text-[10px] text-[hsl(var(--small-text))]">{stat.label}</p>
+                <p className={`text-base font-bold ${stat.color}`}>{stat.value}</p>
+                <p className="text-[10px] text-muted-foreground">{stat.label}</p>
               </div>
             ))}
           </div>
 
-          {/* Bio */}
-          {advisor.bio && (
-            <div className="mt-3.5">
-              <p className={`text-[13px] text-muted-foreground leading-relaxed ${!bioExpanded ? 'line-clamp-3' : ''}`}>
-                {advisor.bio}
-              </p>
-              {advisor.bio.length > 120 && (
-                <button onClick={() => setBioExpanded(!bioExpanded)} className="mt-1 text-xs font-semibold text-secondary">
-                  {bioExpanded ? 'Show less' : 'Read more'}
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Follow + Share */}
+          {/* Actions */}
           {!isOwner && (
-            <div className="mt-3.5 flex items-center gap-2.5">
+            <div className="mt-3 flex items-center gap-2">
               <FollowButton groupId={firstGroupId} />
               <ShareButton />
             </div>
           )}
         </div>
-      </section>
 
-      {/* SECTION 2: Available Groups */}
-      <section className="px-4 mb-4">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-[17px] font-extrabold text-foreground">Subscribe to a Group</h2>
-          <span className="rounded-full bg-light-green px-2.5 py-0.5 text-xs font-bold text-primary">
-            {groups.length} available
-          </span>
-        </div>
-
-        {groups.length === 0 && (
-          <div className="rounded-2xl border-[1.5px] border-dashed border-border bg-card p-6 text-center">
-            <p className="text-sm text-muted-foreground">This advisor hasn't created any signal groups yet.</p>
-          </div>
-        )}
-
-        {groups.map(group => (
-          <div key={group.id} className="mb-3 overflow-hidden rounded-2xl border-[1.5px] border-border bg-card shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-            {/* Top gradient bar */}
-            <div className="h-[3px] bg-gradient-to-r from-primary to-secondary" />
-
-            <div className="p-4">
-              {/* Row 1: Identity + Price */}
-              <div className="flex items-start gap-3">
-                <div className="flex h-11 w-11 min-w-[44px] items-center justify-center rounded-[10px] bg-gradient-to-br from-light-green to-light-blue overflow-hidden">
-                  {group.dp_url ? (
-                    <img src={group.dp_url} alt={group.name} className="h-full w-full object-cover" />
-                  ) : (
-                    <Users className="h-5 w-5 text-primary" />
-                  )}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-[15px] font-bold text-foreground truncate">{group.name}</p>
-                  <p className="flex items-center gap-1 text-[11px] text-[hsl(var(--small-text))]">
-                    <Users className="h-2.5 w-2.5" /> {group.subCount} members
-                  </p>
-                </div>
-                <span className="rounded-lg border border-[hsl(120,30%,75%)] bg-[hsl(120,60%,97%)] px-2.5 py-1 text-sm font-extrabold text-primary">
-                  ₹{group.monthly_price}/mo
-                </span>
-              </div>
-
-              {/* Row 2: Description */}
-              {group.description && (
-                <p className="mt-2.5 text-[13px] text-muted-foreground leading-normal line-clamp-2">
-                  {group.description}
-                </p>
-              )}
-
-              {/* Row 3: Feature tags */}
-              <div className="mt-3 flex flex-wrap gap-2">
-                {[
-                  { icon: Bell, text: 'Telegram alerts' },
-                  { icon: BarChart2, text: 'Signal history' },
-                  { icon: Lock, text: 'Cancel anytime' },
-                ].map((tag, i) => (
-                  <span key={i} className="inline-flex items-center gap-1 rounded-md bg-muted px-2.5 py-1 text-[11px] text-muted-foreground">
-                    <tag.icon className="h-3 w-3" /> {tag.text}
-                  </span>
-                ))}
-              </div>
-
-              {/* Row 4: Subscribe button */}
-              {subscribedGroupIds.includes(group.id) ? (
-                <div className="mt-3.5 flex h-[50px] items-center justify-center rounded-xl bg-light-green text-base font-bold text-primary">
-                  {isOwner ? '👤 Your Group' : '✓ Subscribed'}
-                </div>
-              ) : (
-                <>
-                  <button
-                    onClick={() => handleSubscribe(group)}
-                    disabled={subscribing === group.id}
-                    className="mt-3.5 flex h-[50px] w-full items-center justify-center rounded-xl bg-primary text-base font-bold text-primary-foreground shadow-[0_4px_14px_hsl(var(--primary)/0.25)] transition-all active:scale-[0.98] active:shadow-none disabled:opacity-60"
-                  >
-                    {subscribing === group.id ? 'Processing...' : `Subscribe — ₹${group.monthly_price}/month`}
-                  </button>
-                  <p className="mt-1.5 text-center text-[11px] text-[hsl(var(--small-text))]">
-                    ✓ Cancel anytime  ·  ✓ Signals on Telegram
-                  </p>
-                </>
-              )}
-            </div>
-          </div>
-        ))}
-      </section>
-
-      {/* SECTION 3: Signal History */}
-      <section className="px-4 mb-4 flex-1">
-        <h2 className="text-[17px] font-extrabold text-foreground mb-3">Signal History</h2>
-
-        {/* Filter tabs */}
-        <div className="flex gap-2 mb-4">
+        {/* Tabs */}
+        <div className="flex border-t border-border">
           {[
-            { key: 'all' as const, label: 'All' },
-            { key: 'past' as const, label: 'Past' },
-            { key: 'today' as const, label: 'Today' },
+            { key: 'feed' as const, label: 'Feed' },
+            { key: 'track' as const, label: 'Track Record' },
+            { key: 'about' as const, label: 'About' },
           ].map(t => (
             <button
               key={t.key}
-              onClick={() => setSignalTab(t.key)}
-              className={`rounded-full px-[18px] py-[7px] text-[13px] font-semibold transition-colors ${
-                signalTab === t.key
-                  ? 'bg-foreground text-background'
-                  : 'border-[1.5px] border-border bg-card text-muted-foreground'
+              onClick={() => setActiveTab(t.key)}
+              className={`flex-1 py-3 text-[13px] font-semibold text-center transition-colors border-b-2 ${
+                activeTab === t.key ? 'border-primary text-primary' : 'border-transparent text-muted-foreground'
               }`}
             >
               {t.label}
             </button>
           ))}
         </div>
+      </section>
 
-        {/* Today's signals */}
-        {(signalTab === 'today' || signalTab === 'all') && (
-          <div className="mb-4">
-            {signalTab === 'all' && <h3 className="text-sm font-bold text-foreground mb-2">Today's Signals</h3>}
-            {!user || !isSubscribedToAny ? (
-              <div className="relative overflow-hidden rounded-2xl border-[1.5px] border-border bg-card">
-                {/* Blurred fake signals */}
-                <div className="pointer-events-none blur-[6px] p-4 space-y-3">
-                  <div className="flex items-center gap-3"><div className="h-4 w-24 rounded bg-muted" /><div className="h-4 w-16 rounded bg-muted" /></div>
-                  <div className="flex items-center gap-3"><div className="h-4 w-20 rounded bg-muted" /><div className="h-4 w-12 rounded bg-muted" /></div>
-                  <div className="flex items-center gap-3"><div className="h-4 w-28 rounded bg-muted" /><div className="h-4 w-14 rounded bg-muted" /></div>
-                </div>
-                {/* Lock overlay */}
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-card/85 backdrop-blur-[2px] px-5 py-7">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-border bg-muted">
-                    <Lock className="h-[22px] w-[22px] text-primary" />
+      {/* Tab Content */}
+      <div className="flex-1 px-4 py-4">
+        {/* FEED TAB */}
+        {activeTab === 'feed' && (
+          <div>
+            {groups.length > 0 && (isSubscribedToAny || isOwner) ? (
+              <GroupFeed
+                groupId={groups[0].id}
+                advisorName={toTitleCase(advisor.full_name)}
+                advisorPhoto={advisor.profile_photo_url || undefined}
+              />
+            ) : (
+              <div>
+                {/* Show first 2 posts visible, rest blurred */}
+                {allSignals.length === 0 ? (
+                  <div className="tc-card-static p-10 text-center">
+                    <p className="text-3xl mb-2">📊</p>
+                    <p className="text-sm font-medium text-foreground">No posts yet</p>
+                    <p className="text-sm text-muted-foreground mt-1">{toTitleCase(advisor.full_name)} hasn't posted anything yet.</p>
                   </div>
-                  <p className="mt-3 text-base font-bold text-foreground">Today's Signals are Live</p>
-                  <p className="mt-1 text-center text-[13px] text-muted-foreground">Subscribe to get real-time access to every signal</p>
-                  <button
-                    onClick={() => {
-                      if (groups[0]) handleSubscribe(groups[0]);
-                      else navigate('/login');
-                    }}
-                    className="mt-4 rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground"
-                  >
-                    Subscribe to Unlock
-                  </button>
+                ) : (
+                  <div className="space-y-3">
+                    {allSignals.slice(0, 2).map(s => (
+                      <SignalCard key={s.id} signal={s} advisorName={toTitleCase(advisor.full_name)} />
+                    ))}
+                    {allSignals.length > 2 && (
+                      <div className="relative">
+                        <div className="pointer-events-none space-y-3">
+                          {allSignals.slice(2, 4).map(s => (
+                            <div key={s.id} className="blur-[6px]">
+                              <SignalCard signal={s} />
+                            </div>
+                          ))}
+                        </div>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-card/70 backdrop-blur-[2px] rounded-xl">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-border bg-muted">
+                            <Lock className="h-5 w-5 text-primary" />
+                          </div>
+                          <p className="mt-3 text-base font-bold text-foreground">Subscribe to see all signals</p>
+                          <p className="mt-1 text-[13px] text-muted-foreground text-center">Get real-time access to every trade signal</p>
+                          {groups[0] && (
+                            <button
+                              onClick={() => handleSubscribe(groups[0])}
+                              className="mt-4 rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground"
+                            >
+                              Subscribe — ₹{groups[0].monthly_price}/month
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* TRACK RECORD TAB */}
+        {activeTab === 'track' && (
+          <div>
+            {/* Summary */}
+            <div className="rounded-2xl border border-border bg-card p-5 mb-4">
+              <h3 className="text-base font-bold text-foreground mb-3">Performance Summary</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-xl bg-muted p-3 text-center">
+                  <p className="text-2xl font-black text-foreground">{signalStats.total_signals}</p>
+                  <p className="text-[11px] text-muted-foreground">Total Signals</p>
+                </div>
+                <div className="rounded-xl bg-primary/5 p-3 text-center">
+                  <p className="text-2xl font-black text-primary">{winRate !== null ? `${winRate}%` : '—'}</p>
+                  <p className="text-[11px] text-muted-foreground">Accuracy</p>
+                </div>
+                <div className="rounded-xl bg-primary/5 p-3 text-center">
+                  <p className="text-2xl font-black text-primary">{signalStats.win_count}</p>
+                  <p className="text-[11px] text-muted-foreground">Target Hit ✅</p>
+                </div>
+                <div className="rounded-xl bg-destructive/5 p-3 text-center">
+                  <p className="text-2xl font-black text-destructive">{signalStats.loss_count}</p>
+                  <p className="text-[11px] text-muted-foreground">SL Hit ❌</p>
                 </div>
               </div>
-            ) : todaySignals.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No signals posted today yet.</p>
-            ) : (
-              <div className="space-y-2.5">{todaySignals.map(s => <SignalCard key={s.id} signal={s} />)}</div>
-            )}
+            </div>
+
+            {/* Signal History Table */}
+            <div className="rounded-2xl border border-border bg-card overflow-hidden">
+              <div className="px-4 py-3 border-b border-border">
+                <h3 className="text-sm font-bold text-foreground">Closed Signals</h3>
+              </div>
+              {signalOnlyPosts.length === 0 ? (
+                <div className="p-8 text-center text-sm text-muted-foreground">No signals yet</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-muted text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                        <th className="px-3 py-2 text-left">Date</th>
+                        <th className="px-3 py-2 text-left">Stock</th>
+                        <th className="px-3 py-2 text-left">Type</th>
+                        <th className="px-3 py-2 text-right">Entry</th>
+                        <th className="px-3 py-2 text-right">Target</th>
+                        <th className="px-3 py-2 text-right">SL</th>
+                        <th className="px-3 py-2 text-center">Result</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {signalOnlyPosts.slice(0, 30).map(s => (
+                        <tr key={s.id} className="border-t border-muted">
+                          <td className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
+                            {s.signal_date ? new Date(s.signal_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—'}
+                          </td>
+                          <td className="px-3 py-2 font-semibold text-foreground">{s.instrument}</td>
+                          <td className="px-3 py-2">
+                            <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${s.signal_type === 'BUY' ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive'}`}>{s.signal_type}</span>
+                          </td>
+                          <td className="px-3 py-2 text-right font-medium">₹{Number(s.entry_price).toLocaleString('en-IN')}</td>
+                          <td className="px-3 py-2 text-right font-medium text-primary">₹{Number(s.target_price).toLocaleString('en-IN')}</td>
+                          <td className="px-3 py-2 text-right font-medium text-destructive">₹{Number(s.stop_loss).toLocaleString('en-IN')}</td>
+                          <td className="px-3 py-2 text-center">
+                            {s.result === 'TARGET_HIT' || s.result === 'WIN' ? (
+                              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">✅ Hit</span>
+                            ) : s.result === 'SL_HIT' || s.result === 'LOSS' ? (
+                              <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-bold text-destructive">❌ SL</span>
+                            ) : (
+                              <span className="rounded-full bg-warning/10 px-2 py-0.5 text-[10px] font-bold text-[hsl(var(--warning))]">⏳</span>
+                            )}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
-        {/* Past signals */}
-        {(signalTab === 'past' || signalTab === 'all') && (
-          <div>
-            {signalTab === 'all' && <h3 className="text-sm font-bold text-foreground mb-2">Past Signals</h3>}
-            {signals.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No past signals yet.</p>
-            ) : (
-              <div className="space-y-2.5">{signals.map(s => <SignalCard key={s.id} signal={s} />)}</div>
+        {/* ABOUT TAB */}
+        {activeTab === 'about' && (
+          <div className="space-y-4">
+            {/* Photo + Name */}
+            <div className="rounded-2xl border border-border bg-card p-5 text-center">
+              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-primary to-secondary text-3xl font-extrabold text-primary-foreground overflow-hidden">
+                {advisor.profile_photo_url ? <img src={advisor.profile_photo_url} alt="" className="h-full w-full object-cover" /> : toTitleCase(advisor.full_name).charAt(0)}
+              </div>
+              <h2 className="mt-3 text-xl font-extrabold text-foreground">{toTitleCase(advisor.full_name)}</h2>
+              <p className="text-xs text-muted-foreground mt-1">TradeCircle Verified Advisor</p>
+            </div>
+
+            {/* Details */}
+            <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
+              <div className="flex items-center gap-3">
+                <Shield className="h-4 w-4 text-primary shrink-0" />
+                <div>
+                  <p className="text-[11px] text-muted-foreground">SEBI Registration No.</p>
+                  <p className="text-sm font-semibold text-foreground">{advisor.sebi_reg_no}</p>
+                </div>
+              </div>
+              {advisor.strategy_type && (
+                <div className="flex items-center gap-3">
+                  <TrendingUp className="h-4 w-4 text-secondary shrink-0" />
+                  <div>
+                    <p className="text-[11px] text-muted-foreground">Speciality</p>
+                    <p className="text-sm font-semibold text-foreground">{advisor.strategy_type}</p>
+                  </div>
+                </div>
+              )}
+              <div className="flex items-center gap-3">
+                <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+                <div>
+                  <p className="text-[11px] text-muted-foreground">Member Since</p>
+                  <p className="text-sm font-semibold text-foreground">
+                    {advisor.created_at ? new Date(advisor.created_at).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }) : '—'}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Bio */}
+            {advisor.bio && (
+              <div className="rounded-2xl border border-border bg-card p-5">
+                <h3 className="text-sm font-bold text-foreground mb-2">About</h3>
+                <p className="text-[13px] text-muted-foreground leading-relaxed">{advisor.bio}</p>
+              </div>
+            )}
+
+            {/* Subscribe CTA */}
+            {groups.length > 0 && !isSubscribedToAny && !isOwner && (
+              <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5 text-center">
+                <p className="text-sm font-bold text-foreground">Ready to subscribe?</p>
+                <p className="text-xs text-muted-foreground mt-1">Get signals delivered to your Telegram instantly</p>
+                <button
+                  onClick={() => handleSubscribe(groups[0])}
+                  disabled={subscribing === groups[0].id}
+                  className="mt-3 w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground disabled:opacity-60"
+                >
+                  {subscribing === groups[0].id ? 'Processing...' : `Subscribe — ₹${groups[0].monthly_price}/month`}
+                </button>
+                <p className="mt-1.5 text-[11px] text-muted-foreground">✓ Cancel anytime · ✓ Signals on Telegram</p>
+              </div>
             )}
           </div>
         )}
-      </section>
+      </div>
+
+      {/* Sticky Subscribe Button - for non-subscribers */}
+      {groups.length > 0 && !isSubscribedToAny && !isOwner && activeTab === 'feed' && (
+        <div className="sticky bottom-14 md:bottom-0 bg-card border-t border-border p-3 safe-area-bottom">
+          <button
+            onClick={() => handleSubscribe(groups[0])}
+            disabled={subscribing === groups[0].id}
+            className="w-full rounded-xl bg-primary py-3.5 text-base font-bold text-primary-foreground shadow-[0_-4px_20px_rgba(27,94,32,0.2)] disabled:opacity-60"
+          >
+            {subscribing === groups[0].id ? 'Processing...' : `Subscribe — ₹${groups[0].monthly_price}/month`}
+          </button>
+        </div>
+      )}
+
+      {/* Subscribed badge */}
+      {isSubscribedToAny && !isOwner && (
+        <div className="sticky bottom-14 md:bottom-0 bg-card border-t border-border p-3">
+          <div className="flex items-center justify-center gap-2 rounded-xl bg-primary/5 py-3 text-sm font-bold text-primary">
+            <CheckCircle className="h-4 w-4" /> Subscribed ✓
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>
