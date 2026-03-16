@@ -132,6 +132,7 @@ export type Database = {
           aadhaar_photo_url: string | null
           address: string | null
           bio: string | null
+          cover_image_url: string | null
           created_at: string | null
           email: string
           full_name: string
@@ -151,6 +152,7 @@ export type Database = {
           aadhaar_photo_url?: string | null
           address?: string | null
           bio?: string | null
+          cover_image_url?: string | null
           created_at?: string | null
           email: string
           full_name: string
@@ -170,6 +172,7 @@ export type Database = {
           aadhaar_photo_url?: string | null
           address?: string | null
           bio?: string | null
+          cover_image_url?: string | null
           created_at?: string | null
           email?: string
           full_name?: string

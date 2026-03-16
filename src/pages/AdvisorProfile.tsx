@@ -1,58 +1,29 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
 import { GroupFeed } from '@/components/GroupFeed';
-import { SignalCard } from '@/components/SignalCard';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
-import { Shield, Users, Heart, Share2, Bell, BarChart2, Lock, CheckCircle, Calendar, TrendingUp } from 'lucide-react';
+import { Shield, Users, Heart, Share2, Lock, CheckCircle, Calendar, TrendingUp, Camera, BarChart3, User, ExternalLink } from 'lucide-react';
 import type { Tables } from '@/integrations/supabase/types';
 import { SUBSCRIPTION_RISK_TEXT, getDeviceInfo, getIpAddress } from '@/lib/legalTexts';
 import { useFollow } from '@/hooks/useFollow';
 
-type Advisor = Pick<Tables<'advisors'>, 'id' | 'full_name' | 'email' | 'phone' | 'bio' | 'sebi_reg_no' | 'strategy_type' | 'profile_photo_url' | 'status' | 'created_at' | 'user_id'>;
+type Advisor = Tables<'advisors'>;
 type Group = Tables<'groups'>;
 type Signal = Tables<'signals'>;
 
 const toTitleCase = (s: string) => s.replace(/\b\w/g, c => c.toUpperCase());
 
-const formatRelativeDate = (date: string | null) => {
-  if (!date) return '';
-  const d = new Date(date);
-  const now = new Date();
-  const diff = now.getTime() - d.getTime();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const yesterday = new Date(today.getTime() - 86400000);
-  const dateOnly = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-  
-  const time = d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
-  if (dateOnly.getTime() === today.getTime()) return `Today ${time}`;
-  if (dateOnly.getTime() === yesterday.getTime()) return `Yesterday ${time}`;
-  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) + ` ${time}`;
-};
-
 function FollowButton({ groupId }: { groupId: string }) {
   const { following, loading, toggleFollow } = useFollow(groupId);
   if (loading) return null;
   return (
-    <button onClick={toggleFollow} className={`flex h-10 flex-1 items-center justify-center gap-2 rounded-[10px] border-[1.5px] text-[13px] font-semibold transition-all ${following ? 'border-destructive/30 bg-destructive/5 text-destructive' : 'border-border bg-card text-muted-foreground'}`}>
-      <Heart className={`h-3.5 w-3.5 ${following ? 'fill-current' : ''}`} />
+    <button onClick={toggleFollow} className={`flex h-9 items-center gap-1.5 rounded-full px-4 text-[12px] font-semibold transition-all ${following ? 'bg-destructive/10 text-destructive border border-destructive/30' : 'bg-card text-muted-foreground border border-border'}`}>
+      <Heart className={`h-3 w-3 ${following ? 'fill-current' : ''}`} />
       {following ? 'Following' : 'Follow'}
-    </button>
-  );
-}
-
-function ShareButton() {
-  const handleShare = async () => {
-    try { await navigator.share({ url: window.location.href, title: document.title }); }
-    catch { await navigator.clipboard.writeText(window.location.href); toast.success('Link copied!'); }
-  };
-  return (
-    <button onClick={handleShare} className="flex h-10 w-10 min-w-[40px] items-center justify-center rounded-[10px] border-[1.5px] border-border bg-card text-muted-foreground transition-colors hover:bg-muted">
-      <Share2 className="h-4 w-4" />
     </button>
   );
 }
@@ -64,19 +35,21 @@ export default function AdvisorProfile() {
   const [advisor, setAdvisor] = useState<Advisor | null>(null);
   const [groups, setGroups] = useState<(Group & { subCount: number })[]>([]);
   const [signals, setSignals] = useState<Signal[]>([]);
-  const [todaySignals, setTodaySignals] = useState<Signal[]>([]);
   const [subscribedGroupIds, setSubscribedGroupIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [subscribing, setSubscribing] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'feed' | 'track' | 'about'>('feed');
+  const [activeTab, setActiveTab] = useState<'feed' | 'signals' | 'about'>('feed');
   const [riskAlreadyAccepted, setRiskAlreadyAccepted] = useState(false);
   const [signalStats, setSignalStats] = useState<{ total_signals: number; win_count: number; loss_count: number; resolved_count: number }>({ total_signals: 0, win_count: 0, loss_count: 0, resolved_count: 0 });
   const [totalSubs, setTotalSubs] = useState(0);
+  const [signalFilter, setSignalFilter] = useState<'all' | 'PENDING' | 'WIN' | 'LOSS'>('all');
+  const coverInputRef = useRef<HTMLInputElement>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { if (id) fetchData(); }, [id, user]);
 
   const fetchData = async () => {
-    const { data: adv } = await supabase.from('advisors').select('id, full_name, email, phone, bio, sebi_reg_no, strategy_type, profile_photo_url, status, created_at, user_id').eq('id', id!).single();
+    const { data: adv } = await supabase.from('advisors').select('*').eq('id', id!).single();
     setAdvisor(adv);
 
     const { data: grps } = await supabase.from('groups').select('*').eq('advisor_id', id!).eq('is_active', true);
@@ -96,11 +69,9 @@ export default function AdvisorProfile() {
     if (statsData) setSignalStats(statsData as any);
     if (subCountData) setTotalSubs(subCountData as number);
 
-    const { data: pastSigs } = await supabase.from('signals').select('*').eq('advisor_id', id!).lt('signal_date', new Date().toISOString().split('T')[0]).order('signal_date', { ascending: false }).limit(50);
-    setSignals(pastSigs || []);
-    const today = new Date().toISOString().split('T')[0];
-    const { data: todaySigs } = await supabase.from('signals').select('*').eq('advisor_id', id!).eq('signal_date', today).order('created_at', { ascending: false });
-    setTodaySignals(todaySigs || []);
+    // Fetch all signals for signals tab
+    const { data: allSigs } = await supabase.from('signals').select('*').eq('advisor_id', id!).eq('post_type', 'signal').order('created_at', { ascending: false }).limit(100);
+    setSignals(allSigs || []);
 
     if (user) {
       const { data: subs } = await supabase.from('subscriptions').select('group_id').eq('user_id', user.id).eq('status', 'active');
@@ -144,6 +115,34 @@ export default function AdvisorProfile() {
     finally { setSubscribing(null); }
   };
 
+  const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user || !advisor) return;
+    if (!file.type.startsWith('image/')) { toast.error('Please select an image'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error('Max 5MB'); return; }
+    const path = `${user.id}/cover.${file.name.split('.').pop()}`;
+    const { error } = await supabase.storage.from('advisor-covers').upload(path, file, { upsert: true });
+    if (error) { toast.error('Upload failed'); return; }
+    const { data: { publicUrl } } = supabase.storage.from('advisor-covers').getPublicUrl(path);
+    await supabase.from('advisors').update({ cover_image_url: publicUrl } as any).eq('id', advisor.id);
+    setAdvisor({ ...advisor, cover_image_url: publicUrl } as any);
+    toast.success('Cover photo updated!');
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user || !advisor) return;
+    if (!file.type.startsWith('image/')) { toast.error('Please select an image'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error('Max 5MB'); return; }
+    const path = `${user.id}/avatar.${file.name.split('.').pop()}`;
+    const { error } = await supabase.storage.from('advisor-avatars').upload(path, file, { upsert: true });
+    if (error) { toast.error('Upload failed'); return; }
+    const { data: { publicUrl } } = supabase.storage.from('advisor-avatars').getPublicUrl(path);
+    await supabase.from('advisors').update({ profile_photo_url: publicUrl }).eq('id', advisor.id);
+    setAdvisor({ ...advisor, profile_photo_url: publicUrl });
+    toast.success('Profile photo updated!');
+  };
+
   if (loading) return (
     <div className="min-h-screen bg-muted">
       <Navbar />
@@ -161,72 +160,118 @@ export default function AdvisorProfile() {
   const isSubscribedToAny = groups.some(g => subscribedGroupIds.includes(g.id));
   const firstGroupId = groups[0]?.id || '';
   const winRate = signalStats.resolved_count > 0 ? Math.round((signalStats.win_count / signalStats.resolved_count) * 100) : null;
-  const allSignals = [...todaySignals, ...signals];
-  const signalOnlyPosts = allSignals.filter(s => s.post_type === 'signal');
+  const coverUrl = (advisor as any).cover_image_url;
+
+  const filteredSignals = signals.filter(s => {
+    if (signalFilter === 'all') return true;
+    if (signalFilter === 'PENDING') return !s.result || s.result === 'PENDING';
+    if (signalFilter === 'WIN') return s.result === 'WIN' || s.result === 'TARGET_HIT';
+    if (signalFilter === 'LOSS') return s.result === 'LOSS' || s.result === 'SL_HIT';
+    return true;
+  });
+
+  const pendingCount = signals.filter(s => !s.result || s.result === 'PENDING').length;
+  const winCount = signals.filter(s => s.result === 'WIN' || s.result === 'TARGET_HIT').length;
+  const lossCount = signals.filter(s => s.result === 'LOSS' || s.result === 'SL_HIT').length;
 
   return (
     <div className="min-h-screen flex flex-col bg-muted">
       <Navbar />
 
-      {/* Profile Hero */}
-      <section className="bg-card shadow-sm">
-        <div className="h-16 bg-gradient-to-br from-secondary to-primary" />
-        <div className="px-4 pb-4 -mt-6">
-          <div className="flex items-end gap-3">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full border-[3px] border-card bg-gradient-to-br from-primary to-secondary text-2xl font-extrabold text-primary-foreground shadow-lg overflow-hidden">
-              {advisor.profile_photo_url ? <img src={advisor.profile_photo_url} alt={advisor.full_name} className="h-full w-full object-cover" /> : toTitleCase(advisor.full_name).charAt(0)}
+      {/* COVER PHOTO */}
+      <div className="relative w-full h-[160px] md:h-[200px] bg-gradient-to-br from-primary to-secondary overflow-hidden">
+        {coverUrl && <img src={coverUrl} alt="Cover" className="absolute inset-0 w-full h-full object-cover" />}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+        {isOwner && (
+          <>
+            <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} />
+            <button onClick={() => coverInputRef.current?.click()} className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/60 transition-colors">
+              <Camera className="h-4 w-4" />
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* PROFILE HEADER */}
+      <section className="bg-card border-b border-border relative">
+        <div className="px-4 pb-4">
+          {/* Avatar */}
+          <div className="flex items-end gap-3 -mt-10 relative z-10">
+            <div className="relative">
+              <div className="flex h-20 w-20 items-center justify-center rounded-full border-[3px] border-primary bg-gradient-to-br from-primary to-secondary text-2xl font-extrabold text-primary-foreground shadow-lg overflow-hidden ring-4 ring-card">
+                {advisor.profile_photo_url
+                  ? <img src={advisor.profile_photo_url} alt={advisor.full_name} className="h-full w-full object-cover" />
+                  : toTitleCase(advisor.full_name).charAt(0)}
+              </div>
+              {isOwner && (
+                <>
+                  <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+                  <button onClick={() => avatarInputRef.current?.click()} className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md border-2 border-card">
+                    <Camera className="h-3 w-3" />
+                  </button>
+                </>
+              )}
             </div>
             <div className="flex-1 min-w-0 pb-1">
-              <h1 className="text-lg font-extrabold text-foreground truncate">{toTitleCase(advisor.full_name)}</h1>
-              <p className="text-[11px] text-muted-foreground">TradeCircle Verified</p>
+              <h1 className="text-[18px] font-extrabold text-foreground truncate leading-tight">{toTitleCase(advisor.full_name)}</h1>
+              <p className="text-[12px] font-medium text-primary flex items-center gap-1">
+                <CheckCircle className="h-3 w-3" /> TradeCircle Verified
+              </p>
+            </div>
+            <div className="flex items-center gap-2 pb-1">
+              {!isOwner && firstGroupId && <FollowButton groupId={firstGroupId} />}
+              <button
+                onClick={async () => {
+                  try { await navigator.share({ url: window.location.href, title: document.title }); }
+                  catch { await navigator.clipboard.writeText(window.location.href); toast.success('Link copied!'); }
+                }}
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-muted-foreground"
+              >
+                <Share2 className="h-3.5 w-3.5" />
+              </button>
             </div>
           </div>
 
-          {/* Badges */}
-          <div className="mt-2 flex flex-wrap gap-2">
-            <span className="inline-flex items-center gap-1 rounded-full border border-primary bg-primary/5 px-2.5 py-0.5 text-[11px] font-bold text-primary">
-              <Shield className="h-3 w-3" /> SEBI {advisor.sebi_reg_no}
-            </span>
-            {advisor.strategy_type && (
-              <span className="inline-flex rounded-full border border-secondary bg-secondary/5 px-2.5 py-0.5 text-[11px] font-semibold text-secondary">{advisor.strategy_type}</span>
-            )}
+          {/* Bio */}
+          {advisor.bio && (
+            <p className="mt-2 text-[13px] text-muted-foreground leading-snug line-clamp-2">{advisor.bio}</p>
+          )}
+
+          {/* SEBI badge */}
+          <div className="mt-2">
+            <a href="https://www.sebi.gov.in/sebiweb/other/OtherAction.do?doRecognisedFpi=yes&intmId=13" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2.5 py-1 text-[11px] font-bold text-primary hover:bg-primary/10 transition-colors">
+              <Shield className="h-3 w-3" /> SEBI ✓ {advisor.sebi_reg_no}
+              <ExternalLink className="h-2.5 w-2.5 ml-0.5" />
+            </a>
           </div>
 
-          {/* Stats */}
-          <div className="mt-3 grid grid-cols-4 gap-0 rounded-xl bg-muted p-3">
+          {/* Stats row */}
+          <div className="mt-3 flex items-center justify-between rounded-xl bg-muted p-3">
             {[
-              { value: winRate !== null ? `${winRate}%` : '—', label: 'Accuracy', color: 'text-primary' },
-              { value: signalStats.total_signals, label: 'Signals', color: 'text-foreground' },
-              { value: totalSubs, label: 'Members', color: 'text-secondary' },
-              { value: groups.length, label: 'Groups', color: 'text-foreground' },
+              { value: signalStats.total_signals, label: 'Signals' },
+              { value: totalSubs, label: 'Members' },
+              { value: winRate !== null ? `${winRate}%` : '—', label: 'Accuracy' },
+              { value: groups.length, label: 'Groups' },
             ].map((stat, i) => (
-              <div key={i} className={`text-center ${i > 0 ? 'border-l border-border' : ''}`}>
-                <p className={`text-base font-bold ${stat.color}`}>{stat.value}</p>
-                <p className="text-[10px] text-muted-foreground">{stat.label}</p>
+              <div key={i} className={`text-center flex-1 ${i > 0 ? 'border-l border-border' : ''}`}>
+                <p className="text-[16px] font-bold text-foreground">{stat.value}</p>
+                <p className="text-[10px] text-muted-foreground mt-0.5">{stat.label}</p>
               </div>
             ))}
           </div>
-
-          {/* Actions */}
-          {!isOwner && (
-            <div className="mt-3 flex items-center gap-2">
-              <FollowButton groupId={firstGroupId} />
-              <ShareButton />
-            </div>
-          )}
         </div>
 
         {/* Tabs */}
-        <div className="flex border-t border-border">
+        <div className="flex">
           {[
             { key: 'feed' as const, label: 'Feed' },
-            { key: 'track' as const, label: 'Track Record' },
+            { key: 'signals' as const, label: 'Signals' },
             { key: 'about' as const, label: 'About' },
           ].map(t => (
             <button
               key={t.key}
               onClick={() => setActiveTab(t.key)}
-              className={`flex-1 py-3 text-[13px] font-semibold text-center transition-colors border-b-2 ${
+              className={`flex-1 py-3 text-[14px] font-medium text-center transition-colors border-b-2 ${
                 activeTab === t.key ? 'border-primary text-primary' : 'border-transparent text-muted-foreground'
               }`}
             >
@@ -236,70 +281,176 @@ export default function AdvisorProfile() {
         </div>
       </section>
 
-      {/* Tab Content */}
-      <div className="flex-1 px-4 py-4">
+      {/* TAB CONTENT */}
+      <div className="flex-1 flex flex-col">
         {/* FEED TAB */}
         {activeTab === 'feed' && (
-          <div>
-            {groups.length > 0 && (isSubscribedToAny || isOwner) ? (
+          <div className="flex-1 flex flex-col" style={{ minHeight: '60vh' }}>
+            {groups.length > 0 ? (
               <GroupFeed
                 groupId={groups[0].id}
                 advisorName={toTitleCase(advisor.full_name)}
                 advisorPhoto={advisor.profile_photo_url || undefined}
+                isSubscribed={!!(isSubscribedToAny || isOwner)}
+                onSubscribe={() => groups[0] && handleSubscribe(groups[0])}
+                subscribePrice={groups[0]?.monthly_price}
               />
             ) : (
-              <div>
-                {/* Show first 2 posts visible, rest blurred */}
-                {allSignals.length === 0 ? (
-                  <div className="tc-card-static p-10 text-center">
-                    <p className="text-3xl mb-2">📊</p>
-                    <p className="text-sm font-medium text-foreground">No posts yet</p>
-                    <p className="text-sm text-muted-foreground mt-1">{toTitleCase(advisor.full_name)} hasn't posted anything yet.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-3">
-                    {allSignals.slice(0, 2).map(s => (
-                      <SignalCard key={s.id} signal={s} advisorName={toTitleCase(advisor.full_name)} />
-                    ))}
-                    {allSignals.length > 2 && (
-                      <div className="relative">
-                        <div className="pointer-events-none space-y-3">
-                          {allSignals.slice(2, 4).map(s => (
-                            <div key={s.id} className="blur-[6px]">
-                              <SignalCard signal={s} />
-                            </div>
-                          ))}
-                        </div>
-                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-card/70 backdrop-blur-[2px] rounded-xl">
-                          <div className="flex h-12 w-12 items-center justify-center rounded-full border-2 border-border bg-muted">
-                            <Lock className="h-5 w-5 text-primary" />
-                          </div>
-                          <p className="mt-3 text-base font-bold text-foreground">Subscribe to see all signals</p>
-                          <p className="mt-1 text-[13px] text-muted-foreground text-center">Get real-time access to every trade signal</p>
-                          {groups[0] && (
-                            <button
-                              onClick={() => handleSubscribe(groups[0])}
-                              className="mt-4 rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground"
-                            >
-                              Subscribe — ₹{groups[0].monthly_price}/month
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
+              <div className="flex flex-col items-center justify-center py-16 text-center">
+                <div className="text-4xl mb-3">💬</div>
+                <p className="text-[15px] font-semibold text-foreground">No groups yet</p>
+                <p className="text-[13px] text-muted-foreground mt-1">This advisor hasn't created any groups.</p>
               </div>
             )}
           </div>
         )}
 
-        {/* TRACK RECORD TAB */}
-        {activeTab === 'track' && (
-          <div>
-            {/* Summary */}
-            <div className="rounded-2xl border border-border bg-card p-5 mb-4">
-              <h3 className="text-base font-bold text-foreground mb-3">Performance Summary</h3>
+        {/* SIGNALS TAB */}
+        {activeTab === 'signals' && (
+          <div className="px-4 py-4">
+            {/* Summary bar */}
+            <div className="flex items-center gap-2 overflow-x-auto pb-2 mb-3">
+              {[
+                { label: `Total: ${signals.length}`, cls: 'bg-card border border-border text-foreground' },
+                { label: `✅ Hit: ${winCount}`, cls: 'bg-primary/5 border border-primary/20 text-primary' },
+                { label: `❌ SL: ${lossCount}`, cls: 'bg-destructive/5 border border-destructive/20 text-destructive' },
+                { label: `⏳ Pending: ${pendingCount}`, cls: 'bg-[hsl(45,100%,94%)] border border-[hsl(45,80%,70%)] text-[hsl(35,100%,35%)]' },
+                { label: `Accuracy: ${winRate !== null ? winRate + '%' : '—'}`, cls: 'bg-primary/10 border border-primary/30 text-primary font-bold' },
+              ].map((item, i) => (
+                <span key={i} className={`whitespace-nowrap rounded-full px-3 py-1.5 text-[11px] font-semibold ${item.cls}`}>{item.label}</span>
+              ))}
+            </div>
+
+            {/* Filter chips */}
+            <div className="flex gap-2 mb-4">
+              {[
+                { key: 'all' as const, label: 'All' },
+                { key: 'PENDING' as const, label: 'Pending' },
+                { key: 'WIN' as const, label: 'Target Hit' },
+                { key: 'LOSS' as const, label: 'SL Hit' },
+              ].map(f => (
+                <button
+                  key={f.key}
+                  onClick={() => setSignalFilter(f.key)}
+                  className={`rounded-full px-3 py-1.5 text-[12px] font-semibold transition-colors ${
+                    signalFilter === f.key ? 'bg-primary text-primary-foreground' : 'bg-card border border-border text-muted-foreground'
+                  }`}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Signal cards */}
+            {filteredSignals.length === 0 ? (
+              <div className="py-12 text-center">
+                <BarChart3 className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
+                <p className="text-[14px] text-muted-foreground">No signals found</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {filteredSignals.map(s => {
+                  const isBuy = s.signal_type === 'BUY';
+                  const resultStatus = (s.result === 'WIN' || s.result === 'TARGET_HIT') ? 'win'
+                    : (s.result === 'LOSS' || s.result === 'SL_HIT') ? 'loss' : 'pending';
+                  const borderColor = resultStatus === 'win' ? 'border-l-primary' : resultStatus === 'loss' ? 'border-l-destructive' : 'border-l-[hsl(45,100%,51%)]';
+
+                  return (
+                    <div key={s.id} className={`rounded-xl border border-border bg-card p-3 pl-4 border-l-[3px] ${borderColor}`}>
+                      <div className="flex items-center justify-between">
+                        <span className="text-[15px] font-bold text-foreground">{s.instrument}</span>
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${isBuy ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive'}`}>
+                          {isBuy ? '🟢' : '🔴'} {s.signal_type}
+                        </span>
+                      </div>
+                      <div className="mt-1.5 flex gap-4 text-[12px]">
+                        <span className="text-muted-foreground">Entry <span className="font-bold text-foreground">₹{Number(s.entry_price).toLocaleString('en-IN')}</span></span>
+                        <span className="text-muted-foreground">Target <span className="font-bold text-primary">₹{Number(s.target_price).toLocaleString('en-IN')}</span></span>
+                        <span className="text-muted-foreground">SL <span className="font-bold text-destructive">₹{Number(s.stop_loss).toLocaleString('en-IN')}</span></span>
+                      </div>
+                      <div className="mt-2 flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          {s.timeframe && <span className="text-[10px] rounded-full bg-muted px-2 py-0.5 text-muted-foreground">{s.timeframe}</span>}
+                          <span className="text-[10px] text-muted-foreground">
+                            {s.signal_date ? new Date(s.signal_date + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : ''}
+                          </span>
+                        </div>
+                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                          resultStatus === 'win' ? 'bg-primary/10 text-primary' :
+                          resultStatus === 'loss' ? 'bg-destructive/10 text-destructive' :
+                          'bg-[hsl(45,100%,92%)] text-[hsl(35,100%,35%)]'
+                        }`}>
+                          {resultStatus === 'win' ? '✅ Target Hit' : resultStatus === 'loss' ? '❌ SL Hit' : '⏳ Pending'}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ABOUT TAB */}
+        {activeTab === 'about' && (
+          <div className="px-4 py-4 space-y-4">
+            {/* Advisor card */}
+            <div className="rounded-2xl border border-border bg-card p-5 text-center">
+              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-primary to-secondary text-3xl font-extrabold text-primary-foreground overflow-hidden ring-4 ring-primary/20">
+                {advisor.profile_photo_url ? <img src={advisor.profile_photo_url} alt="" className="h-full w-full object-cover" /> : toTitleCase(advisor.full_name).charAt(0)}
+              </div>
+              <h2 className="mt-3 text-xl font-extrabold text-foreground">{toTitleCase(advisor.full_name)}</h2>
+              <p className="text-[12px] text-primary font-medium flex items-center justify-center gap-1 mt-1">
+                <CheckCircle className="h-3 w-3" /> TradeCircle Verified Advisor
+              </p>
+            </div>
+
+            {/* Details */}
+            <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
+              <div className="flex items-center gap-3">
+                <Shield className="h-4 w-4 text-primary shrink-0" />
+                <div>
+                  <p className="text-[11px] text-muted-foreground">SEBI Registration</p>
+                  <a href="https://www.sebi.gov.in/sebiweb/other/OtherAction.do?doRecognisedFpi=yes&intmId=13" target="_blank" rel="noopener noreferrer" className="text-[14px] font-semibold text-primary hover:underline flex items-center gap-1">
+                    {advisor.sebi_reg_no} <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+                <div>
+                  <p className="text-[11px] text-muted-foreground">Member Since</p>
+                  <p className="text-[14px] font-semibold text-foreground">
+                    {advisor.created_at ? new Date(advisor.created_at).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }) : '—'}
+                  </p>
+                </div>
+              </div>
+              {advisor.strategy_type && (
+                <div className="flex items-center gap-3">
+                  <TrendingUp className="h-4 w-4 text-secondary shrink-0" />
+                  <div>
+                    <p className="text-[11px] text-muted-foreground">Speciality</p>
+                    <div className="flex flex-wrap gap-1.5 mt-1">
+                      {advisor.strategy_type.split(',').map((tag, i) => (
+                        <span key={i} className="tc-badge-strategy text-[11px]">{tag.trim()}</span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Bio */}
+            {advisor.bio && (
+              <div className="rounded-2xl border border-border bg-card p-5">
+                <h3 className="text-[14px] font-bold text-foreground mb-2">About</h3>
+                <p className="text-[13px] text-muted-foreground leading-relaxed whitespace-pre-wrap">{advisor.bio}</p>
+              </div>
+            )}
+
+            {/* Stats card */}
+            <div className="rounded-2xl border border-border bg-card p-5">
+              <h3 className="text-[14px] font-bold text-foreground mb-3">Performance Stats</h3>
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-xl bg-muted p-3 text-center">
                   <p className="text-2xl font-black text-foreground">{signalStats.total_signals}</p>
@@ -320,150 +471,61 @@ export default function AdvisorProfile() {
               </div>
             </div>
 
-            {/* Signal History Table */}
-            <div className="rounded-2xl border border-border bg-card overflow-hidden">
-              <div className="px-4 py-3 border-b border-border">
-                <h3 className="text-sm font-bold text-foreground">Closed Signals</h3>
-              </div>
-              {signalOnlyPosts.length === 0 ? (
-                <div className="p-8 text-center text-sm text-muted-foreground">No signals yet</div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr className="bg-muted text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                        <th className="px-3 py-2 text-left">Date</th>
-                        <th className="px-3 py-2 text-left">Stock</th>
-                        <th className="px-3 py-2 text-left">Type</th>
-                        <th className="px-3 py-2 text-right">Entry</th>
-                        <th className="px-3 py-2 text-right">Target</th>
-                        <th className="px-3 py-2 text-right">SL</th>
-                        <th className="px-3 py-2 text-center">Result</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {signalOnlyPosts.slice(0, 30).map(s => (
-                        <tr key={s.id} className="border-t border-muted">
-                          <td className="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">
-                            {s.signal_date ? new Date(s.signal_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—'}
-                          </td>
-                          <td className="px-3 py-2 font-semibold text-foreground">{s.instrument}</td>
-                          <td className="px-3 py-2">
-                            <span className={`rounded px-1.5 py-0.5 text-[10px] font-bold ${s.signal_type === 'BUY' ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive'}`}>{s.signal_type}</span>
-                          </td>
-                          <td className="px-3 py-2 text-right font-medium">₹{Number(s.entry_price).toLocaleString('en-IN')}</td>
-                          <td className="px-3 py-2 text-right font-medium text-primary">₹{Number(s.target_price).toLocaleString('en-IN')}</td>
-                          <td className="px-3 py-2 text-right font-medium text-destructive">₹{Number(s.stop_loss).toLocaleString('en-IN')}</td>
-                          <td className="px-3 py-2 text-center">
-                            {s.result === 'TARGET_HIT' || s.result === 'WIN' ? (
-                              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-bold text-primary">✅ Hit</span>
-                            ) : s.result === 'SL_HIT' || s.result === 'LOSS' ? (
-                              <span className="rounded-full bg-destructive/10 px-2 py-0.5 text-[10px] font-bold text-destructive">❌ SL</span>
-                            ) : (
-                              <span className="rounded-full bg-warning/10 px-2 py-0.5 text-[10px] font-bold text-[hsl(var(--warning))]">⏳</span>
-                            )}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ABOUT TAB */}
-        {activeTab === 'about' && (
-          <div className="space-y-4">
-            {/* Photo + Name */}
-            <div className="rounded-2xl border border-border bg-card p-5 text-center">
-              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-primary to-secondary text-3xl font-extrabold text-primary-foreground overflow-hidden">
-                {advisor.profile_photo_url ? <img src={advisor.profile_photo_url} alt="" className="h-full w-full object-cover" /> : toTitleCase(advisor.full_name).charAt(0)}
-              </div>
-              <h2 className="mt-3 text-xl font-extrabold text-foreground">{toTitleCase(advisor.full_name)}</h2>
-              <p className="text-xs text-muted-foreground mt-1">TradeCircle Verified Advisor</p>
-            </div>
-
-            {/* Details */}
-            <div className="rounded-2xl border border-border bg-card p-5 space-y-3">
-              <div className="flex items-center gap-3">
-                <Shield className="h-4 w-4 text-primary shrink-0" />
-                <div>
-                  <p className="text-[11px] text-muted-foreground">SEBI Registration No.</p>
-                  <p className="text-sm font-semibold text-foreground">{advisor.sebi_reg_no}</p>
-                </div>
-              </div>
-              {advisor.strategy_type && (
-                <div className="flex items-center gap-3">
-                  <TrendingUp className="h-4 w-4 text-secondary shrink-0" />
-                  <div>
-                    <p className="text-[11px] text-muted-foreground">Speciality</p>
-                    <p className="text-sm font-semibold text-foreground">{advisor.strategy_type}</p>
-                  </div>
-                </div>
-              )}
-              <div className="flex items-center gap-3">
-                <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
-                <div>
-                  <p className="text-[11px] text-muted-foreground">Member Since</p>
-                  <p className="text-sm font-semibold text-foreground">
-                    {advisor.created_at ? new Date(advisor.created_at).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }) : '—'}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Bio */}
-            {advisor.bio && (
+            {/* Groups list */}
+            {groups.length > 0 && (
               <div className="rounded-2xl border border-border bg-card p-5">
-                <h3 className="text-sm font-bold text-foreground mb-2">About</h3>
-                <p className="text-[13px] text-muted-foreground leading-relaxed">{advisor.bio}</p>
+                <h3 className="text-[14px] font-bold text-foreground mb-3">Groups</h3>
+                <div className="space-y-3">
+                  {groups.map(g => {
+                    const isSub = subscribedGroupIds.includes(g.id);
+                    return (
+                      <div key={g.id} className="flex items-center justify-between rounded-xl border border-border bg-muted/50 p-3">
+                        <div>
+                          <p className="text-[14px] font-semibold text-foreground">{g.name}</p>
+                          <p className="text-[12px] text-muted-foreground">₹{g.monthly_price}/mo · {g.subCount} members</p>
+                        </div>
+                        {isSub || isOwner ? (
+                          <span className="flex items-center gap-1 text-[12px] font-semibold text-primary">
+                            <CheckCircle className="h-3.5 w-3.5" /> {isOwner ? 'Owner' : 'Subscribed'}
+                          </span>
+                        ) : (
+                          <Button size="sm" className="text-[12px] rounded-full h-8" onClick={() => handleSubscribe(g)} disabled={subscribing === g.id}>
+                            Subscribe
+                          </Button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
-            {/* Subscribe CTA */}
-            {groups.length > 0 && !isSubscribedToAny && !isOwner && (
-              <div className="rounded-2xl border border-primary/20 bg-primary/5 p-5 text-center">
-                <p className="text-sm font-bold text-foreground">Ready to subscribe?</p>
-                <p className="text-xs text-muted-foreground mt-1">Get signals delivered to your Telegram instantly</p>
-                <button
-                  onClick={() => handleSubscribe(groups[0])}
-                  disabled={subscribing === groups[0].id}
-                  className="mt-3 w-full rounded-xl bg-primary py-3 text-sm font-bold text-primary-foreground disabled:opacity-60"
-                >
-                  {subscribing === groups[0].id ? 'Processing...' : `Subscribe — ₹${groups[0].monthly_price}/month`}
-                </button>
-                <p className="mt-1.5 text-[11px] text-muted-foreground">✓ Cancel anytime · ✓ Signals on Telegram</p>
-              </div>
-            )}
+            {/* Disclaimer */}
+            <p className="text-[11px] text-center text-muted-foreground italic px-4 pb-4">
+              All advisors on TradeCircle are SEBI registered. SEBI does not endorse any advisor's performance. Past performance ≠ future results.
+            </p>
           </div>
         )}
       </div>
 
-      {/* Sticky Subscribe Button - for non-subscribers */}
-      {groups.length > 0 && !isSubscribedToAny && !isOwner && activeTab === 'feed' && (
-        <div className="sticky bottom-14 md:bottom-0 bg-card border-t border-border p-3 safe-area-bottom">
-          <button
-            onClick={() => handleSubscribe(groups[0])}
-            disabled={subscribing === groups[0].id}
-            className="w-full rounded-xl bg-primary py-3.5 text-base font-bold text-primary-foreground shadow-[0_-4px_20px_rgba(27,94,32,0.2)] disabled:opacity-60"
-          >
-            {subscribing === groups[0].id ? 'Processing...' : `Subscribe — ₹${groups[0].monthly_price}/month`}
-          </button>
+      {/* STICKY BOTTOM BAR */}
+      {groups.length > 0 && !isOwner && (
+        <div className="sticky bottom-14 md:bottom-0 bg-card border-t border-border p-3 safe-area-bottom z-20">
+          {isSubscribedToAny ? (
+            <div className="flex items-center justify-center gap-2 rounded-xl bg-primary/5 py-3 text-[14px] font-bold text-primary">
+              <CheckCircle className="h-4 w-4" /> Subscribed ✓
+            </div>
+          ) : (
+            <button
+              onClick={() => handleSubscribe(groups[0])}
+              disabled={subscribing === groups[0].id}
+              className="w-full rounded-xl bg-primary py-3.5 text-[15px] font-bold text-primary-foreground shadow-lg disabled:opacity-60 transition-all active:scale-[0.98]"
+            >
+              {subscribing === groups[0].id ? 'Processing...' : `Subscribe — ₹${groups[0].monthly_price}/month`}
+            </button>
+          )}
         </div>
       )}
-
-      {/* Subscribed badge */}
-      {isSubscribedToAny && !isOwner && (
-        <div className="sticky bottom-14 md:bottom-0 bg-card border-t border-border p-3">
-          <div className="flex items-center justify-center gap-2 rounded-xl bg-primary/5 py-3 text-sm font-bold text-primary">
-            <CheckCircle className="h-4 w-4" /> Subscribed ✓
-          </div>
-        </div>
-      )}
-
-      <Footer />
     </div>
   );
 }
