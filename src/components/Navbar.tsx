@@ -31,28 +31,30 @@ export function Navbar() {
 
   const isActive = (path: string) => location.pathname === path;
   const linkClass = (path: string) =>
-    `text-sm transition-colors ${isActive(path) ? 'font-semibold text-primary' : 'text-muted-foreground hover:text-foreground'}`;
+    `text-sm font-medium transition-colors ${isActive(path) ? 'text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'}`;
 
   return (
-    <nav className={`sticky top-0 z-50 h-14 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 transition-shadow ${scrolled ? 'shadow-md' : ''}`}>
+    <nav className={`sticky top-0 z-50 h-14 border-b bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 transition-shadow ${scrolled ? 'shadow-sm' : ''}`}>
       <div className="container mx-auto flex h-full items-center justify-between px-4">
-        <Link to="/" className="text-lg font-extrabold text-foreground">Trade<span className="text-primary">Circle</span></Link>
+        <Link to="/" className="text-lg font-extrabold text-foreground tracking-tight">
+          Trade<span className="text-primary">Circle</span>
+        </Link>
 
         {/* Desktop nav */}
-        <div className="hidden items-center gap-5 md:flex">
+        <div className="hidden items-center gap-6 md:flex">
           <Link to="/" className={linkClass('/')}>Home</Link>
-          <Link to="/groups" className={linkClass('/groups')}>Discover</Link>
+          <Link to="/discover" className={linkClass('/discover')}>Discover</Link>
           {user ? (
             <>
               <Link to={getDashboardLink()} className={linkClass(getDashboardLink())}>Dashboard</Link>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="sm" className="gap-2">
+                  <Button variant="ghost" size="sm" className="gap-2 h-9">
                     <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
                       {(profile?.full_name || 'U').charAt(0).toUpperCase()}
                     </div>
-                    <span className="text-sm">{profile?.full_name?.split(' ')[0] || 'Account'}</span>
-                    <ChevronDown className="h-3 w-3" />
+                    <span className="text-sm font-medium">{profile?.full_name?.split(' ')[0] || 'Account'}</span>
+                    <ChevronDown className="h-3 w-3 text-muted-foreground" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
@@ -68,8 +70,8 @@ export function Navbar() {
             </>
           ) : (
             <div className="flex items-center gap-2">
-              <Link to="/login"><Button variant="outline" size="sm" className="border-2 border-primary text-primary hover:bg-light-green tc-btn-click">Sign In</Button></Link>
-              <Link to="/register"><Button size="sm" className="tc-btn-click">Sign Up</Button></Link>
+              <Link to="/login"><Button variant="ghost" size="sm" className="text-muted-foreground hover:text-foreground">Sign In</Button></Link>
+              <Link to="/register"><Button size="sm" className="rounded-lg h-9 px-4 font-semibold tc-btn-click">Sign Up</Button></Link>
             </div>
           )}
         </div>
