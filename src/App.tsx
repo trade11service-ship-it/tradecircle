@@ -24,13 +24,13 @@ import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import Refund from "./pages/Refund";
 import ReferralLanding from "./pages/ReferralLanding";
-import Groups from "./pages/Groups";
+import Discover from "./pages/Discover";
 
 const queryClient = new QueryClient();
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
-  if (loading) return <div className="flex min-h-screen items-center justify-center"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>;
+  if (loading) return <div className="flex min-h-screen items-center justify-center bg-background"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div>;
   if (!user) return <Navigate to="/login" replace />;
   return <>{children}</>;
 }
@@ -52,7 +52,8 @@ const App = () => (
           <div className="pb-14 md:pb-0">
             <Routes>
               <Route path="/" element={<Landing />} />
-              <Route path="/groups" element={<Groups />} />
+              <Route path="/discover" element={<Discover />} />
+              <Route path="/groups" element={<Discover />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />

@@ -302,7 +302,7 @@ export function GroupFeed({ groupId, advisorName, advisorPhoto, isSubscribed = t
 
   return (
     <div className="relative flex flex-col h-full">
-      <div ref={feedContainerRef} className="flex-1 overflow-y-auto px-2 py-3 space-y-3" style={{ background: 'hsl(var(--muted))' }}>
+      <div ref={feedContainerRef} className="flex-1 overflow-y-auto px-2 py-3 space-y-3" style={{ background: 'hsl(var(--chat-bg))' }}>
         {hasMore && (
           <div className="flex justify-center mb-2">
             <Button variant="ghost" size="sm" className="text-[12px] text-muted-foreground" onClick={() => setLimit(prev => prev + 50)}>
