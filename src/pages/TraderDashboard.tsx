@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { Bell, BellOff, Send, BarChart3, ExternalLink, CheckCircle2, AlertTriangle, RotateCcw, Shield, User, Loader2, Rss } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { Tables } from '@/integrations/supabase/types';
+import { getExpiryStatus } from '@/lib/accessControl';
 
 type Signal = Tables<'signals'>;
 type Subscription = Tables<'subscriptions'>;
