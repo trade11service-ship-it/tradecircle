@@ -526,8 +526,8 @@ export default function AdvisorDashboard() {
                     <div className="flex items-center gap-2">
                       {signalForm.isPublic ? <Globe className="h-4 w-4 text-primary" /> : <Lock className="h-4 w-4 text-muted-foreground" />}
                       <div>
-                        <p className="text-sm font-medium">{signalForm.isPublic ? 'Public' : 'Subscribers Only'}</p>
-                        <p className="text-[11px] text-muted-foreground">{signalForm.isPublic ? 'Visible to followers (blurred for non-subs)' : 'Only paid subscribers can see this'}</p>
+                        <p className="text-sm font-medium">{signalForm.isPublic ? 'Public after 24h' : 'Subscribers Only'}</p>
+                        <p className="text-[11px] text-muted-foreground">{signalForm.isPublic ? 'Visible free after 24 hours (preview for non-subs)' : 'Only paid subscribers can see this forever'}</p>
                       </div>
                     </div>
                     <Switch checked={signalForm.isPublic} onCheckedChange={v => setSignalForm({ ...signalForm, isPublic: v })} />
@@ -576,6 +576,7 @@ export default function AdvisorDashboard() {
                   <div className="space-y-2">
                     {groupSignals.map(sig => {
                       const barColor = sig.result === 'TARGET_HIT' ? 'bg-primary' : sig.result === 'SL_HIT' ? 'bg-[hsl(var(--small-text))]' : 'bg-[hsl(var(--warning))]';
+                      const isPending = !sig.result || sig.result === 'PENDING';
                       return (
                         <div key={sig.id} className="relative overflow-hidden rounded-2xl border-[1.5px] border-border bg-card p-4 pl-[18px]">
                           <div className={`absolute left-0 top-0 bottom-0 w-1 ${barColor}`} />
@@ -591,7 +592,7 @@ export default function AdvisorDashboard() {
                                 <span className="text-muted-foreground">Target: <span className="font-semibold text-foreground">₹{Number(sig.target_price).toLocaleString('en-IN')}</span></span>
                                 <span className="text-muted-foreground">SL: <span className="font-semibold text-foreground">₹{Number(sig.stop_loss).toLocaleString('en-IN')}</span></span>
                               </div>
-                              {sig.notes && <p className="text-xs text-muted-foreground mt-1 truncate italic">{sig.notes}</p>}
+                              {sig.notes && <p className="text-xs text-muted-foreground mt-1 italic">{sig.notes}</p>}
                             </div>
                             <div className="flex flex-col items-end gap-1 shrink-0">
                               <div className="flex items-center gap-1">
@@ -601,6 +602,31 @@ export default function AdvisorDashboard() {
                               <span className="text-[11px] text-[hsl(var(--small-text))]">{sig.signal_date ? new Date(sig.signal_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : ''}</span>
                             </div>
                           </div>
+                          {/* Status update buttons for PENDING signals — no delete/edit allowed */}
+                          {isPending && (
+                            <div className="mt-3 pt-3 border-t border-border flex gap-2">
+                              <button
+                                className="flex-1 rounded-lg bg-primary/10 py-2 text-[12px] font-bold text-primary hover:bg-primary/20 transition-colors"
+                                onClick={async () => {
+                                  const { error } = await supabase.from('signals').update({ result: 'TARGET_HIT' } as any).eq('id', sig.id);
+                                  if (error) toast.error('Update failed');
+                                  else { toast.success('Marked as Target Hit ✅'); fetchData(); }
+                                }}
+                              >
+                                ✅ Target Hit
+                              </button>
+                              <button
+                                className="flex-1 rounded-lg bg-destructive/10 py-2 text-[12px] font-bold text-destructive hover:bg-destructive/20 transition-colors"
+                                onClick={async () => {
+                                  const { error } = await supabase.from('signals').update({ result: 'SL_HIT' } as any).eq('id', sig.id);
+                                  if (error) toast.error('Update failed');
+                                  else { toast.success('Marked as SL Hit ❌'); fetchData(); }
+                                }}
+                              >
+                                ❌ SL Hit
+                              </button>
+                            </div>
+                          )}
                         </div>
                       );
                     })}

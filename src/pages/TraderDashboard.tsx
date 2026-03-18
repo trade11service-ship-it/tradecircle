@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { Bell, BellOff, Send, BarChart3, ExternalLink, CheckCircle2, AlertTriangle, RotateCcw, Shield, User, Loader2, Rss } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { Tables } from '@/integrations/supabase/types';
+import { getExpiryStatus } from '@/lib/accessControl';
 
 type Signal = Tables<'signals'>;
 type Subscription = Tables<'subscriptions'>;
@@ -50,11 +51,13 @@ export default function TraderDashboard() {
   useEffect(() => { if (user) fetchData(); }, [user]);
 
   const fetchData = async () => {
+    const now = new Date().toISOString();
     const { data: subs } = await supabase
       .from('subscriptions')
       .select('*, groups!inner(id, name, advisor_id, dp_url, advisors!inner(full_name, profile_photo_url, sebi_reg_no, bio))')
       .eq('user_id', user!.id)
-      .eq('status', 'active');
+      .eq('status', 'active')
+      .gte('end_date', now);
 
     const uniqueMap = new Map<string, any>();
     (subs || []).forEach((s: any) => {

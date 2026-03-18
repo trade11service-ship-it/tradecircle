@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { User, ChevronDown, Lock } from 'lucide-react';
+import { getPostVisibility } from '@/lib/accessControl';
 
 interface FeedPost {
   id: string;
@@ -20,6 +21,7 @@ interface FeedPost {
   created_at: string | null;
   group_id: string;
   advisor_id: string;
+  is_public: boolean;
 }
 
 interface FeedProps {
@@ -27,6 +29,7 @@ interface FeedProps {
   advisorName: string;
   advisorPhoto?: string;
   isSubscribed?: boolean;
+  isOwner?: boolean;
   onSubscribe?: () => void;
   subscribePrice?: number;
 }
@@ -59,7 +62,15 @@ function DateSeparator({ label }: { label: string }) {
   );
 }
 
-function MessageBubble({ post, advisorName, advisorPhoto }: { post: FeedPost; advisorName: string; advisorPhoto?: string }) {
+function FreeBadge({ text }: { text: string }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-[hsl(45,100%,92%)] px-2 py-0.5 text-[10px] font-semibold text-[hsl(35,100%,35%)] mb-1">
+      🔓 {text}
+    </span>
+  );
+}
+
+function MessageBubble({ post, advisorName, advisorPhoto, freeBadge }: { post: FeedPost; advisorName: string; advisorPhoto?: string; freeBadge?: string | null }) {
   const [expanded, setExpanded] = useState(false);
   const [imgOpen, setImgOpen] = useState(false);
 
@@ -74,6 +85,7 @@ function MessageBubble({ post, advisorName, advisorPhoto }: { post: FeedPost; ad
             <div className="flex items-center gap-2 mb-1">
               <span className="text-[12px] font-bold text-primary">{advisorName}</span>
             </div>
+            {freeBadge && <FreeBadge text={freeBadge} />}
             {post.message_text && (
               <p className={`text-[14px] text-foreground leading-relaxed whitespace-pre-wrap ${!expanded && post.message_text.length > 300 ? 'line-clamp-4' : ''}`}>
                 {post.message_text}
@@ -105,7 +117,7 @@ function MessageBubble({ post, advisorName, advisorPhoto }: { post: FeedPost; ad
   );
 }
 
-function SignalBubble({ post, advisorName, advisorPhoto, blurred }: { post: FeedPost; advisorName: string; advisorPhoto?: string; blurred?: boolean }) {
+function SignalBubble({ post, advisorName, advisorPhoto, blurred, freeBadge }: { post: FeedPost; advisorName: string; advisorPhoto?: string; blurred?: boolean; freeBadge?: string | null }) {
   const [expanded, setExpanded] = useState(false);
   const isBuy = post.signal_type === 'BUY';
   const bgClass = isBuy ? 'bg-[hsl(120,60%,97%)]' : 'bg-[hsl(0,70%,97%)]';
@@ -130,7 +142,9 @@ function SignalBubble({ post, advisorName, advisorPhoto, blurred }: { post: Feed
             <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-card border border-border text-muted-foreground">📊 SIGNAL</span>
           </div>
 
-          {/* Instrument + Type */}
+          {freeBadge && <FreeBadge text={freeBadge} />}
+
+          {/* Instrument + Type — always visible even when blurred */}
           <div className="flex items-center justify-between mb-2">
             <span className="text-[16px] font-extrabold text-foreground">{post.instrument}</span>
             <span className={`rounded-full px-2.5 py-0.5 text-[11px] font-bold ${isBuy ? 'bg-primary/15 text-primary' : 'bg-destructive/15 text-destructive'}`}>
@@ -138,8 +152,8 @@ function SignalBubble({ post, advisorName, advisorPhoto, blurred }: { post: Feed
             </span>
           </div>
 
-          {/* Prices */}
-          <div className={`grid grid-cols-3 gap-2 text-center rounded-lg bg-card/60 p-2 ${blurred ? 'blur-[6px] select-none' : ''}`}>
+          {/* Prices — blurred for non-subscribers */}
+          <div className={`grid grid-cols-3 gap-2 text-center rounded-lg bg-card/60 p-2 ${blurred ? 'blur-[6px] select-none pointer-events-none' : ''}`}>
             <div>
               <p className="text-[10px] text-muted-foreground">Entry</p>
               <p className="text-[15px] font-bold text-foreground">₹{Number(post.entry_price).toLocaleString('en-IN')}</p>
@@ -160,18 +174,18 @@ function SignalBubble({ post, advisorName, advisorPhoto, blurred }: { post: Feed
             <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${resultBadge.cls}`}>{resultBadge.label}</span>
           </div>
 
-          {post.notes && (
+          {post.notes && !blurred && (
             <p className={`mt-2 text-[13px] text-muted-foreground italic leading-relaxed ${!expanded && post.notes.length > 150 ? 'line-clamp-2' : ''}`}>
               "{post.notes}"
             </p>
           )}
-          {post.notes && post.notes.length > 150 && (
+          {post.notes && post.notes.length > 150 && !blurred && (
             <button onClick={() => setExpanded(!expanded)} className="text-[11px] font-medium text-primary mt-0.5">
               {expanded ? 'Less' : 'More'}
             </button>
           )}
 
-          {post.image_url && (
+          {post.image_url && !blurred && (
             <img src={post.image_url} alt="Signal" className="mt-2 rounded-lg max-h-48 object-cover w-full" />
           )}
 
@@ -198,7 +212,7 @@ function SkeletonBubble() {
   );
 }
 
-export function GroupFeed({ groupId, advisorName, advisorPhoto, isSubscribed = true, onSubscribe, subscribePrice }: FeedProps) {
+export function GroupFeed({ groupId, advisorName, advisorPhoto, isSubscribed = true, isOwner = false, onSubscribe, subscribePrice }: FeedProps) {
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [limit, setLimit] = useState(50);
@@ -297,8 +311,8 @@ export function GroupFeed({ groupId, advisorName, advisorPhoto, isSubscribed = t
     </div>
   );
 
-  // Determine how many posts to show fully for non-subscribers
-  const FREE_VISIBLE = 3;
+  // Build a global index counter for visibility
+  let globalIdx = 0;
 
   return (
     <div className="relative flex flex-col h-full">
@@ -312,24 +326,22 @@ export function GroupFeed({ groupId, advisorName, advisorPhoto, isSubscribed = t
         )}
         
         {groupedPosts.map((group, gi) => {
-          // Count how many posts have been rendered before this group
-          let countBefore = 0;
-          for (let i = 0; i < gi; i++) countBefore += groupedPosts[i].posts.length;
-
           return (
             <div key={gi}>
               <DateSeparator label={group.label} />
               <div className="space-y-3">
-                {group.posts.map((post, pi) => {
-                  const globalIndex = countBefore + pi;
-                  const shouldBlur = !isSubscribed && globalIndex >= FREE_VISIBLE;
+                {group.posts.map((post) => {
+                  const currentIdx = globalIdx++;
+                  const vis = getPostVisibility(post, isSubscribed, isOwner, currentIdx);
 
-                  if (shouldBlur && globalIndex === FREE_VISIBLE) {
-                    // Show lock overlay
+                  if (vis.hideCompletely) return null;
+
+                  if (vis.showLockOverlay) {
+                    // Show lock overlay with blurred preview
                     return (
                       <div key={post.id} className="relative">
                         <div className="pointer-events-none blur-[6px] opacity-60 space-y-3">
-                          {group.posts.slice(pi, pi + 2).map(p => (
+                          {group.posts.slice(group.posts.indexOf(post), group.posts.indexOf(post) + 2).map(p => (
                             p.post_type === 'signal'
                               ? <SignalBubble key={p.id} post={p} advisorName={advisorName} advisorPhoto={advisorPhoto} blurred />
                               : <MessageBubble key={p.id} post={p} advisorName={advisorName} advisorPhoto={advisorPhoto} />
@@ -351,11 +363,11 @@ export function GroupFeed({ groupId, advisorName, advisorPhoto, isSubscribed = t
                     );
                   }
 
-                  if (shouldBlur) return null;
-
-                  return post.post_type === 'signal'
-                    ? <SignalBubble key={post.id} post={post} advisorName={advisorName} advisorPhoto={advisorPhoto} />
-                    : <MessageBubble key={post.id} post={post} advisorName={advisorName} advisorPhoto={advisorPhoto} />;
+                  // Render the post based on visibility
+                  if (post.post_type === 'signal') {
+                    return <SignalBubble key={post.id} post={post} advisorName={advisorName} advisorPhoto={advisorPhoto} blurred={vis.blurNumbers} freeBadge={vis.freeBadge} />;
+                  }
+                  return <MessageBubble key={post.id} post={post} advisorName={advisorName} advisorPhoto={advisorPhoto} freeBadge={vis.freeBadge} />;
                 })}
               </div>
             </div>

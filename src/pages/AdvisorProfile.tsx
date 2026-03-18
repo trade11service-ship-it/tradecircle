@@ -6,10 +6,11 @@ import { GroupFeed } from '@/components/GroupFeed';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
-import { Shield, Users, Heart, Share2, Lock, CheckCircle, Calendar, TrendingUp, Camera, BarChart3, User, ExternalLink } from 'lucide-react';
+import { Shield, Users, Heart, Share2, Lock, CheckCircle, Calendar, TrendingUp, Camera, BarChart3, User, ExternalLink, AlertTriangle } from 'lucide-react';
 import type { Tables } from '@/integrations/supabase/types';
 import { SUBSCRIPTION_RISK_TEXT, getDeviceInfo, getIpAddress } from '@/lib/legalTexts';
 import { useFollow } from '@/hooks/useFollow';
+import { checkGroupAccess, getExpiryStatus } from '@/lib/accessControl';
 
 type Advisor = Tables<'advisors'>;
 type Group = Tables<'groups'>;
@@ -35,7 +36,8 @@ export default function AdvisorProfile() {
   const [advisor, setAdvisor] = useState<Advisor | null>(null);
   const [groups, setGroups] = useState<(Group & { subCount: number })[]>([]);
   const [signals, setSignals] = useState<Signal[]>([]);
-  const [subscribedGroupIds, setSubscribedGroupIds] = useState<string[]>([]);
+  // Per-group subscription status: { groupId: { hasAccess, expiresAt, isExpired } }
+  const [groupAccessMap, setGroupAccessMap] = useState<Record<string, { hasAccess: boolean; expiresAt: string | null; isExpired: boolean }>>({});
   const [loading, setLoading] = useState(true);
   const [subscribing, setSubscribing] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'feed' | 'signals' | 'about'>('feed');
@@ -74,14 +76,24 @@ export default function AdvisorProfile() {
     setSignals(allSigs || []);
 
     if (user) {
-      const { data: subs } = await supabase.from('subscriptions').select('group_id').eq('user_id', user.id).eq('status', 'active');
-      const subIds = (subs || []).map(s => s.group_id);
-      if (adv && adv.user_id === user.id) {
-        const allGroupIds = (grps || []).map(g => g.id);
-        setSubscribedGroupIds([...new Set([...subIds, ...allGroupIds])]);
-      } else {
-        setSubscribedGroupIds(subIds);
+      // Check per-group access with expiry
+      if (grps) {
+        const accessChecks = await Promise.all(
+          grps.map(async g => {
+            const access = await checkGroupAccess(user.id, g.id);
+            return { groupId: g.id, ...access };
+          })
+        );
+        const accessMap: Record<string, { hasAccess: boolean; expiresAt: string | null; isExpired: boolean }> = {};
+        accessChecks.forEach(a => { accessMap[a.groupId] = { hasAccess: a.hasAccess, expiresAt: a.expiresAt, isExpired: a.isExpired }; });
+
+        // If owner, grant access to all groups
+        if (adv && adv.user_id === user.id) {
+          grps.forEach(g => { accessMap[g.id] = { hasAccess: true, expiresAt: null, isExpired: false }; });
+        }
+        setGroupAccessMap(accessMap);
       }
+
       const { data: acceptance } = await supabase.from('user_legal_acceptances').select('id').eq('user_id', user.id).eq('acceptance_type', 'subscription_risk').limit(1);
       if (acceptance && acceptance.length > 0) setRiskAlreadyAccepted(true);
     }
@@ -92,6 +104,14 @@ export default function AdvisorProfile() {
     if (!user) { navigate('/login'); return; }
     setSubscribing(group.id);
     try {
+      // Check for duplicate active subscription
+      const existing = groupAccessMap[group.id];
+      if (existing?.hasAccess) {
+        toast.info('You are already subscribed to this group');
+        setSubscribing(null);
+        return;
+      }
+
       if (!riskAlreadyAccepted) {
         const ip = await getIpAddress();
         await supabase.from('user_legal_acceptances').insert({
@@ -157,8 +177,20 @@ export default function AdvisorProfile() {
   );
 
   const isOwner = user && advisor && advisor.user_id === user.id;
-  const isSubscribedToAny = groups.some(g => subscribedGroupIds.includes(g.id));
-  const firstGroupId = groups[0]?.id || '';
+  const firstGroup = groups[0];
+  const firstGroupId = firstGroup?.id || '';
+  const firstGroupAccess = firstGroupId ? groupAccessMap[firstGroupId] : null;
+  const isSubscribedToFirstGroup = !!(firstGroupAccess?.hasAccess || isOwner);
+
+  // Check expiry status for banner
+  const firstGroupExpiry = firstGroupAccess?.expiresAt ? getExpiryStatus(firstGroupAccess.expiresAt) : null;
+  const anyExpired = Object.values(groupAccessMap).some(a => a.isExpired);
+  const anyExpiring = Object.values(groupAccessMap).some(a => {
+    if (!a.expiresAt) return false;
+    const s = getExpiryStatus(a.expiresAt);
+    return s.isExpiringSoon;
+  });
+
   const winRate = signalStats.resolved_count > 0 ? Math.round((signalStats.win_count / signalStats.resolved_count) * 100) : null;
   const coverUrl = (advisor as any).cover_image_url;
 
@@ -191,6 +223,28 @@ export default function AdvisorProfile() {
           </>
         )}
       </div>
+
+      {/* EXPIRY / EXPIRED BANNER */}
+      {anyExpired && !isOwner && (
+        <div className="bg-destructive/10 border-b border-destructive/20 px-4 py-3 flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
+          <p className="text-[13px] text-destructive font-medium flex-1">Your subscription has expired.</p>
+          <button onClick={() => firstGroup && handleSubscribe(firstGroup)} className="rounded-lg bg-destructive px-3 py-1.5 text-[12px] font-bold text-destructive-foreground shrink-0">
+            Renew Now
+          </button>
+        </div>
+      )}
+      {anyExpiring && !anyExpired && !isOwner && (
+        <div className="bg-[hsl(45,100%,92%)] border-b border-[hsl(45,80%,70%)] px-4 py-3 flex items-center gap-2">
+          <AlertTriangle className="h-4 w-4 text-[hsl(35,100%,35%)] shrink-0" />
+          <p className="text-[13px] text-[hsl(35,100%,35%)] font-medium flex-1">
+            {firstGroupExpiry?.message || 'Your subscription is expiring soon'}
+          </p>
+          <button onClick={() => firstGroup && handleSubscribe(firstGroup)} className="rounded-lg bg-primary px-3 py-1.5 text-[12px] font-bold text-primary-foreground shrink-0">
+            Renew
+          </button>
+        </div>
+      )}
 
       {/* PROFILE HEADER */}
       <section className="bg-card border-b border-border relative">
@@ -250,7 +304,7 @@ export default function AdvisorProfile() {
             {[
               { value: signalStats.total_signals, label: 'Signals' },
               { value: totalSubs, label: 'Members' },
-              { value: winRate !== null ? `${winRate}%` : '—', label: 'Accuracy' },
+              { value: winRate !== null ? `${winRate}%` : (signalStats.total_signals > 0 ? '—' : 'New'), label: 'Accuracy' },
               { value: groups.length, label: 'Groups' },
             ].map((stat, i) => (
               <div key={i} className={`text-center flex-1 ${i > 0 ? 'border-l border-border' : ''}`}>
@@ -291,7 +345,8 @@ export default function AdvisorProfile() {
                 groupId={groups[0].id}
                 advisorName={toTitleCase(advisor.full_name)}
                 advisorPhoto={advisor.profile_photo_url || undefined}
-                isSubscribed={!!(isSubscribedToAny || isOwner)}
+                isSubscribed={isSubscribedToFirstGroup}
+                isOwner={!!isOwner}
                 onSubscribe={() => groups[0] && handleSubscribe(groups[0])}
                 subscribePrice={groups[0]?.monthly_price}
               />
@@ -315,7 +370,7 @@ export default function AdvisorProfile() {
                 { label: `✅ Hit: ${winCount}`, cls: 'bg-primary/5 border border-primary/20 text-primary' },
                 { label: `❌ SL: ${lossCount}`, cls: 'bg-destructive/5 border border-destructive/20 text-destructive' },
                 { label: `⏳ Pending: ${pendingCount}`, cls: 'bg-[hsl(45,100%,94%)] border border-[hsl(45,80%,70%)] text-[hsl(35,100%,35%)]' },
-                { label: `Accuracy: ${winRate !== null ? winRate + '%' : '—'}`, cls: 'bg-primary/10 border border-primary/30 text-primary font-bold' },
+                { label: `Accuracy: ${winRate !== null ? winRate + '%' : (signalStats.total_signals > 0 ? '—' : 'New')}`, cls: 'bg-primary/10 border border-primary/30 text-primary font-bold' },
               ].map((item, i) => (
                 <span key={i} className={`whitespace-nowrap rounded-full px-3 py-1.5 text-[11px] font-semibold ${item.cls}`}>{item.label}</span>
               ))}
@@ -345,7 +400,9 @@ export default function AdvisorProfile() {
             {filteredSignals.length === 0 ? (
               <div className="py-12 text-center">
                 <BarChart3 className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
-                <p className="text-[14px] text-muted-foreground">No signals found</p>
+                <p className="text-[14px] text-muted-foreground">
+                  {signals.length === 0 ? 'No signals posted yet. Check back soon!' : 'No signals found for this filter'}
+                </p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -355,6 +412,10 @@ export default function AdvisorProfile() {
                     : (s.result === 'LOSS' || s.result === 'SL_HIT') ? 'loss' : 'pending';
                   const borderColor = resultStatus === 'win' ? 'border-l-primary' : resultStatus === 'loss' ? 'border-l-destructive' : 'border-l-[hsl(45,100%,51%)]';
 
+                  // Check if signal should be visible to non-subscriber
+                  const isSubToGroup = groupAccessMap[s.group_id]?.hasAccess || isOwner;
+                  const shouldBlurSignal = !isSubToGroup && s.post_type === 'signal';
+
                   return (
                     <div key={s.id} className={`rounded-xl border border-border bg-card p-3 pl-4 border-l-[3px] ${borderColor}`}>
                       <div className="flex items-center justify-between">
@@ -363,7 +424,7 @@ export default function AdvisorProfile() {
                           {isBuy ? '🟢' : '🔴'} {s.signal_type}
                         </span>
                       </div>
-                      <div className="mt-1.5 flex gap-4 text-[12px]">
+                      <div className={`mt-1.5 flex gap-4 text-[12px] ${shouldBlurSignal ? 'blur-[5px] select-none' : ''}`}>
                         <span className="text-muted-foreground">Entry <span className="font-bold text-foreground">₹{Number(s.entry_price).toLocaleString('en-IN')}</span></span>
                         <span className="text-muted-foreground">Target <span className="font-bold text-primary">₹{Number(s.target_price).toLocaleString('en-IN')}</span></span>
                         <span className="text-muted-foreground">SL <span className="font-bold text-destructive">₹{Number(s.stop_loss).toLocaleString('en-IN')}</span></span>
@@ -372,7 +433,7 @@ export default function AdvisorProfile() {
                         <div className="flex items-center gap-2">
                           {s.timeframe && <span className="text-[10px] rounded-full bg-muted px-2 py-0.5 text-muted-foreground">{s.timeframe}</span>}
                           <span className="text-[10px] text-muted-foreground">
-                            {s.signal_date ? new Date(s.signal_date + 'T00:00:00').toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : ''}
+                            {s.created_at ? formatSmartDate(s.created_at) : ''}
                           </span>
                         </div>
                         <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
@@ -383,6 +444,11 @@ export default function AdvisorProfile() {
                           {resultStatus === 'win' ? '✅ Target Hit' : resultStatus === 'loss' ? '❌ SL Hit' : '⏳ Pending'}
                         </span>
                       </div>
+                      {s.notes && (
+                        <p className={`mt-1.5 text-[12px] text-muted-foreground italic ${shouldBlurSignal ? 'blur-[4px]' : ''}`}>
+                          {s.notes}
+                        </p>
+                      )}
                     </div>
                   );
                 })}
@@ -451,24 +517,28 @@ export default function AdvisorProfile() {
             {/* Stats card */}
             <div className="rounded-2xl border border-border bg-card p-5">
               <h3 className="text-[14px] font-bold text-foreground mb-3">Performance Stats</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="rounded-xl bg-muted p-3 text-center">
-                  <p className="text-2xl font-black text-foreground">{signalStats.total_signals}</p>
-                  <p className="text-[11px] text-muted-foreground">Total Signals</p>
+              {signalStats.total_signals === 0 ? (
+                <p className="text-[13px] text-muted-foreground text-center py-4">No signals posted yet. Member since {advisor.created_at ? new Date(advisor.created_at).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) : '—'}.</p>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="rounded-xl bg-muted p-3 text-center">
+                    <p className="text-2xl font-black text-foreground">{signalStats.total_signals}</p>
+                    <p className="text-[11px] text-muted-foreground">Total Signals</p>
+                  </div>
+                  <div className="rounded-xl bg-primary/5 p-3 text-center">
+                    <p className="text-2xl font-black text-primary">{winRate !== null ? `${winRate}%` : 'No closed signals yet'}</p>
+                    <p className="text-[11px] text-muted-foreground">Accuracy</p>
+                  </div>
+                  <div className="rounded-xl bg-primary/5 p-3 text-center">
+                    <p className="text-2xl font-black text-primary">{signalStats.win_count}</p>
+                    <p className="text-[11px] text-muted-foreground">Target Hit ✅</p>
+                  </div>
+                  <div className="rounded-xl bg-destructive/5 p-3 text-center">
+                    <p className="text-2xl font-black text-destructive">{signalStats.loss_count}</p>
+                    <p className="text-[11px] text-muted-foreground">SL Hit ❌</p>
+                  </div>
                 </div>
-                <div className="rounded-xl bg-primary/5 p-3 text-center">
-                  <p className="text-2xl font-black text-primary">{winRate !== null ? `${winRate}%` : '—'}</p>
-                  <p className="text-[11px] text-muted-foreground">Accuracy</p>
-                </div>
-                <div className="rounded-xl bg-primary/5 p-3 text-center">
-                  <p className="text-2xl font-black text-primary">{signalStats.win_count}</p>
-                  <p className="text-[11px] text-muted-foreground">Target Hit ✅</p>
-                </div>
-                <div className="rounded-xl bg-destructive/5 p-3 text-center">
-                  <p className="text-2xl font-black text-destructive">{signalStats.loss_count}</p>
-                  <p className="text-[11px] text-muted-foreground">SL Hit ❌</p>
-                </div>
-              </div>
+              )}
             </div>
 
             {/* Groups list */}
@@ -477,20 +547,28 @@ export default function AdvisorProfile() {
                 <h3 className="text-[14px] font-bold text-foreground mb-3">Groups</h3>
                 <div className="space-y-3">
                   {groups.map(g => {
-                    const isSub = subscribedGroupIds.includes(g.id);
+                    const access = groupAccessMap[g.id];
+                    const isSub = access?.hasAccess || isOwner;
+                    const expiry = access?.expiresAt ? getExpiryStatus(access.expiresAt) : null;
                     return (
                       <div key={g.id} className="flex items-center justify-between rounded-xl border border-border bg-muted/50 p-3">
                         <div>
                           <p className="text-[14px] font-semibold text-foreground">{g.name}</p>
                           <p className="text-[12px] text-muted-foreground">₹{g.monthly_price}/mo · {g.subCount} members</p>
+                          {expiry?.isExpired && (
+                            <p className="text-[11px] text-destructive font-medium mt-0.5">Subscription expired</p>
+                          )}
+                          {expiry?.isExpiringSoon && !expiry.isExpired && (
+                            <p className="text-[11px] text-[hsl(35,100%,35%)] font-medium mt-0.5">{expiry.message}</p>
+                          )}
                         </div>
-                        {isSub || isOwner ? (
+                        {isSub ? (
                           <span className="flex items-center gap-1 text-[12px] font-semibold text-primary">
                             <CheckCircle className="h-3.5 w-3.5" /> {isOwner ? 'Owner' : 'Subscribed'}
                           </span>
                         ) : (
                           <Button size="sm" className="text-[12px] rounded-full h-8" onClick={() => handleSubscribe(g)} disabled={subscribing === g.id}>
-                            Subscribe
+                            {access?.isExpired ? 'Renew' : 'Subscribe'}
                           </Button>
                         )}
                       </div>
@@ -511,7 +589,7 @@ export default function AdvisorProfile() {
       {/* STICKY BOTTOM BAR */}
       {groups.length > 0 && !isOwner && (
         <div className="sticky bottom-14 md:bottom-0 bg-card border-t border-border p-3 safe-area-bottom z-20">
-          {isSubscribedToAny ? (
+          {isSubscribedToFirstGroup ? (
             <div className="flex items-center justify-center gap-2 rounded-xl bg-primary/5 py-3 text-[14px] font-bold text-primary">
               <CheckCircle className="h-4 w-4" /> Subscribed ✓
             </div>
@@ -521,11 +599,26 @@ export default function AdvisorProfile() {
               disabled={subscribing === groups[0].id}
               className="w-full rounded-xl bg-primary py-3.5 text-[15px] font-bold text-primary-foreground shadow-lg disabled:opacity-60 transition-all active:scale-[0.98]"
             >
-              {subscribing === groups[0].id ? 'Processing...' : `Subscribe — ₹${groups[0].monthly_price}/month`}
+              {subscribing === groups[0].id ? 'Processing...' : firstGroupAccess?.isExpired ? `Renew — ₹${groups[0].monthly_price}/month` : `Subscribe — ₹${groups[0].monthly_price}/month`}
             </button>
           )}
         </div>
       )}
     </div>
   );
+}
+
+function formatSmartDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today.getTime() - 86400000);
+  const dateOnly = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const time = d.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+  if (dateOnly.getTime() === today.getTime()) return `Today ${time}`;
+  if (dateOnly.getTime() === yesterday.getTime()) return `Yesterday ${time}`;
+  const diffDays = (today.getTime() - dateOnly.getTime()) / 86400000;
+  if (diffDays < 7) return `${d.toLocaleDateString('en-IN', { weekday: 'short' })} ${time}`;
+  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
 }
