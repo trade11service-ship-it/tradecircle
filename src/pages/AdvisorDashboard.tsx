@@ -526,8 +526,8 @@ export default function AdvisorDashboard() {
                     <div className="flex items-center gap-2">
                       {signalForm.isPublic ? <Globe className="h-4 w-4 text-primary" /> : <Lock className="h-4 w-4 text-muted-foreground" />}
                       <div>
-                        <p className="text-sm font-medium">{signalForm.isPublic ? 'Public' : 'Subscribers Only'}</p>
-                        <p className="text-[11px] text-muted-foreground">{signalForm.isPublic ? 'Visible to followers (blurred for non-subs)' : 'Only paid subscribers can see this'}</p>
+                        <p className="text-sm font-medium">{signalForm.isPublic ? 'Public after 24h' : 'Subscribers Only'}</p>
+                        <p className="text-[11px] text-muted-foreground">{signalForm.isPublic ? 'Visible free after 24 hours (preview for non-subs)' : 'Only paid subscribers can see this forever'}</p>
                       </div>
                     </div>
                     <Switch checked={signalForm.isPublic} onCheckedChange={v => setSignalForm({ ...signalForm, isPublic: v })} />
