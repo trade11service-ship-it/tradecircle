@@ -25,6 +25,11 @@ import Privacy from "./pages/Privacy";
 import Refund from "./pages/Refund";
 import ReferralLanding from "./pages/ReferralLanding";
 import Discover from "./pages/Discover";
+import Home from "./pages/Home";
+import About from "./pages/About";
+import Contact from "./pages/Contact";
+import Notifications from "./pages/Notifications";
+import Subscriptions from "./pages/Subscriptions";
 
 const queryClient = new QueryClient();
 
@@ -52,8 +57,11 @@ const App = () => (
           <div className="pb-14 md:pb-0">
             <Routes>
               <Route path="/" element={<Landing />} />
+              <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
               <Route path="/discover" element={<Discover />} />
               <Route path="/groups" element={<Discover />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -61,9 +69,19 @@ const App = () => (
               <Route path="/advisor-register" element={<AdvisorRegister />} />
               <Route path="/advisor/:id" element={<AdvisorProfile />} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+              <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+              <Route path="/subscriptions" element={<ProtectedRoute><Subscriptions /></ProtectedRoute>} />
               <Route path="/dashboard" element={<ProtectedRoute><TraderDashboard /></ProtectedRoute>} />
               <Route path="/advisor/dashboard" element={<ProtectedRoute><AdvisorDashboard /></ProtectedRoute>} />
+              <Route path="/advisor/dashboard/groups" element={<ProtectedRoute><AdvisorDashboard /></ProtectedRoute>} />
+              <Route path="/advisor/dashboard/post" element={<ProtectedRoute><AdvisorDashboard /></ProtectedRoute>} />
+              <Route path="/advisor/dashboard/signals" element={<ProtectedRoute><AdvisorDashboard /></ProtectedRoute>} />
+              <Route path="/advisor/dashboard/earnings" element={<ProtectedRoute><AdvisorDashboard /></ProtectedRoute>} />
+              <Route path="/advisor/dashboard/subscribers" element={<ProtectedRoute><AdvisorDashboard /></ProtectedRoute>} />
               <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+              <Route path="/admin/approvals" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+              <Route path="/admin/revenue" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+              <Route path="/admin/complaints" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
               <Route path="/payment-success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
               <Route path="/disclaimer" element={<Disclaimer />} />
               <Route path="/terms" element={<Terms />} />

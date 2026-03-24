@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import { BarChart3, Radio, Users, UserCircle, IndianRupee, TrendingUp, Clock, CheckCircle2, XCircle, AlertTriangle, MessageSquare, ImageIcon, X, Globe, Lock, Gift, Plus, Shield } from 'lucide-react';
 import { sanitizeText, sanitizeTextarea, sanitizeNumeric, sanitizeAlphanumeric } from '@/lib/sanitize';
 import type { Tables } from '@/integrations/supabase/types';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 type Advisor = Tables<'advisors'>;
 type Group = Tables<'groups'>;
@@ -25,6 +26,8 @@ type DailyEarning = { earning_date: string; gross_revenue: number; gst_amount: n
 
 export default function AdvisorDashboard() {
   const { user } = useAuth();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [advisor, setAdvisor] = useState<Advisor | null>(null);
   const [groups, setGroups] = useState<Group[]>([]);
   const [subscribers, setSubscribers] = useState<any[]>([]);
@@ -51,6 +54,16 @@ export default function AdvisorDashboard() {
   const [feedGroupId, setFeedGroupId] = useState<string | null>(null);
 
   useEffect(() => { if (user) fetchData(); }, [user]);
+
+  useEffect(() => {
+    const path = location.pathname;
+    if (path.endsWith('/groups')) setTab('groups');
+    else if (path.endsWith('/post')) setTab('post');
+    else if (path.endsWith('/signals')) setTab('signals_history');
+    else if (path.endsWith('/subscribers')) setTab('subscribers');
+    else if (path.endsWith('/earnings')) setTab('revenue');
+    else if (path === '/advisor/dashboard') setTab('groups');
+  }, [location.pathname]);
 
   useEffect(() => {
     if (!advisor) return;
@@ -248,6 +261,16 @@ export default function AdvisorDashboard() {
     { key: 'profile' as const, label: 'Profile', icon: UserCircle },
   ];
 
+  const tabPathMap: Record<typeof tab, string> = {
+    groups: '/advisor/dashboard/groups',
+    post: '/advisor/dashboard/post',
+    signals_history: '/advisor/dashboard/signals',
+    subscribers: '/advisor/dashboard/subscribers',
+    revenue: '/advisor/dashboard/earnings',
+    referrals: '/advisor/dashboard',
+    profile: '/advisor/dashboard',
+  };
+
   const signalCount = signals.filter(s => (s as any).post_type !== 'message').length;
   const greeting = new Date().getHours() < 12 ? 'Good morning' : new Date().getHours() < 17 ? 'Good afternoon' : 'Good evening';
 
@@ -305,7 +328,12 @@ export default function AdvisorDashboard() {
           {tabs.map(t => (
             <button
               key={t.key}
-              onClick={() => { setTab(t.key); if (t.key === 'post') setPostMode('choose'); }}
+              onClick={() => {
+                setTab(t.key);
+                if (t.key === 'post') setPostMode('choose');
+                const path = tabPathMap[t.key];
+                if (location.pathname !== path) navigate(path);
+              }}
               className={`flex h-10 items-center gap-1.5 whitespace-nowrap rounded-lg px-4 text-[13px] font-semibold transition-all ${
                 tab === t.key
                   ? 'bg-foreground text-background shadow-[0_2px_6px_rgba(0,0,0,0.15)]'

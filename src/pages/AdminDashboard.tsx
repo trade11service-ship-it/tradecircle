@@ -1,11 +1,13 @@
-import { useEffect, useState } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
 import { AdminReferralTab } from '@/components/AdminReferralTab';
+import { Link } from 'react-router-dom';
 import type { Tables } from '@/integrations/supabase/types';
 import {
   LayoutDashboard, Clock, UserCheck, Users, CreditCard, Gift, FileText, Mail,
@@ -91,6 +93,14 @@ export default function AdminDashboard() {
   const [userLegal, setUserLegal] = useState<any[]>([]);
   const [legalSearch, setLegalSearch] = useState('');
   const [deletionRequests, setDeletionRequests] = useState<any[]>([]);
+  const [editingAdvisorId, setEditingAdvisorId] = useState<string | null>(null);
+  const [publicProfileForm, setPublicProfileForm] = useState({
+    featured: false,
+    sortOrder: 999,
+    tagline: '',
+    description: '',
+    yearsExperience: '',
+  });
 
   useEffect(() => {
     if (authLoading) return;
@@ -154,6 +164,36 @@ export default function AdminDashboard() {
       supabase.from('profiles').update({ role: 'trader' }).eq('id', advisor.user_id),
     ]);
     toast.success('Advisor suspended');
+    fetchData();
+  };
+
+  const startPublicProfileEdit = (advisor: Advisor) => {
+    const a = advisor as any;
+    setEditingAdvisorId(advisor.id);
+    setPublicProfileForm({
+      featured: !!a.is_public_featured,
+      sortOrder: Number(a.public_sort_order ?? 999),
+      tagline: a.public_tagline || '',
+      description: a.public_description || '',
+      yearsExperience: a.public_years_experience ? String(a.public_years_experience) : '',
+    });
+  };
+
+  const savePublicProfile = async (advisorId: string) => {
+    const payload = {
+      is_public_featured: publicProfileForm.featured,
+      public_sort_order: Number(publicProfileForm.sortOrder) || 999,
+      public_tagline: publicProfileForm.tagline.trim() || null,
+      public_description: publicProfileForm.description.trim() || null,
+      public_years_experience: publicProfileForm.yearsExperience ? Number(publicProfileForm.yearsExperience) : null,
+    };
+    const { error } = await (supabase.from('advisors') as any).update(payload).eq('id', advisorId);
+    if (error) {
+      toast.error('Failed to save public advisor profile');
+      return;
+    }
+    toast.success('Public advisor profile saved');
+    setEditingAdvisorId(null);
     fetchData();
   };
 
@@ -563,27 +603,118 @@ export default function AdminDashboard() {
                   <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">SEBI No</th>
                   <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Strategy</th>
                   <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Status</th>
+                  <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Public Page</th>
                   <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {allAdvisors.map((a, i) => (
-                  <tr key={a.id} className={`border-b border-muted last:border-0 ${i % 2 === 1 ? 'bg-muted/50' : ''}`}>
-                    <td className="p-4">
-                      <div className="flex items-center gap-3">
-                        <AdminAvatar name={a.full_name} size={32} />
-                        <span className="font-semibold text-foreground capitalize">{a.full_name}</span>
-                      </div>
-                    </td>
-                    <td className="p-4 font-mono text-[12px] text-muted-foreground">{a.sebi_reg_no}</td>
-                    <td className="p-4"><span className="bg-[hsl(var(--light-blue))] text-secondary px-2.5 py-1 rounded-full text-[12px] font-semibold">{a.strategy_type || '-'}</span></td>
-                    <td className="p-4"><span className={`px-2.5 py-1 rounded-full text-[12px] font-semibold ${statusPill(a.status || '')}`}>{a.status}</span></td>
-                    <td className="p-4">
-                      {a.status === 'approved' && (
-                        <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10 rounded-lg text-[12px]" onClick={() => suspendAdvisor(a)}>Suspend</Button>
-                      )}
-                    </td>
-                  </tr>
+                  <Fragment key={a.id}>
+                    <tr key={`${a.id}-row`} className={`border-b border-muted ${i % 2 === 1 ? 'bg-muted/50' : ''}`}>
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          <AdminAvatar name={a.full_name} size={32} />
+                          <span className="font-semibold text-foreground capitalize">{a.full_name}</span>
+                        </div>
+                      </td>
+                      <td className="p-4 font-mono text-[12px] text-muted-foreground">{a.sebi_reg_no}</td>
+                      <td className="p-4"><span className="bg-[hsl(var(--light-blue))] text-secondary px-2.5 py-1 rounded-full text-[12px] font-semibold">{a.strategy_type || '-'}</span></td>
+                      <td className="p-4"><span className={`px-2.5 py-1 rounded-full text-[12px] font-semibold ${statusPill(a.status || '')}`}>{a.status}</span></td>
+                      <td className="p-4">
+                        {a.status === 'approved' ? (
+                          <div className="space-y-1">
+                            <span className={`inline-flex px-2 py-0.5 rounded-full text-[11px] font-semibold ${
+                              (a as any).is_public_featured ? 'bg-[hsl(var(--light-green))] text-primary' : 'bg-muted text-muted-foreground'
+                            }`}>
+                              {(a as any).is_public_featured ? 'Published' : 'Hidden'}
+                            </span>
+                            <p className="text-[11px] text-muted-foreground">Order {(a as any).public_sort_order ?? 999}</p>
+                          </div>
+                        ) : (
+                          <span className="text-[12px] text-muted-foreground">Approve first</span>
+                        )}
+                      </td>
+                      <td className="p-4">
+                        <div className="flex gap-2">
+                          {a.status === 'approved' && (
+                            <>
+                              <Button variant="outline" size="sm" className="rounded-lg text-[12px]" onClick={() => startPublicProfileEdit(a)}>
+                                Edit Public Page
+                              </Button>
+                              <Button variant="outline" size="sm" className="rounded-lg text-[12px]" asChild>
+                                <Link to={`/advisor/${a.id}`} target="_blank">Preview</Link>
+                              </Button>
+                              <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/10 rounded-lg text-[12px]" onClick={() => suspendAdvisor(a)}>
+                                Suspend
+                              </Button>
+                            </>
+                          )}
+                        </div>
+                      </td>
+                    </tr>,
+                    {editingAdvisorId === a.id && (
+                      <tr key={`${a.id}-editor`} className="border-b border-muted bg-background">
+                        <td colSpan={6} className="p-4">
+                          <div className="rounded-xl border border-border bg-card p-4">
+                            <h4 className="text-sm font-bold text-foreground">Public Advisor Page Template</h4>
+                            <p className="mt-1 text-xs text-muted-foreground">
+                              Fill this once and advisor frame will auto-show on landing. Full profile page already uses advisor details and groups automatically.
+                            </p>
+                            <div className="mt-4 grid gap-3 md:grid-cols-2">
+                              <label className="rounded-lg border border-border bg-muted/40 p-3">
+                                <p className="text-[11px] font-semibold text-muted-foreground">Show on Landing Frames</p>
+                                <div className="mt-2 flex gap-2">
+                                  <Button type="button" size="sm" variant={publicProfileForm.featured ? 'default' : 'outline'} onClick={() => setPublicProfileForm(prev => ({ ...prev, featured: true }))}>Yes</Button>
+                                  <Button type="button" size="sm" variant={!publicProfileForm.featured ? 'default' : 'outline'} onClick={() => setPublicProfileForm(prev => ({ ...prev, featured: false }))}>No</Button>
+                                </div>
+                              </label>
+                              <label className="rounded-lg border border-border bg-muted/40 p-3">
+                                <p className="text-[11px] font-semibold text-muted-foreground">Frame Sort Order</p>
+                                <Input
+                                  type="number"
+                                  value={publicProfileForm.sortOrder}
+                                  onChange={(e) => setPublicProfileForm(prev => ({ ...prev, sortOrder: Number(e.target.value) || 999 }))}
+                                  className="mt-2"
+                                />
+                              </label>
+                              <label className="rounded-lg border border-border bg-muted/40 p-3 md:col-span-2">
+                                <p className="text-[11px] font-semibold text-muted-foreground">Card Tagline (minimal home version)</p>
+                                <Input
+                                  placeholder="Options specialist with disciplined risk-first approach"
+                                  value={publicProfileForm.tagline}
+                                  onChange={(e) => setPublicProfileForm(prev => ({ ...prev, tagline: e.target.value }))}
+                                  className="mt-2"
+                                />
+                              </label>
+                              <label className="rounded-lg border border-border bg-muted/40 p-3 md:col-span-2">
+                                <p className="text-[11px] font-semibold text-muted-foreground">Public Description</p>
+                                <Textarea
+                                  placeholder="Write advisor intro for public profile card and detail context..."
+                                  value={publicProfileForm.description}
+                                  onChange={(e) => setPublicProfileForm(prev => ({ ...prev, description: e.target.value }))}
+                                  className="mt-2 min-h-[110px]"
+                                />
+                              </label>
+                              <label className="rounded-lg border border-border bg-muted/40 p-3">
+                                <p className="text-[11px] font-semibold text-muted-foreground">Years of Experience</p>
+                                <Input
+                                  type="number"
+                                  placeholder="7"
+                                  value={publicProfileForm.yearsExperience}
+                                  onChange={(e) => setPublicProfileForm(prev => ({ ...prev, yearsExperience: e.target.value }))}
+                                  className="mt-2"
+                                />
+                              </label>
+                            </div>
+                            <div className="mt-4 flex items-center gap-2">
+                              <Button onClick={() => savePublicProfile(a.id)}>Save Public Page</Button>
+                              <Button variant="outline" onClick={() => setEditingAdvisorId(null)}>Cancel</Button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
                 ))}
               </tbody>
             </table>

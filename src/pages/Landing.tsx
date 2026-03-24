@@ -16,12 +16,24 @@ interface GroupData {
   sub_count: number; signal_count: number; win_count: number; resolved_count: number;
 }
 
+interface FeaturedAdvisor {
+  id: string;
+  full_name: string;
+  profile_photo_url: string | null;
+  strategy_type: string | null;
+  sebi_reg_no: string;
+  public_tagline: string | null;
+  public_description: string | null;
+  public_years_experience: number | null;
+}
+
 export default function Landing() {
   const { user } = useAuth();
   const [groups, setGroups] = useState<GroupData[]>([]);
+  const [featuredAdvisors, setFeaturedAdvisors] = useState<FeaturedAdvisor[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => { fetchGroups(); }, []);
+  useEffect(() => { fetchGroups(); fetchFeaturedAdvisors(); }, []);
 
   const fetchGroups = async () => {
     const { data: grps } = await supabase
@@ -47,6 +59,16 @@ export default function Landing() {
     }));
     setGroups(withStats);
     setLoading(false);
+  };
+
+  const fetchFeaturedAdvisors = async () => {
+    const { data } = await (supabase.from('advisors') as any)
+      .select('id, full_name, profile_photo_url, strategy_type, sebi_reg_no, public_tagline, public_description, public_years_experience, is_public_featured, public_sort_order')
+      .eq('status', 'approved')
+      .eq('is_public_featured', true)
+      .order('public_sort_order', { ascending: true })
+      .limit(8);
+    setFeaturedAdvisors((data || []) as FeaturedAdvisor[]);
   };
 
   return (
@@ -174,6 +196,62 @@ export default function Landing() {
               </div>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ADVISOR FRAMES (after how it works) */}
+      <section className="bg-card px-5 py-12 md:py-16 border-y border-border">
+        <div className="container mx-auto">
+          <div className="mb-6 flex items-end justify-between">
+            <div>
+              <p className="text-[11px] font-bold text-primary uppercase tracking-[2px]">ADVISOR FRAMES</p>
+              <h2 className="mt-1 text-2xl font-extrabold text-foreground tracking-tight">Meet Our Listed Advisors</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Quick profile cards. Tap any frame for full bio, details, and all groups.</p>
+            </div>
+            <Link to="/discover">
+              <Button variant="outline" className="hidden sm:inline-flex">View all</Button>
+            </Link>
+          </div>
+
+          {featuredAdvisors.length === 0 ? (
+            <div className="rounded-xl border border-border bg-background py-10 text-center">
+              <p className="text-sm text-muted-foreground">Featured advisors will appear here after admin publishes them.</p>
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+              {featuredAdvisors.map((a) => (
+                <Link key={a.id} to={`/advisor/${a.id}`} className="group">
+                  <div className="h-full rounded-2xl border border-border bg-background p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
+                    <div className="mb-3 flex items-center gap-3">
+                      <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-primary to-secondary text-lg font-bold text-primary-foreground">
+                        {a.profile_photo_url ? (
+                          <img src={a.profile_photo_url} alt={a.full_name} className="h-full w-full object-cover" />
+                        ) : (
+                          a.full_name.charAt(0).toUpperCase()
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="truncate text-sm font-bold text-foreground">{a.full_name}</p>
+                        <p className="truncate text-[11px] text-primary">{a.strategy_type || 'Market Advisor'}</p>
+                      </div>
+                    </div>
+                    <p className="line-clamp-2 text-xs text-muted-foreground">
+                      {a.public_tagline || a.public_description || 'SEBI verified advisor on TradeCircle.'}
+                    </p>
+                    <div className="mt-3 flex items-center justify-between text-[11px]">
+                      <span className="rounded-full bg-primary/10 px-2 py-0.5 font-semibold text-primary">
+                        {a.public_years_experience ? `${a.public_years_experience}+ yrs` : 'Verified'}
+                      </span>
+                      <span className="font-semibold text-foreground group-hover:text-primary">Full profile →</span>
+                    </div>
+                    <Button variant="outline" size="sm" className="mt-3 h-8 w-full text-xs group-hover:border-primary group-hover:text-primary">
+                      Show Full Version
+                    </Button>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

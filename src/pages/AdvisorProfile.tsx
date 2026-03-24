@@ -45,10 +45,17 @@ export default function AdvisorProfile() {
   const [signalStats, setSignalStats] = useState<{ total_signals: number; win_count: number; loss_count: number; resolved_count: number }>({ total_signals: 0, win_count: 0, loss_count: 0, resolved_count: 0 });
   const [totalSubs, setTotalSubs] = useState(0);
   const [signalFilter, setSignalFilter] = useState<'all' | 'PENDING' | 'WIN' | 'LOSS'>('all');
+  const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { if (id) fetchData(); }, [id, user]);
+
+  useEffect(() => {
+    if (!selectedGroupId && groups.length > 0) {
+      setSelectedGroupId(groups[0].id);
+    }
+  }, [groups, selectedGroupId]);
 
   const fetchData = async () => {
     const { data: adv } = await supabase.from('advisors').select('*').eq('id', id!).single();
@@ -181,6 +188,9 @@ export default function AdvisorProfile() {
   const firstGroupId = firstGroup?.id || '';
   const firstGroupAccess = firstGroupId ? groupAccessMap[firstGroupId] : null;
   const isSubscribedToFirstGroup = !!(firstGroupAccess?.hasAccess || isOwner);
+  const selectedGroup = groups.find((g) => g.id === selectedGroupId) || firstGroup;
+  const selectedGroupAccess = selectedGroup ? groupAccessMap[selectedGroup.id] : null;
+  const isSubscribedToSelectedGroup = !!(selectedGroupAccess?.hasAccess || isOwner);
 
   // Check expiry status for banner
   const firstGroupExpiry = firstGroupAccess?.expiresAt ? getExpiryStatus(firstGroupAccess.expiresAt) : null;
@@ -193,6 +203,8 @@ export default function AdvisorProfile() {
 
   const winRate = signalStats.resolved_count > 0 ? Math.round((signalStats.win_count / signalStats.resolved_count) * 100) : null;
   const coverUrl = (advisor as any).cover_image_url;
+  const publicDescription = ((advisor as any).public_description as string | null) || advisor.bio || null;
+  const publicTagline = ((advisor as any).public_tagline as string | null) || null;
 
   const filteredSignals = signals.filter(s => {
     if (signalFilter === 'all') return true;
@@ -287,7 +299,10 @@ export default function AdvisorProfile() {
           </div>
 
           {/* Bio */}
-          {advisor.bio && (
+          {publicTagline && (
+            <p className="mt-2 text-[13px] font-medium text-foreground/90 leading-snug">{publicTagline}</p>
+          )}
+          {!publicTagline && advisor.bio && (
             <p className="mt-2 text-[13px] text-muted-foreground leading-snug line-clamp-2">{advisor.bio}</p>
           )}
 
@@ -341,15 +356,59 @@ export default function AdvisorProfile() {
         {activeTab === 'feed' && (
           <div className="flex-1 flex flex-col" style={{ minHeight: '60vh' }}>
             {groups.length > 0 ? (
-              <GroupFeed
-                groupId={groups[0].id}
-                advisorName={toTitleCase(advisor.full_name)}
-                advisorPhoto={advisor.profile_photo_url || undefined}
-                isSubscribed={isSubscribedToFirstGroup}
-                isOwner={!!isOwner}
-                onSubscribe={() => groups[0] && handleSubscribe(groups[0])}
-                subscribePrice={groups[0]?.monthly_price}
-              />
+              <div className="px-3 pb-3 pt-3 md:px-4">
+                <div className="mb-3 flex gap-2 overflow-x-auto pb-1">
+                  {groups.map((g) => {
+                    const access = groupAccessMap[g.id];
+                    const isSub = access?.hasAccess || isOwner;
+                    const active = selectedGroupId === g.id;
+                    return (
+                      <button
+                        key={g.id}
+                        onClick={() => setSelectedGroupId(g.id)}
+                        className={`whitespace-nowrap rounded-full border px-3 py-1.5 text-xs font-semibold transition-all ${
+                          active
+                            ? 'border-primary bg-primary text-primary-foreground'
+                            : isSub
+                              ? 'border-primary/30 bg-primary/5 text-primary'
+                              : 'border-border bg-card text-muted-foreground'
+                        }`}
+                      >
+                        {g.name}
+                      </button>
+                    );
+                  })}
+                </div>
+                {selectedGroup && (
+                  <div className="mb-3 rounded-2xl border border-border bg-card p-3 shadow-sm">
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-bold text-foreground">{selectedGroup.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          ₹{selectedGroup.monthly_price}/month · {selectedGroup.subCount} members
+                        </p>
+                        {selectedGroup.description && (
+                          <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{selectedGroup.description}</p>
+                        )}
+                      </div>
+                      {!isSubscribedToSelectedGroup && (
+                        <Button size="sm" className="rounded-full text-xs" onClick={() => handleSubscribe(selectedGroup)} disabled={subscribing === selectedGroup.id}>
+                          {selectedGroupAccess?.isExpired ? 'Renew' : 'Subscribe'}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                )}
+                <GroupFeed
+                  groupId={selectedGroup?.id || groups[0].id}
+                  advisorName={toTitleCase(advisor.full_name)}
+                  advisorPhoto={advisor.profile_photo_url || undefined}
+                  isSubscribed={isSubscribedToSelectedGroup}
+                  isOwner={!!isOwner}
+                  onSubscribe={() => selectedGroup && handleSubscribe(selectedGroup)}
+                  subscribePrice={selectedGroup?.monthly_price}
+                />
+              </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-16 text-center">
                 <div className="text-4xl mb-3">💬</div>
@@ -507,10 +566,10 @@ export default function AdvisorProfile() {
             </div>
 
             {/* Bio */}
-            {advisor.bio && (
+            {publicDescription && (
               <div className="rounded-2xl border border-border bg-card p-5">
                 <h3 className="text-[14px] font-bold text-foreground mb-2">About</h3>
-                <p className="text-[13px] text-muted-foreground leading-relaxed whitespace-pre-wrap">{advisor.bio}</p>
+                <p className="text-[13px] text-muted-foreground leading-relaxed whitespace-pre-wrap">{publicDescription}</p>
               </div>
             )}
 
@@ -589,17 +648,21 @@ export default function AdvisorProfile() {
       {/* STICKY BOTTOM BAR */}
       {groups.length > 0 && !isOwner && (
         <div className="sticky bottom-14 md:bottom-0 bg-card border-t border-border p-3 safe-area-bottom z-20">
-          {isSubscribedToFirstGroup ? (
+          {isSubscribedToSelectedGroup ? (
             <div className="flex items-center justify-center gap-2 rounded-xl bg-primary/5 py-3 text-[14px] font-bold text-primary">
               <CheckCircle className="h-4 w-4" /> Subscribed ✓
             </div>
           ) : (
             <button
-              onClick={() => handleSubscribe(groups[0])}
-              disabled={subscribing === groups[0].id}
+              onClick={() => selectedGroup && handleSubscribe(selectedGroup)}
+              disabled={!selectedGroup || subscribing === selectedGroup.id}
               className="w-full rounded-xl bg-primary py-3.5 text-[15px] font-bold text-primary-foreground shadow-lg disabled:opacity-60 transition-all active:scale-[0.98]"
             >
-              {subscribing === groups[0].id ? 'Processing...' : firstGroupAccess?.isExpired ? `Renew — ₹${groups[0].monthly_price}/month` : `Subscribe — ₹${groups[0].monthly_price}/month`}
+              {selectedGroup && subscribing === selectedGroup.id
+                ? 'Processing...'
+                : selectedGroupAccess?.isExpired
+                  ? `Renew — ₹${selectedGroup?.monthly_price}/month`
+                  : `Subscribe — ₹${selectedGroup?.monthly_price}/month`}
             </button>
           )}
         </div>

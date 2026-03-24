@@ -13,16 +13,16 @@ export function BottomNav() {
   const isAdvisor = profile?.role === 'advisor';
 
   const traderTabs = [
-    { to: user ? '/dashboard' : '/', icon: Home, label: 'Home', match: (p: string) => p === '/' || p === '/dashboard' },
+    { to: user ? '/home' : '/', icon: Home, label: 'Home', match: (p: string) => p === '/' || p === '/dashboard' || p === '/home' },
     { to: '/discover', icon: Search, label: 'Discover', match: (p: string) => p === '/discover' || p === '/groups' },
-    { to: user ? '/dashboard' : '/login', icon: Bell, label: 'Alerts', match: (p: string) => false },
+    { to: user ? '/notifications' : '/login', icon: Bell, label: 'Alerts', match: (p: string) => p === '/notifications' },
     { to: user ? '/profile' : '/login', icon: User, label: 'Profile', match: (p: string) => p === '/profile' || p === '/login' || p === '/register' },
   ];
 
   const advisorTabs = [
-    { to: '/advisor/dashboard', icon: BarChart3, label: 'Groups', match: (p: string) => p === '/advisor/dashboard' },
-    { to: '/advisor/dashboard', icon: PenSquare, label: 'Post', match: (p: string) => false },
-    { to: '/advisor/dashboard', icon: TrendingUp, label: 'Signals', match: (p: string) => false },
+    { to: '/advisor/dashboard/groups', icon: BarChart3, label: 'Groups', match: (p: string) => p === '/advisor/dashboard' || p === '/advisor/dashboard/groups' },
+    { to: '/advisor/dashboard/post', icon: PenSquare, label: 'Post', match: (p: string) => p === '/advisor/dashboard/post' },
+    { to: '/advisor/dashboard/signals', icon: TrendingUp, label: 'Signals', match: (p: string) => p === '/advisor/dashboard/signals' },
     { to: '/profile', icon: User, label: 'Profile', match: (p: string) => p === '/profile' },
   ];
 
