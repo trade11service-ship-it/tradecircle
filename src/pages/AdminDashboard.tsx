@@ -4,6 +4,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { ViewApplicationModal } from '@/components/ViewApplicationModal';
+import { RejectApplicationModal } from '@/components/RejectApplicationModal';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
 import { AdminReferralTab } from '@/components/AdminReferralTab';
@@ -101,6 +103,12 @@ export default function AdminDashboard() {
     description: '',
     yearsExperience: '',
   });
+  const [viewApplicationModalOpen, setViewApplicationModalOpen] = useState(false);
+  const [selectedAdvisorForView, setSelectedAdvisorForView] = useState<Advisor | null>(null);
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [selectedAdvisorForReject, setSelectedAdvisorForReject] = useState<Advisor | null>(null);
+  const [approvingAdvisorId, setApprovingAdvisorId] = useState<string | null>(null);
+  const [rejectingAdvisorId, setRejectingAdvisorId] = useState<string | null>(null);
 
   useEffect(() => {
     if (authLoading) return;
@@ -140,31 +148,119 @@ export default function AdminDashboard() {
   };
 
   const approveAdvisor = async (advisor: Advisor) => {
-    const [a, p] = await Promise.all([
-      supabase.from('advisors').update({ status: 'approved' }).eq('id', advisor.id),
-      supabase.from('profiles').update({ role: 'advisor' }).eq('id', advisor.user_id),
-    ]);
-    if (a.error || p.error) { toast.error('Failed to approve advisor'); return; }
-    toast.success('Advisor approved successfully');
-    fetchData();
+    setApprovingAdvisorId(advisor.id);
+    try {
+      // Update advisor status
+      const { error: advisorError } = await supabase
+        .from('advisors')
+        .update({ status: 'approved' })
+        .eq('id', advisor.id);
+
+      if (advisorError) throw advisorError;
+
+      // Update profile role to advisor
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ role: 'advisor' })
+        .eq('id', advisor.user_id);
+
+      if (profileError) throw profileError;
+
+      // Send approval email via edge function
+      try {
+        const { data: session } = await supabase.auth.getSession();
+        const response = await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-advisor-approval-email`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session?.session?.access_token}`,
+            },
+            body: JSON.stringify({
+              advisor_id: advisor.id,
+              email: advisor.email,
+              full_name: advisor.full_name,
+            }),
+          }
+        );
+
+        if (!response.ok) {
+          console.warn('Email notification failed, but approval succeeded');
+        }
+      } catch (emailErr) {
+        console.warn('Could not send approval email:', emailErr);
+      }
+
+      toast.success(`${advisor.full_name} approved! Email sent.`);
+      fetchData();
+    } catch (err) {
+      toast.error((err as Error).message || 'Failed to approve advisor');
+      console.error(err);
+    } finally {
+      setApprovingAdvisorId(null);
+    }
   };
 
-  const rejectAdvisor = async (id: string) => {
-    if (!rejectReason.trim()) { toast.error('Please provide a rejection reason'); return; }
-    const { error } = await supabase.from('advisors').update({ status: 'rejected', rejection_reason: rejectReason }).eq('id', id);
-    if (error) { toast.error('Failed to reject'); return; }
-    toast.success('Advisor rejected');
-    setRejectReason('');
-    fetchData();
+  const rejectAdvisor = async (advisor: Advisor, reason: string) => {
+    setRejectingAdvisorId(advisor.id);
+    try {
+      // Update advisor status with rejection reason
+      const { error: advisorError } = await supabase
+        .from('advisors')
+        .update({ 
+          status: 'rejected',
+          rejection_reason: reason,
+        })
+        .eq('id', advisor.id);
+
+      if (advisorError) throw advisorError;
+
+      // Send rejection email via edge function
+      try {
+        const { data: session } = await supabase.auth.getSession();
+        await fetch(
+          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-advisor-rejection-email`,
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${session?.session?.access_token}`,
+            },
+            body: JSON.stringify({
+              advisor_id: advisor.id,
+              email: advisor.email,
+              full_name: advisor.full_name,
+              rejection_reason: reason,
+            }),
+          }
+        );
+      } catch (emailErr) {
+        console.warn('Could not send rejection email:', emailErr);
+      }
+
+      toast.success(`${advisor.full_name} rejected. Email sent with reason.`);
+      fetchData();
+    } catch (err) {
+      toast.error((err as Error).message || 'Failed to reject advisor');
+      console.error(err);
+    } finally {
+      setRejectingAdvisorId(null);
+    }
   };
 
   const suspendAdvisor = async (advisor: Advisor) => {
-    await Promise.all([
-      supabase.from('advisors').update({ status: 'suspended' }).eq('id', advisor.id),
-      supabase.from('profiles').update({ role: 'trader' }).eq('id', advisor.user_id),
-    ]);
-    toast.success('Advisor suspended');
-    fetchData();
+    try {
+      const [a, p] = await Promise.all([
+        supabase.from('advisors').update({ status: 'suspended' }).eq('id', advisor.id),
+        supabase.from('profiles').update({ role: 'trader' }).eq('id', advisor.user_id),
+      ]);
+      if (a.error || p.error) throw new Error('Failed to suspend');
+      toast.success('Advisor suspended');
+      fetchData();
+    } catch (err) {
+      toast.error((err as Error).message || 'Failed to suspend advisor');
+    }
   };
 
   const startPublicProfileEdit = (advisor: Advisor) => {
@@ -439,8 +535,10 @@ export default function AdminDashboard() {
                           <p className="text-[11px] text-muted-foreground">Applied {formatDate(a.created_at)}</p>
                         </div>
                         <div className="flex gap-2">
-                          <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg px-4 text-[13px] font-semibold" onClick={() => approveAdvisor(a)}>Approve</Button>
-                          <Button size="sm" variant="outline" className="rounded-lg px-4 text-[13px] font-semibold" onClick={() => setExpandedAdvisor(expandedAdvisor === a.id ? null : a.id)}>Review</Button>
+                          <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg px-4 text-[13px] font-semibold" onClick={() => approveAdvisor(a)} disabled={approvingAdvisorId === a.id}>
+                            {approvingAdvisorId === a.id ? 'Approving...' : 'Approve'}
+                          </Button>
+                          <Button size="sm" variant="outline" className="rounded-lg px-4 text-[13px] font-semibold" onClick={() => { setSelectedAdvisorForView(a); setViewApplicationModalOpen(true); }}>View Application</Button>
                         </div>
                       </div>
                     ))
@@ -557,8 +655,8 @@ export default function AdminDashboard() {
                       <p className="text-[13px] text-muted-foreground">SEBI: {a.sebi_reg_no} • Applied: {formatDate(a.created_at)}</p>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" className="rounded-lg" onClick={() => setExpandedAdvisor(expandedAdvisor === a.id ? null : a.id)}>
-                    {expandedAdvisor === a.id ? 'Collapse' : 'Review'}
+                  <Button variant="outline" size="sm" className="rounded-lg" onClick={() => { setSelectedAdvisorForView(a); setViewApplicationModalOpen(true); }}>
+                    View Application
                   </Button>
                 </div>
                 {expandedAdvisor === a.id && (
@@ -580,11 +678,12 @@ export default function AdminDashboard() {
                     </div>
                     {a.bio && <div className="rounded-xl bg-muted p-3"><p className="text-[11px] text-muted-foreground font-semibold uppercase">Bio</p><p className="text-[14px] text-foreground mt-0.5">{a.bio}</p></div>}
                     <div className="flex gap-2 items-end flex-wrap">
-                      <Button onClick={() => approveAdvisor(a)} className="bg-primary hover:bg-primary/90 font-semibold rounded-lg">✓ Approve</Button>
-                      <div className="flex-1 min-w-[200px]">
-                        <Input placeholder="Rejection reason (required)..." value={rejectReason} onChange={e => setRejectReason(e.target.value)} className="rounded-lg" />
-                      </div>
-                      <Button variant="destructive" className="font-semibold rounded-lg" onClick={() => rejectAdvisor(a.id)}>✕ Reject</Button>
+                      <Button onClick={() => approveAdvisor(a)} className="bg-primary hover:bg-primary/90 font-semibold rounded-lg" disabled={approvingAdvisorId === a.id}>
+                        {approvingAdvisorId === a.id ? 'Approving...' : '✓ Approve'}
+                      </Button>
+                      <Button variant="destructive" className="font-semibold rounded-lg" onClick={() => { setSelectedAdvisorForReject(a); setRejectModalOpen(true); }} disabled={rejectingAdvisorId === a.id}>
+                        {rejectingAdvisorId === a.id ? 'Rejecting...' : '✕ Reject'}
+                      </Button>
                     </div>
                   </div>
                 )}
@@ -929,6 +1028,27 @@ export default function AdminDashboard() {
           <AdminReferralTab />
         )}
       </main>
+
+      {/* MODALS */}
+      <ViewApplicationModal
+        open={viewApplicationModalOpen}
+        onOpenChange={setViewApplicationModalOpen}
+        advisor={selectedAdvisorForView}
+        onApprove={approveAdvisor}
+        onRejectClick={(adv) => {
+          setSelectedAdvisorForReject(adv);
+          setRejectModalOpen(true);
+        }}
+        isApproving={approvingAdvisorId === selectedAdvisorForView?.id}
+      />
+
+      <RejectApplicationModal
+        open={rejectModalOpen}
+        onOpenChange={setRejectModalOpen}
+        advisorName={selectedAdvisorForReject?.full_name || ''}
+        onConfirm={(reason) => rejectAdvisor(selectedAdvisorForReject!, reason)}
+        isLoading={rejectingAdvisorId === selectedAdvisorForReject?.id}
+      />
     </div>
   );
 }

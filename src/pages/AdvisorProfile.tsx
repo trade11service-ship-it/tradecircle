@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Navbar } from '@/components/Navbar';
 import { GroupFeed } from '@/components/GroupFeed';
+import { SubscriptionModal } from '@/components/SubscriptionModal';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
@@ -48,6 +49,9 @@ export default function AdvisorProfile() {
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [subscriptionModalOpen, setSubscriptionModalOpen] = useState(false);
+  const [selectedGroupForSubscription, setSelectedGroupForSubscription] = useState<Group | null>(null);
+  const [processingSubscription, setProcessingSubscription] = useState(false);
 
   useEffect(() => { if (id) fetchData(); }, [id, user]);
 
@@ -109,16 +113,30 @@ export default function AdvisorProfile() {
 
   const handleSubscribe = async (group: Group) => {
     if (!user) { navigate('/login'); return; }
-    setSubscribing(group.id);
-    try {
-      // Check for duplicate active subscription
-      const existing = groupAccessMap[group.id];
-      if (existing?.hasAccess) {
-        toast.info('You are already subscribed to this group');
-        setSubscribing(null);
-        return;
-      }
+    
+    // Check for duplicate active subscription
+    const existing = groupAccessMap[group.id];
+    if (existing?.hasAccess) {
+      toast.info('You are already subscribed to this group');
+      return;
+    }
 
+    // Open subscription modal to collect PAN and consent
+    setSelectedGroupForSubscription(group);
+    setSubscriptionModalOpen(true);
+  };
+
+  const handleSubscriptionModalConfirm = async (panNumber: string) => {
+    if (!user || !selectedGroupForSubscription) return;
+    
+    setProcessingSubscription(true);
+    try {
+      // Store PAN in session storage for payment success page
+      sessionStorage.setItem('subscription_pan', panNumber);
+      sessionStorage.setItem('subscription_consent', 'true');
+      sessionStorage.setItem('subscription_consent_timestamp', new Date().toISOString());
+      
+      // Store subscription risk acceptance if needed
       if (!riskAlreadyAccepted) {
         const ip = await getIpAddress();
         await supabase.from('user_legal_acceptances').insert({
@@ -129,17 +147,27 @@ export default function AdvisorProfile() {
         });
         setRiskAlreadyAccepted(true);
       }
+
+      // Initiate payment
       const { data: session } = await supabase.auth.getSession();
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/initiate-payment`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.session?.access_token}` },
-        body: JSON.stringify({ group_id: group.id, origin_url: window.location.origin }),
+        body: JSON.stringify({ group_id: selectedGroupForSubscription.id, origin_url: window.location.origin }),
       });
       const result = await res.json();
-      if (res.ok && result.payment_url) window.location.href = result.payment_url;
-      else toast.error(result.error || 'Failed to initiate payment');
-    } catch { toast.error('Payment initiation failed'); }
-    finally { setSubscribing(null); }
+      if (res.ok && result.payment_url) {
+        setSubscriptionModalOpen(false);
+        window.location.href = result.payment_url;
+      } else {
+        toast.error(result.error || 'Failed to initiate payment');
+      }
+    } catch (err) {
+      toast.error((err as Error).message || 'Payment initiation failed');
+      throw err;
+    } finally {
+      setProcessingSubscription(false);
+    }
   };
 
   const handleCoverUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -666,6 +694,18 @@ export default function AdvisorProfile() {
             </button>
           )}
         </div>
+      )}
+
+      {/* SUBSCRIPTION MODAL */}
+      {selectedGroupForSubscription && (
+        <SubscriptionModal
+          open={subscriptionModalOpen}
+          onOpenChange={setSubscriptionModalOpen}
+          group={selectedGroupForSubscription}
+          advisorName={toTitleCase(advisor?.full_name || '')}
+          onConfirm={handleSubscriptionModalConfirm}
+          isLoading={processingSubscription}
+        />
       )}
     </div>
   );

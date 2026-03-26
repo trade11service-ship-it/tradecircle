@@ -1,10 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { Bell, User } from "lucide-react";
+import { Bell, User, ArrowRight } from "lucide-react";
+import { HeroSection } from "@/components/HeroSection";
+import { setMetaTags, SEO_CONFIG } from "@/lib/seo";
 
 type FeedItem = {
   id: string;
@@ -23,14 +25,24 @@ type FeedItem = {
 
 export default function Home() {
   const { user, profile } = useAuth();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState<FeedItem[]>([]);
   const [groupNames, setGroupNames] = useState<Record<string, string>>({});
   const [advisorNames, setAdvisorNames] = useState<Record<string, string>>({});
   const [advisorPhotos, setAdvisorPhotos] = useState<Record<string, string>>({});
 
+  // Set meta tags
   useEffect(() => {
-    if (user) fetchFeed();
+    setMetaTags(SEO_CONFIG.home);
+  }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchFeed();
+    } else {
+      setLoading(false);
+    }
   }, [user]);
 
   const fetchFeed = async () => {
@@ -79,6 +91,57 @@ export default function Home() {
     return h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening";
   }, []);
 
+  // If user not authenticated, show hero
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navbar />
+        <HeroSection
+          title="Get Trading Signals from SEBI Verified Advisors"
+          subtitle="Discover 500+ manually verified trading advisors with public track records. Subscribe to premium signals delivered directly to Telegram."
+          cta={{
+            text: "Browse Advisors",
+            href: "/discover",
+          }}
+          secondaryCta={{
+            text: "Login to View Feed",
+            href: "/login",
+          }}
+        />
+        <section className="bg-slate-50 py-12 md:py-16">
+          <div className="container mx-auto px-4 text-center">
+            <h2 className="text-3xl font-bold text-foreground mb-8">
+              Why TradeCircle?
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-3xl mx-auto">
+              <div className="bg-white p-6 rounded-lg border border-slate-200">
+                <div className="text-3xl font-bold text-green-600 mb-3">🛡️</div>
+                <h3 className="font-bold text-foreground mb-2">SEBI Verified</h3>
+                <p className="text-muted-foreground text-sm">
+                  Every advisor manually verified and SEBI registered
+                </p>
+              </div>
+              <div className="bg-white p-6 rounded-lg border border-slate-200">
+                <div className="text-3xl font-bold text-green-600 mb-3">📊</div>
+                <h3 className="font-bold text-foreground mb-2">Public Track Records</h3>
+                <p className="text-muted-foreground text-sm">
+                  Full WIN/LOSS history visible for every advisor
+                </p>
+              </div>
+              <div className="bg-white p-6 rounded-lg border border-slate-200">
+                <div className="text-3xl font-bold text-green-600 mb-3">⚡</div>
+                <h3 className="font-bold text-foreground mb-2">Real-Time Telegram Alerts</h3>
+                <p className="text-muted-foreground text-sm">
+                  Signals delivered instantly to your Telegram
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-muted">
       <Navbar />
@@ -86,8 +149,12 @@ export default function Home() {
         <div className="mb-4 rounded-2xl border border-border bg-card p-4">
           <div className="flex items-center justify-between gap-3">
             <div>
-              <h1 className="text-xl font-extrabold text-foreground">{greeting}, {profile?.full_name?.split(" ")[0] || "Trader"}</h1>
-              <p className="text-xs text-muted-foreground">Combined feed from all your subscribed advisors</p>
+              <h1 className="text-xl font-extrabold text-foreground">
+                {greeting}, {profile?.full_name?.split(" ")[0] || "Trader"}
+              </h1>
+              <p className="text-xs text-muted-foreground">
+                Live signals from your SEBI verified subscribed advisors
+              </p>
             </div>
             <Link to="/notifications">
               <Button variant="outline" size="icon" aria-label="Notifications">
@@ -99,12 +166,19 @@ export default function Home() {
 
         <div className="rounded-2xl border border-border bg-[hsl(var(--chat-bg))] p-3">
           {loading ? (
-            <div className="py-10 text-center text-sm text-muted-foreground">Loading feed...</div>
+            <div className="py-10 text-center text-sm text-muted-foreground">Loading your signal feed...</div>
           ) : posts.length === 0 ? (
             <div className="py-10 text-center">
-              <p className="text-sm text-muted-foreground">No active subscription feed yet.</p>
+              <p className="text-sm text-muted-foreground mb-3">
+                You haven't subscribed to any advisors yet.
+              </p>
+              <p className="text-base font-semibold text-foreground mb-4">
+                Browse 500+ SEBI verified advisors and start receiving trading signals.
+              </p>
               <Link to="/discover">
-                <Button className="mt-3">Discover Advisors</Button>
+                <Button className="gap-2">
+                  Browse Verified Advisors <ArrowRight className="w-4 h-4" />
+                </Button>
               </Link>
             </div>
           ) : (

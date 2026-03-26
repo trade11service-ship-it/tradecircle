@@ -6,6 +6,9 @@ import { Footer } from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Shield, Users, BarChart2, Search, ArrowRight, TrendingUp } from 'lucide-react';
+import { HeroSection } from '@/components/HeroSection';
+import { GroupCard } from '@/components/GroupCard';
+import { setMetaTags, SEO_CONFIG } from '@/lib/seo';
 
 interface GroupWithDetails {
   id: string;
@@ -32,6 +35,11 @@ export default function Groups() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('All');
   const [sort, setSort] = useState<'subscribers' | 'accuracy' | 'newest'>('subscribers');
+
+  // Set meta tags
+  useEffect(() => {
+    setMetaTags(SEO_CONFIG.discover);
+  }, []);
 
   useEffect(() => { fetchGroups(); }, []);
 
@@ -105,14 +113,20 @@ export default function Groups() {
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
 
+      {/* Hero Section */}
+      <HeroSection
+        title="Find SEBI Verified Trading Advisors"
+        subtitle="Browse 500+ manually verified advisors with public track records. Subscribe to get intraday signals, swing trades, and F&O analysis directly to Telegram."
+      />
+
       <div className="container mx-auto px-4 py-6 md:py-10 flex-1">
         {/* Header */}
         <div className="mb-6">
-          <h1 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-tight">
-            Discover Advisor Groups
-          </h1>
+          <h2 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-tight">
+            Browse Verified Advisor Groups
+          </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Browse SEBI-verified advisors and their signal groups. No login required.
+            Filter by strategy type (Intraday, Swing, F&O), sort by subscribers or accuracy, and filter by signal type.
           </p>
         </div>
 

@@ -82,6 +82,10 @@ export default function PaymentSuccess() {
 
     // CRITICAL: group_id from the URL matches the group we're creating subscription for
     // We verify amount matches group price stored in DB (prevent tampering)
+    const panNumber = sessionStorage.getItem('subscription_pan');
+    const consentGiven = sessionStorage.getItem('subscription_consent') === 'true';
+    const consentTimestamp = sessionStorage.getItem('subscription_consent_timestamp');
+
     const { error } = await supabase.from('subscriptions').insert({
       user_id: user!.id,
       group_id: groupId,
@@ -93,10 +97,19 @@ export default function PaymentSuccess() {
       from_referral: fromReferral,
       referral_code: referralCode,
       platform_fee_percent: platformFee,
+      pan_number: panNumber || null,
+      consent_given: consentGiven,
+      consent_timestamp: consentTimestamp || null,
+      consent_ip: null, // Could capture IP if needed, but session storage is sufficient
     });
 
     if (error) { console.error('Subscription error:', error); setStatus('error'); }
     else {
+      // Clear subscription data from sessionStorage
+      sessionStorage.removeItem('subscription_pan');
+      sessionStorage.removeItem('subscription_consent');
+      sessionStorage.removeItem('subscription_consent_timestamp');
+      
       if (fromReferral && referralCode) {
         try {
           await supabase.rpc('increment_referral_conversions', { _code: referralCode, _revenue: group.monthly_price });

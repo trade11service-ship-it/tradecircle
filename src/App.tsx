@@ -4,8 +4,8 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
-import { AuthProvider, useAuth } from "@/lib/auth";
-import { BottomNav } from "@/components/BottomNav";
+import { AuthProvider } from "@/lib/auth";
+import { BottomNavigation } from "@/components/BottomNavigation";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -30,6 +30,8 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Notifications from "./pages/Notifications";
 import Subscriptions from "./pages/Subscriptions";
+import Explore from "./pages/Explore";
+import { useAuth } from "@/lib/auth";
 
 const queryClient = new QueryClient();
 
@@ -54,12 +56,13 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <ScrollToTop />
-          <div className="pb-14 md:pb-0">
+          <div className="pb-16 md:pb-0">
             <Routes>
               <Route path="/" element={<Landing />} />
               <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
               <Route path="/discover" element={<Discover />} />
               <Route path="/groups" element={<Discover />} />
+              <Route path="/explore" element={<Explore />} />
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/login" element={<Login />} />
@@ -91,7 +94,7 @@ const App = () => (
               <Route path="*" element={<NotFound />} />
             </Routes>
           </div>
-          <BottomNav />
+          <BottomNavigation />
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

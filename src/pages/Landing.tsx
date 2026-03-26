@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 import { Shield, ShieldCheck, ArrowRight, BarChart2, Bell, CreditCard, Search, Users, CheckCircle } from 'lucide-react';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { useAuth } from '@/lib/auth';
+import { PublicMixedFeed } from "@/components/PublicMixedFeed";
+import { setMetaTags, SEO_CONFIG } from '@/lib/seo';
 
 interface GroupData {
   id: string; name: string; description: string | null; monthly_price: number;
@@ -32,6 +34,11 @@ export default function Landing() {
   const [groups, setGroups] = useState<GroupData[]>([]);
   const [featuredAdvisors, setFeaturedAdvisors] = useState<FeaturedAdvisor[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Set meta tags
+  useEffect(() => {
+    setMetaTags(SEO_CONFIG.landing);
+  }, []);
 
   useEffect(() => { fetchGroups(); fetchFeaturedAdvisors(); }, []);
 
@@ -199,6 +206,29 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* PUBLIC MIXED FEED PREVIEW */}
+      <section className="bg-background px-5 py-12 md:py-16 border-y border-border">
+        <div className="container mx-auto max-w-2xl">
+          <div className="text-center mb-6">
+            <p className="text-[11px] font-bold text-primary uppercase tracking-[2px]">PUBLIC FEED</p>
+            <h2 className="mt-1 text-2xl font-extrabold text-foreground tracking-tight">Analysis + Signals Preview</h2>
+            <p className="mt-1 text-sm text-muted-foreground">Browse recent posts from verified advisors. Signals unlock after the preview.</p>
+          </div>
+
+          <div className="rounded-2xl border border-border bg-card p-3 md:p-4">
+            <PublicMixedFeed preview maxItems={8} />
+          </div>
+
+          <div className="mt-5 text-center">
+            <a href="/explore">
+              <Button className="h-12 px-8 rounded-xl bg-primary text-[15px] font-bold tc-btn-click">
+                Open Full Feed <ArrowRight className="ml-1 h-4 w-4" />
+              </Button>
+            </a>
+          </div>
+        </div>
+      </section>
+
       {/* ADVISOR FRAMES (after how it works) */}
       <section className="bg-card px-5 py-12 md:py-16 border-y border-border">
         <div className="container mx-auto">
@@ -275,6 +305,60 @@ export default function Landing() {
                 <p className="mt-1 text-[12px] text-muted-foreground">{f.desc}</p>
               </div>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* TESTIMONIALS / SOCIAL PROOF */}
+      <section className="bg-background px-5 py-12 md:py-16 border-t border-border">
+        <div className="container mx-auto max-w-3xl">
+          <div className="text-center mb-8">
+            <p className="text-[11px] font-bold text-primary uppercase tracking-[2px]">TRUSTED BY TRADERS</p>
+            <h2 className="mt-1 text-2xl font-extrabold text-foreground tracking-tight">Real Feedback from Real Traders</h2>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {[
+              {
+                name: 'Rajiv M.',
+                text: 'Finally found a platform where I can verify advisors properly. The SEBI registration check saved me from fake tips on Telegram.',
+                rating: 5,
+              },
+              {
+                name: 'Priya S.',
+                text: 'Love the track record transparency. I can see exactly how accurate each advisor is before subscribing.',
+                rating: 5,
+              },
+              {
+                name: 'Amit K.',
+                text: 'Cancel anytime is a game changer. No more worrying about locked-in subscriptions. Great platform!',
+                rating: 5,
+              },
+              {
+                name: 'Neha P.',
+                text: 'The Telegram signal delivery is instant and reliable. Got into my first intraday trade within seconds.',
+                rating: 5,
+              },
+            ].map((testimonial, idx) => (
+              <div key={idx} className="rounded-xl border border-border bg-card p-6">
+                <div className="flex gap-1 mb-3">
+                  {Array.from({ length: testimonial.rating }).map((_, i) => (
+                    <span key={i} className="text-lg">⭐</span>
+                  ))}
+                </div>
+                <p className="text-[14px] text-muted-foreground italic mb-4">
+                  "{testimonial.text}"
+                </p>
+                <p className="text-[13px] font-semibold text-foreground">
+                  — {testimonial.name}
+                </p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-8 text-center">
+            <p className="text-[13px] text-muted-foreground">
+              <span className="font-bold text-foreground">100K+</span> active traders • 
+              <span className="font-bold text-foreground ml-1">4.8★</span> platform rating
+            </p>
           </div>
         </div>
       </section>
