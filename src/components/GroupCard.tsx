@@ -35,43 +35,67 @@ export function GroupCard({
         hasHighAccuracy ? 'border-l-4 border-l-primary border-r-border border-t-border border-b-border' : 'border-border'
       }`}>
         <div className={compact ? 'p-3.5' : 'p-4'}>
-          {/* Identity */}
-          <div className="flex items-center gap-3 mb-2.5">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-secondary text-sm font-bold text-primary-foreground overflow-hidden">
-              {advisorPhoto ? (
-                <img src={advisorPhoto} alt={advisorName} className="h-full w-full object-cover" />
-              ) : toTitleCase(advisorName).charAt(0)}
-            </div>
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5">
-                <p className="font-bold text-foreground text-sm truncate">{toTitleCase(advisorName)}</p>
-                <Shield className="h-3 w-3 text-primary shrink-0" />
+          {/* Header: Photo + Name + Price */}
+          <div className="flex items-start justify-between gap-3 mb-3">
+            <div className="flex items-center gap-3 flex-1">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-secondary text-base font-bold text-primary-foreground overflow-hidden ring-2 ring-primary/20">
+                {advisorPhoto ? (
+                  <img src={advisorPhoto} alt={advisorName} className="h-full w-full object-cover" />
+                ) : toTitleCase(advisorName).charAt(0)}
               </div>
-              <p className="text-xs text-muted-foreground truncate">{groupName}</p>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-foreground text-sm truncate">{toTitleCase(advisorName)}</p>
+                <p className="text-xs text-muted-foreground truncate">{groupName}</p>
+              </div>
             </div>
-            <span className="shrink-0 text-sm font-extrabold text-primary">
-              ₹{monthlyPrice.toLocaleString('en-IN')}/mo
+            <span className="shrink-0 text-lg font-extrabold text-primary whitespace-nowrap">
+              ₹{monthlyPrice}
             </span>
           </div>
 
-          {/* Stats row */}
-          <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
-            <span className="flex items-center gap-1">📊 {signalCount} signals</span>
-            <span className={`flex items-center gap-1 ${accuracy !== null && accuracy >= 70 ? 'text-primary font-semibold' : ''}`}>
-              ✅ {accuracy !== null ? `${accuracy}%` : 'New'}
-            </span>
-            <span className="flex items-center gap-1">👥 {subCount}</span>
-            {strategyType && <span className="flex items-center gap-1">💰 {strategyType}</span>}
+          {/* SEBI Badge - Prominent */}
+          <div className="mb-3 flex items-center gap-2 rounded-lg bg-primary/5 px-2.5 py-1.5">
+            <Shield className="h-3.5 w-3.5 text-primary shrink-0" />
+            <span className="text-xs font-bold text-primary truncate">SEBI {sebiRegNo}</span>
           </div>
+
+          {/* Stats Grid */}
+          <div className="grid grid-cols-3 gap-2 mb-3">
+            <div className="rounded-lg bg-muted p-2 text-center">
+              <p className="text-xs font-bold text-foreground">{signalCount}</p>
+              <p className="text-[10px] text-muted-foreground">Signals</p>
+            </div>
+            <div className={`rounded-lg p-2 text-center ${hasHighAccuracy ? 'bg-primary/10' : 'bg-muted'}`}>
+              <p className={`text-xs font-bold ${hasHighAccuracy ? 'text-primary' : 'text-foreground'}`}>
+                {accuracy !== null ? `${accuracy}%` : '—'}
+              </p>
+              <p className={`text-[10px] ${hasHighAccuracy ? 'text-primary' : 'text-muted-foreground'}`}>Accuracy</p>
+            </div>
+            <div className="rounded-lg bg-muted p-2 text-center">
+              <p className="text-xs font-bold text-foreground">{subCount}</p>
+              <p className="text-[10px] text-muted-foreground">Members</p>
+            </div>
+          </div>
+
+          {/* Specialty Tag */}
+          {strategyType && (
+            <div className="mb-3 flex flex-wrap gap-2">
+              {strategyType.split(',').map((tag, i) => (
+                <span key={i} className="inline-flex items-center rounded-full bg-secondary/10 px-2.5 py-1 text-[10px] font-semibold text-secondary">
+                  {tag.trim()}
+                </span>
+              ))}
+            </div>
+          )}
 
           {/* Description */}
           {description && !compact && (
-            <p className="text-[12px] text-muted-foreground line-clamp-1 mb-2">"{description}"</p>
+            <p className="text-[11px] text-muted-foreground line-clamp-2 mb-3 italic">"{description}"</p>
           )}
 
           {!compact && (
             <Button size="sm" className="w-full rounded-lg bg-primary font-semibold text-xs h-9">
-              Subscribe Now <ArrowRight className="ml-1 h-3 w-3" />
+              Subscribe <ArrowRight className="ml-1 h-3 w-3" />
             </Button>
           )}
         </div>

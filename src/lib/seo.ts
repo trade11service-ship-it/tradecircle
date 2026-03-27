@@ -86,6 +86,13 @@ export const SEO_CONFIG = {
     keywords:
       'SEBI verified trading advisors, best intraday signals, swing trading advisors, F&O trading signals, stock market advisory',
   },
+  explore: {
+    title: 'Free Trading Insights from SEBI Verified Advisors | TradeCircle',
+    description:
+      'Discover free analysis and public posts from SEBI verified trading advisors. Follow advisors to get free insights in your feed.',
+    keywords:
+      'free trading insights, SEBI advisor posts, free stock analysis, trading advisor insights, free trading signals',
+  },
   about: {
     title: 'About TradeCircle - How We Verify Trading Advisors',
     description:

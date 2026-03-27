@@ -504,19 +504,29 @@ export default function AdvisorProfile() {
                   const shouldBlurSignal = !isSubToGroup && s.post_type === 'signal';
 
                   return (
-                    <div key={s.id} className={`rounded-xl border border-border bg-card p-3 pl-4 border-l-[3px] ${borderColor}`}>
-                      <div className="flex items-center justify-between">
+                    <div key={s.id} className={`rounded-xl border border-border bg-card p-3 pl-4 border-l-[3px] ${borderColor} relative group`}>
+                      {/* Blur overlay for locked signals */}
+                      {shouldBlurSignal && (
+                        <div className="absolute inset-0 rounded-xl bg-muted/80 backdrop-blur-[8px] flex items-center justify-center z-10 group-hover:bg-muted/90 transition-all">
+                          <div className="text-center">
+                            <Lock className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
+                            <p className="text-[12px] font-semibold text-foreground">Subscribe to unlock</p>
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div className={`flex items-center justify-between ${shouldBlurSignal ? 'blur-[3px] select-none' : ''}`}>
                         <span className="text-[15px] font-bold text-foreground">{s.instrument}</span>
                         <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${isBuy ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive'}`}>
                           {isBuy ? '🟢' : '🔴'} {s.signal_type}
                         </span>
                       </div>
-                      <div className={`mt-1.5 flex gap-4 text-[12px] ${shouldBlurSignal ? 'blur-[5px] select-none' : ''}`}>
+                      <div className={`mt-1.5 flex gap-4 text-[12px] ${shouldBlurSignal ? 'blur-[3px] select-none' : ''}`}>
                         <span className="text-muted-foreground">Entry <span className="font-bold text-foreground">₹{Number(s.entry_price).toLocaleString('en-IN')}</span></span>
                         <span className="text-muted-foreground">Target <span className="font-bold text-primary">₹{Number(s.target_price).toLocaleString('en-IN')}</span></span>
                         <span className="text-muted-foreground">SL <span className="font-bold text-destructive">₹{Number(s.stop_loss).toLocaleString('en-IN')}</span></span>
                       </div>
-                      <div className="mt-2 flex items-center justify-between">
+                      <div className={`mt-2 flex items-center justify-between ${shouldBlurSignal ? 'blur-[3px]' : ''}`}>
                         <div className="flex items-center gap-2">
                           {s.timeframe && <span className="text-[10px] rounded-full bg-muted px-2 py-0.5 text-muted-foreground">{s.timeframe}</span>}
                           <span className="text-[10px] text-muted-foreground">
@@ -532,7 +542,7 @@ export default function AdvisorProfile() {
                         </span>
                       </div>
                       {s.notes && (
-                        <p className={`mt-1.5 text-[12px] text-muted-foreground italic ${shouldBlurSignal ? 'blur-[4px]' : ''}`}>
+                        <p className={`mt-1.5 text-[12px] text-muted-foreground italic ${shouldBlurSignal ? 'blur-[3px] select-none' : ''}`}>
                           {s.notes}
                         </p>
                       )}

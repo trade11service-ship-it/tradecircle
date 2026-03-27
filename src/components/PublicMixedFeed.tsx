@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Lock, ChevronDown, User } from "lucide-react";
+import { Lock, ChevronDown, User, MessageCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getPostVisibility } from "@/lib/accessControl";
 import { Button } from "@/components/ui/button";
+import { FollowButton } from "@/components/FollowButton";
 
 type FeedPost = {
   id: string;
@@ -47,24 +48,27 @@ function MessageBubble({
   post,
   advisorName,
   advisorPhoto,
+  groupId,
 }: {
   post: FeedPost;
   advisorName: string;
   advisorPhoto?: string | null;
+  groupId?: string;
 }) {
   const [expanded, setExpanded] = useState(false);
   const text = post.message_text || "";
 
   return (
     <>
-      <div className="flex gap-2 max-w-[88%]">
+      <div className="flex gap-2 max-w-full">
         <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground overflow-hidden mt-1">
           {advisorPhoto ? <img src={advisorPhoto} alt="" className="h-full w-full object-cover" /> : <User className="h-3.5 w-3.5" />}
         </div>
         <div className="min-w-0 flex-1">
           <div className="rounded-2xl rounded-tl-sm bg-card border border-border p-3 shadow-sm">
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center justify-between gap-2 mb-1">
               <span className="text-[12px] font-bold text-primary">{advisorName}</span>
+              {groupId && <FollowButton groupId={groupId} size="sm" />}
             </div>
             {text && (
               <p className={`text-[14px] text-foreground leading-relaxed whitespace-pre-wrap ${!expanded && text.length > 300 ? "line-clamp-4" : ""}`}>
@@ -81,7 +85,7 @@ function MessageBubble({
                 <img src={post.image_url} alt="Post" className="w-full rounded-lg max-h-64 object-cover" />
               </div>
             )}
-            <div className="flex items-center justify-end gap-1 mt-1">
+            <div className="flex items-center justify-between gap-1 mt-1">
               <span className="text-[10px] text-muted-foreground">{formatTime(post.created_at)}</span>
               <span className="text-[10px] text-primary">✓✓</span>
             </div>
@@ -194,12 +198,14 @@ export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedF
   const fetchPage = async (nextOffset: number) => {
     setLoading(true);
 
-    // We only want approved advisors' content, but rely on RLS for visibility.
+    // Query only public posts (is_public=true, post_type='message') from approved advisors
     const { data: rows } = await supabase
       .from("signals")
       .select(
         "id,post_type,instrument,signal_type,entry_price,target_price,stop_loss,timeframe,notes,message_text,image_url,created_at,group_id,advisor_id,is_public,result,signal_date, groups(id,name), advisors(id,full_name,profile_photo_url,sebi_reg_no,strategy_type)"
       )
+      .eq("post_type", "message")
+      .eq("is_public", true)
       .order("created_at", { ascending: false })
       .range(nextOffset, nextOffset + pageSize - 1);
 
@@ -299,55 +305,22 @@ export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedF
             <div className="space-y-3">
               {group.items.map((post, localIdx) => {
                 const advisor = advisorMap[post.advisor_id];
+                const grp = groupMap[post.group_id];
                 const advisorName = advisor?.full_name || "Advisor";
                 const advisorPhoto = advisor?.profile_photo_url || undefined;
 
-                const globalIndex = visiblePosts.findIndex((p) => p.id === post.id);
-                const vis = getPostVisibility(
-                  {
-                    post_type: post.post_type,
-                    timeframe: post.timeframe,
-                    is_public: post.is_public,
-                    created_at: post.created_at,
-                    signal_type: post.signal_type,
-                  },
-                  false,
-                  false,
-                  globalIndex,
+                // Only show public message posts
+                if (post.post_type !== "message") return null;
+
+                return (
+                  <MessageBubble 
+                    key={post.id} 
+                    post={post} 
+                    advisorName={advisorName} 
+                    advisorPhoto={advisorPhoto}
+                    groupId={post.group_id}
+                  />
                 );
-
-                if (vis.hideCompletely) return null;
-
-                if (vis.showLockOverlay) {
-                  return (
-                    <div key={post.id} className="relative">
-                      <div className="pointer-events-none blur-[6px] opacity-60">
-                        {post.post_type === "signal" ? (
-                          <SignalBubble post={post} advisorName={advisorName} advisorPhoto={advisorPhoto} blurred />
-                        ) : (
-                          <MessageBubble post={post} advisorName={advisorName} advisorPhoto={advisorPhoto} />
-                        )}
-                      </div>
-                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/60 backdrop-blur-[3px] rounded-2xl p-4">
-                        <div className="flex h-14 w-14 items-center justify-center rounded-full bg-card border-2 border-border shadow-lg">
-                          <Lock className="h-6 w-6 text-primary" />
-                        </div>
-                        <p className="mt-3 text-[15px] font-bold text-foreground text-center">Subscribe to see all signals</p>
-                        <p className="mt-1 text-[12px] text-muted-foreground text-center px-4">Get real-time access to every trade signal & analysis</p>
-                        <Link to={`/advisor/${post.advisor_id}`}>
-                          <Button className="mt-3 rounded-xl bg-primary px-6" variant="default">
-                            Subscribe Now
-                          </Button>
-                        </Link>
-                      </div>
-                    </div>
-                  );
-                }
-
-                if (post.post_type === "signal") {
-                  return <SignalBubble key={post.id} post={post} advisorName={advisorName} advisorPhoto={advisorPhoto} blurred={vis.blurNumbers} />;
-                }
-                return <MessageBubble key={post.id} post={post} advisorName={advisorName} advisorPhoto={advisorPhoto} />;
               })}
             </div>
           </div>

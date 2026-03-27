@@ -111,9 +111,9 @@ export default function Landing() {
           {/* Stats */}
           <div className="mt-8 flex items-center justify-center gap-6 md:gap-10">
             {[
-              { val: '17Cr+', label: 'Indian Traders' },
               { val: '100%', label: 'SEBI Verified' },
               { val: '₹0', label: 'Listing Fee' },
+              { val: 'No Lock-in', label: 'Cancel Anytime' },
             ].map((s, i) => (
               <div key={i} className="text-center">
                 <p className="text-xl md:text-2xl font-extrabold text-white">{s.val}</p>
