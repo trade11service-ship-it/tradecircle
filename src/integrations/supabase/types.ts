@@ -137,10 +137,15 @@ export type Database = {
           email: string
           full_name: string
           id: string
+          is_public_featured: boolean | null
           pan_no: string | null
           pan_photo_url: string | null
           phone: string | null
           profile_photo_url: string | null
+          public_description: string | null
+          public_sort_order: number | null
+          public_tagline: string | null
+          public_years_experience: number | null
           rejection_reason: string | null
           sebi_reg_no: string
           status: string | null
@@ -157,10 +162,15 @@ export type Database = {
           email: string
           full_name: string
           id?: string
+          is_public_featured?: boolean | null
           pan_no?: string | null
           pan_photo_url?: string | null
           phone?: string | null
           profile_photo_url?: string | null
+          public_description?: string | null
+          public_sort_order?: number | null
+          public_tagline?: string | null
+          public_years_experience?: number | null
           rejection_reason?: string | null
           sebi_reg_no: string
           status?: string | null
@@ -177,10 +187,15 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
+          is_public_featured?: boolean | null
           pan_no?: string | null
           pan_photo_url?: string | null
           phone?: string | null
           profile_photo_url?: string | null
+          public_description?: string | null
+          public_sort_order?: number | null
+          public_tagline?: string | null
+          public_years_experience?: number | null
           rejection_reason?: string | null
           sebi_reg_no?: string
           status?: string | null
