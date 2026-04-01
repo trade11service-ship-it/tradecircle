@@ -32,6 +32,7 @@ import Notifications from "./pages/Notifications";
 import Subscriptions from "./pages/Subscriptions";
 import Explore from "./pages/Explore";
 import ListedAdvisors from "./pages/ListedAdvisors";
+import FeaturedAdvisors from "./pages/FeaturedAdvisors";
 import { useAuth } from "@/lib/auth";
 
 const queryClient = new QueryClient();
