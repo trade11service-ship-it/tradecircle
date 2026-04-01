@@ -23,9 +23,18 @@ export default function Login() {
   // Auto-redirect if already logged in (e.g. after Google OAuth redirect)
   useEffect(() => {
     if (!authLoading && user && profile) {
-      if (profile.role === 'advisor') navigate('/advisor/dashboard', { replace: true });
-      else if (profile.role === 'admin') navigate('/admin', { replace: true });
-      else navigate('/dashboard', { replace: true });
+      // Check if user is an advisor (even if pending approval)
+      const checkAdvisor = async () => {
+        const { data: advisor } = await supabase.from('advisors').select('id').eq('user_id', user.id).maybeSingle();
+        if (profile.role === 'advisor' || advisor) {
+          navigate('/advisor/dashboard', { replace: true });
+        } else if (profile.role === 'admin') {
+          navigate('/admin', { replace: true });
+        } else {
+          navigate('/dashboard', { replace: true });
+        }
+      };
+      checkAdvisor();
     }
   }, [user, profile, authLoading, navigate]);
 
@@ -40,7 +49,9 @@ export default function Login() {
       toast.error('Please verify your email before signing in. Check your inbox for the verification link.');
     } else if (data.user) {
       const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
-      if (profile?.role === 'advisor') navigate('/advisor/dashboard');
+      // Check if user is an advisor (even if pending approval)
+      const { data: advisor } = await supabase.from('advisors').select('id').eq('user_id', data.user.id).maybeSingle();
+      if (profile?.role === 'advisor' || advisor) navigate('/advisor/dashboard');
       else if (profile?.role === 'admin') navigate('/admin');
       else navigate('/dashboard');
     }

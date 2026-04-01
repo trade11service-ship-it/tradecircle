@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Lock, ChevronDown, User, MessageCircle } from "lucide-react";
+import { Lock, ChevronDown, User, MessageCircle, Rss } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { getPostVisibility } from "@/lib/accessControl";
 import { Button } from "@/components/ui/button";
@@ -288,10 +288,10 @@ export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedF
 
   if (!hasAny) {
     return (
-      <div className="rounded-xl border border-border bg-background py-12 text-center">
-        <div className="text-4xl mb-3">📣</div>
-        <p className="text-[15px] font-semibold text-foreground">No public posts yet</p>
-        <p className="text-[13px] text-muted-foreground mt-1">When advisors publish analysis or signals, they will appear here.</p>
+      <div className="rounded-xl border border-green-200 bg-green-50 py-12 text-center dark:bg-green-950/20 dark:border-green-500/30">
+        <Rss className="mx-auto h-12 w-12 text-green-500 mb-3" />
+        <p className="text-[15px] font-semibold text-foreground">Advisors are onboarding</p>
+        <p className="text-[13px] text-muted-foreground mt-1">First signals coming soon. Follow an advisor to get notified.</p>
       </div>
     );
   }

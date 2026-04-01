@@ -6,8 +6,15 @@ import { useState } from 'react';
 export function BottomNavigation() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user } = useAuth();
+  const { user, profile, signOut } = useAuth();
   const [showMenu, setShowMenu] = useState(false);
+
+  // Get correct dashboard link based on user role
+  const getDashboardLink = () => {
+    if (profile?.role === 'admin') return '/admin';
+    if (profile?.role === 'advisor') return '/advisor/dashboard';
+    return '/dashboard';
+  };
 
   // Determine which nav items to show based on user
   const getNavItems = () => {
@@ -19,7 +26,7 @@ export function BottomNavigation() {
     if (user) {
       return [
         ...commonItems,
-        { icon: BarChart3, label: 'Dashboard', path: '/dashboard' },
+        { icon: BarChart3, label: 'Dashboard', path: getDashboardLink() },
         { icon: User, label: 'Profile', path: '/profile' },
       ];
     } else {
@@ -148,9 +155,9 @@ export function BottomNavigation() {
                     Privacy & Terms
                   </a>
                   <button
-                    onClick={() => {
-                      // Handle logout
+                    onClick={async () => {
                       setShowMenu(false);
+                      await signOut();
                     }}
                     className="w-full px-4 py-3 rounded-lg bg-destructive/10 hover:bg-destructive/20 transition-colors text-destructive font-medium text-[14px]"
                   >

@@ -119,9 +119,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setProfile(null);
+    try {
+      await supabase.auth.signOut({ scope: 'local' });
+      setUser(null);
+      setProfile(null);
+      // Force navigate to home
+      navigate('/', { replace: true });
+    } catch (err) {
+      console.error('Logout error:', err);
+      setUser(null);
+      setProfile(null);
+      navigate('/', { replace: true });
+    }
   };
 
   return (

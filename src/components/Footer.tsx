@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Mail, Shield, Heart, Github, Linkedin, Twitter, ExternalLink, ArrowRight } from 'lucide-react';
+import { Mail, Shield, Heart, Linkedin, Twitter, Instagram, ExternalLink, ArrowRight } from 'lucide-react';
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -119,13 +119,13 @@ export function Footer() {
                 {[
                   { icon: Twitter, href: 'https://twitter.com', label: 'Twitter' },
                   { icon: Linkedin, href: 'https://linkedin.com', label: 'LinkedIn' },
-                  { icon: Github, href: 'https://github.com', label: 'GitHub' },
+                  { icon: Instagram, href: '#', label: 'Instagram' },
                 ].map(s => (
                   <a
                     key={s.label}
                     href={s.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    target={s.href !== '#' ? '_blank' : undefined}
+                    rel={s.href !== '#' ? 'noopener noreferrer' : undefined}
                     aria-label={s.label}
                     className="h-10 w-10 rounded-lg border border-white/20 bg-white/5 hover:bg-primary hover:border-primary flex items-center justify-center text-white/60 hover:text-white transition-all duration-300 hover:scale-110 backdrop-blur-sm group/social"
                   >

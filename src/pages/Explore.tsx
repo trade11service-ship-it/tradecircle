@@ -38,40 +38,6 @@ export default function Explore() {
           </div>
         </div>
 
-        {/* How It Works Section */}
-        <div className="mb-12 bg-card border border-border rounded-2xl p-6 md:p-8">
-          <h2 className="text-xl font-bold text-foreground mb-6 text-center">How It Works</h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="text-center">
-              <div className="w-12 h-12 rounded-full bg-primary/10 text-primary text-xl font-bold flex items-center justify-center mx-auto mb-3">
-                1
-              </div>
-              <h3 className="font-semibold text-foreground mb-2">Browse Posts</h3>
-              <p className="text-sm text-muted-foreground">
-                Explore free analysis and insights from top trading advisors
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="w-12 h-12 rounded-full bg-primary/10 text-primary text-xl font-bold flex items-center justify-center mx-auto mb-3">
-                2
-              </div>
-              <h3 className="font-semibold text-foreground mb-2">Follow Advisors</h3>
-              <p className="text-sm text-muted-foreground">
-                Follow advisors to get their public posts in your personal feed
-              </p>
-            </div>
-            <div className="text-center">
-              <div className="w-12 h-12 rounded-full bg-primary/10 text-primary text-xl font-bold flex items-center justify-center mx-auto mb-3">
-                3
-              </div>
-              <h3 className="font-semibold text-foreground mb-2">Subscribe for Premium</h3>
-              <p className="text-sm text-muted-foreground">
-                Get real-time trading signals and exclusive analysis
-              </p>
-            </div>
-          </div>
-        </div>
-
         {/* Feed Section */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-foreground mb-6">Latest Public Posts</h2>

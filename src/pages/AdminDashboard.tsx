@@ -110,6 +110,24 @@ export default function AdminDashboard() {
   const [approvingAdvisorId, setApprovingAdvisorId] = useState<string | null>(null);
   const [rejectingAdvisorId, setRejectingAdvisorId] = useState<string | null>(null);
 
+  // Create/Edit Advisor Modal
+  const [createAdvisorModalOpen, setCreateAdvisorModalOpen] = useState(false);
+  const [editingAdvisorModal, setEditingAdvisorModal] = useState<Advisor | null>(null);
+  const [advisorFormData, setAdvisorFormData] = useState({
+    full_name: '',
+    email: '',
+    phone: '',
+    sebi_reg_no: '',
+    strategy_type: 'Options' as 'Options' | 'Equity' | 'Futures' | 'All',
+    bio: '',
+  });
+  const [savingAdvisor, setSavingAdvisor] = useState(false);
+  const [deletingAdvisorId, setDeletingAdvisorId] = useState<string | null>(null);
+
+  // Deletion Request Review Modal
+  const [deletionRequestModalOpen, setDeletionRequestModalOpen] = useState(false);
+  const [selectedDeletionRequest, setSelectedDeletionRequest] = useState<any | null>(null);
+
   useEffect(() => {
     if (authLoading) return;
     if (!user) { navigate('/login', { replace: true }); return; }
@@ -263,7 +281,107 @@ export default function AdminDashboard() {
     }
   };
 
-  const startPublicProfileEdit = (advisor: Advisor) => {
+  const deleteAdvisor = async (advisor: Advisor) => {
+    setDeletingAdvisorId(advisor.id);
+    try {
+      const { error: delError } = await supabase.from('advisors').delete().eq('id', advisor.id);
+      if (delError) throw delError;
+      toast.success(`${advisor.full_name} deleted successfully`);
+      fetchData();
+    } catch (err) {
+      toast.error((err as Error).message || 'Failed to delete advisor');
+    } finally {
+      setDeletingAdvisorId(null);
+    }
+  };
+
+  const openCreateAdvisorModal = () => {
+    setAdvisorFormData({
+      full_name: '',
+      email: '',
+      phone: '',
+      sebi_reg_no: '',
+      strategy_type: 'Options',
+      bio: '',
+    });
+    setEditingAdvisorModal(null);
+    setCreateAdvisorModalOpen(true);
+  };
+
+  const openEditAdvisorModal = (advisor: Advisor) => {
+    setAdvisorFormData({
+      full_name: advisor.full_name || '',
+      email: advisor.email || '',
+      phone: advisor.phone || '',
+      sebi_reg_no: advisor.sebi_reg_no || '',
+      strategy_type: (advisor.strategy_type as any) || 'Options',
+      bio: advisor.bio || '',
+    });
+    setEditingAdvisorModal(advisor);
+    setCreateAdvisorModalOpen(true);
+  };
+
+  const saveAdvisor = async () => {
+    if (!advisorFormData.full_name.trim() || !advisorFormData.email.trim() || !advisorFormData.sebi_reg_no.trim()) {
+      toast.error('Please fill in all required fields');
+      return;
+    }
+
+    setSavingAdvisor(true);
+    try {
+      if (editingAdvisorModal) {
+        // Update existing advisor
+        const { error } = await supabase
+          .from('advisors')
+          .update({
+            full_name: advisorFormData.full_name,
+            email: advisorFormData.email,
+            phone: advisorFormData.phone,
+            sebi_reg_no: advisorFormData.sebi_reg_no,
+            strategy_type: advisorFormData.strategy_type,
+            bio: advisorFormData.bio,
+          })
+          .eq('id', editingAdvisorModal.id);
+
+        if (error) throw error;
+        toast.success('Advisor updated successfully');
+      } else {
+        // Create new advisor (without user account - admin creation)
+        // First, create a dummy profile for the advisor
+        const tempUser = `advisor-${Math.random().toString(36).substr(2, 9)}@system.local`;
+        
+        // For now, we'll insert into advisors table with a placeholder user_id
+        // In production, you'd want a proper user account creation flow
+        const tempUserId = 'temp-' + Math.random().toString(36).substr(2, 9);
+        
+        const { error, data } = await supabase
+          .from('advisors')
+          .insert({
+            full_name: advisorFormData.full_name,
+            email: advisorFormData.email,
+            phone: advisorFormData.phone,
+            sebi_reg_no: advisorFormData.sebi_reg_no,
+            strategy_type: advisorFormData.strategy_type,
+            bio: advisorFormData.bio,
+            status: 'pending', // New advisors start as pending
+            user_id: user!.id, // Temporary: use admin's ID (should be fixed in production)
+          })
+          .select();
+
+        if (error) throw error;
+        toast.success('Advisor created successfully - set to pending approval');
+      }
+      setCreateAdvisorModalOpen(false);
+      fetchData();
+    } catch (err) {
+      toast.error((err as Error).message || 'Failed to save advisor');
+      console.error(err);
+    } finally {
+      setSavingAdvisor(false);
+    }
+  };
+
+  const startPublicProfileEdit = async (advisor: Advisor) => {
     const a = advisor as any;
     setEditingAdvisorId(advisor.id);
     setPublicProfileForm({
@@ -694,8 +812,15 @@ export default function AdminDashboard() {
 
         {/* ===== ADVISORS TAB ===== */}
         {tab === 'advisors' && !loading && (
-          <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
-            <table className="w-full text-sm">
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-[15px] font-bold text-foreground">All Advisors ({allAdvisors.length})</h3>
+              <Button onClick={openCreateAdvisorModal} className="gap-2 bg-primary hover:bg-primary/90 rounded-lg">
+                <UserPlus size={16} /> Create New Advisor
+              </Button>
+            </div>
+            <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
+              <table className="w-full text-sm">
               <thead>
                 <tr className="bg-muted border-b border-border text-left">
                   <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Name</th>
@@ -734,7 +859,7 @@ export default function AdminDashboard() {
                         )}
                       </td>
                       <td className="p-4">
-                        <div className="flex gap-2">
+                        <div className="flex gap-2 flex-wrap">
                           {a.status === 'approved' && (
                             <>
                               <Button variant="outline" size="sm" className="rounded-lg text-[12px]" onClick={() => startPublicProfileEdit(a)}>
@@ -748,6 +873,18 @@ export default function AdminDashboard() {
                               </Button>
                             </>
                           )}
+                          <Button variant="outline" size="sm" className="rounded-lg text-[12px]" onClick={() => openEditAdvisorModal(a)}>
+                            Edit Details
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            className="text-destructive border-destructive/30 hover:bg-destructive/10 rounded-lg text-[12px]" 
+                            onClick={() => deleteAdvisor(a)}
+                            disabled={deletingAdvisorId === a.id}
+                          >
+                            {deletingAdvisorId === a.id ? 'Deleting...' : 'Delete'}
+                          </Button>
                         </div>
                       </td>
                     </tr>,
@@ -817,6 +954,86 @@ export default function AdminDashboard() {
                 ))}
               </tbody>
             </table>
+            </div>
+          </div>
+        )}
+
+        {/* ===== CREATE/EDIT ADVISOR MODAL ===== */}
+        {createAdvisorModalOpen && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-card rounded-2xl border border-border p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+              <h2 className="text-xl font-bold text-foreground mb-4">
+                {editingAdvisorModal ? 'Edit Advisor Details' : 'Create New Advisor'}
+              </h2>
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <label>
+                    <p className="text-sm font-semibold text-muted-foreground mb-1">Full Name *</p>
+                    <Input
+                      placeholder="Advisor Name"
+                      value={advisorFormData.full_name}
+                      onChange={(e) => setAdvisorFormData(prev => ({ ...prev, full_name: e.target.value }))}
+                    />
+                  </label>
+                  <label>
+                    <p className="text-sm font-semibold text-muted-foreground mb-1">Email *</p>
+                    <Input
+                      type="email"
+                      placeholder="advisor@example.com"
+                      value={advisorFormData.email}
+                      onChange={(e) => setAdvisorFormData(prev => ({ ...prev, email: e.target.value }))}
+                    />
+                  </label>
+                  <label>
+                    <p className="text-sm font-semibold text-muted-foreground mb-1">Phone</p>
+                    <Input
+                      type="tel"
+                      placeholder="+91 XXXXX XXXXX"
+                      value={advisorFormData.phone}
+                      onChange={(e) => setAdvisorFormData(prev => ({ ...prev, phone: e.target.value }))}
+                    />
+                  </label>
+                  <label>
+                    <p className="text-sm font-semibold text-muted-foreground mb-1">SEBI Registration No *</p>
+                    <Input
+                      placeholder="SEBI/RIA/XXXXXX"
+                      value={advisorFormData.sebi_reg_no}
+                      onChange={(e) => setAdvisorFormData(prev => ({ ...prev, sebi_reg_no: e.target.value }))}
+                    />
+                  </label>
+                  <label>
+                    <p className="text-sm font-semibold text-muted-foreground mb-1">Strategy Type</p>
+                    <select 
+                      value={advisorFormData.strategy_type}
+                      onChange={(e) => setAdvisorFormData(prev => ({ ...prev, strategy_type: e.target.value as any }))}
+                      className="w-full border border-border rounded-lg px-3 py-2 bg-background text-foreground"
+                    >
+                      <option value="Options">Options</option>
+                      <option value="Equity">Equity</option>
+                      <option value="Futures">Futures</option>
+                      <option value="All">All</option>
+                    </select>
+                  </label>
+                </div>
+                <label>
+                  <p className="text-sm font-semibold text-muted-foreground mb-1">Bio</p>
+                  <Textarea
+                    placeholder="Brief biography..."
+                    value={advisorFormData.bio}
+                    onChange={(e) => setAdvisorFormData(prev => ({ ...prev, bio: e.target.value }))}
+                    className="min-h-[100px]"
+                  />
+                </label>
+              </div>
+              <div className="mt-6 flex gap-2 justify-end">
+                <Button variant="outline" onClick={() => setCreateAdvisorModalOpen(false)} disabled={savingAdvisor}>
+                  Cancel
+                </Button>
+                <Button onClick={saveAdvisor} disabled={savingAdvisor} className="bg-primary hover:bg-primary/90">
+                  {savingAdvisor ? 'Saving...' : (editingAdvisorModal ? 'Update Advisor' : 'Create Advisor')}
+                </Button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -1009,8 +1226,8 @@ export default function AdminDashboard() {
                       <td className="p-4 text-muted-foreground">{formatDate(r.created_at)}</td>
                       <td className="p-4">
                         <Button variant="outline" size="sm" className="rounded-lg text-[12px]" onClick={() => {
-                          navigator.clipboard.writeText(r.reason || '');
-                          toast.success('Reason copied to clipboard');
+                          setSelectedDeletionRequest(r);
+                          setDeletionRequestModalOpen(true);
                         }}>
                           <Eye size={14} className="mr-1" /> View Reason
                         </Button>
@@ -1049,6 +1266,83 @@ export default function AdminDashboard() {
         onConfirm={(reason) => rejectAdvisor(selectedAdvisorForReject!, reason)}
         isLoading={rejectingAdvisorId === selectedAdvisorForReject?.id}
       />
+
+      {/* ===== DELETION REQUEST REVIEW MODAL ===== */}
+      {deletionRequestModalOpen && selectedDeletionRequest && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-card rounded-2xl border border-border p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-bold text-foreground mb-4">Account Deletion Request</h2>
+            
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4 bg-muted p-4 rounded-lg">
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground mb-1">Type</p>
+                  <p className="text-sm font-bold text-foreground capitalize">{selectedDeletionRequest.request_type?.replace(/_/g, ' ')}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground mb-1">Status</p>
+                  <span className={`inline-flex px-2.5 py-1 rounded-full text-[12px] font-semibold ${statusPill(selectedDeletionRequest.status)}`}>
+                    {selectedDeletionRequest.status}
+                  </span>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground mb-1">Date</p>
+                  <p className="text-sm font-bold text-foreground">{formatDate(selectedDeletionRequest.created_at)}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-muted-foreground mb-1">Request ID</p>
+                  <p className="text-xs font-mono text-foreground truncate">{selectedDeletionRequest.id}</p>
+                </div>
+              </div>
+
+              <div>
+                <p className="text-sm font-semibold text-muted-foreground mb-2">Requester Information</p>
+                <div className="bg-slate-50 p-4 rounded-lg space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Name:</span>
+                    <span className="text-sm font-bold text-foreground">{selectedDeletionRequest.advisor_name || selectedDeletionRequest.full_name || '-'}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-muted-foreground">Email:</span>
+                    <span className="text-sm font-bold text-foreground">{selectedDeletionRequest.email || '-'}</span>
+                  </div>
+                  {selectedDeletionRequest.group_name && (
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Group:</span>
+                      <span className="text-sm font-bold text-foreground">{selectedDeletionRequest.group_name}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-sm font-semibold text-muted-foreground mb-2">Reason for Deletion</p>
+                <div className="bg-slate-50 p-4 rounded-lg border border-border min-h-24">
+                  <p className="text-sm text-foreground whitespace-pre-wrap">{selectedDeletionRequest.reason || 'No reason provided'}</p>
+                </div>
+              </div>
+
+              <div className="mt-6 flex gap-2 justify-end">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setDeletionRequestModalOpen(false)}
+                >
+                  Close
+                </Button>
+                <Button 
+                  onClick={() => {
+                    navigator.clipboard.writeText(selectedDeletionRequest.reason || '');
+                    toast.success('Reason copied to clipboard');
+                  }}
+                  className="gap-2"
+                >
+                  Copy Request
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

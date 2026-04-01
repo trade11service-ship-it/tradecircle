@@ -62,7 +62,7 @@ export function Navbar() {
                     <User className="mr-2 h-4 w-4" /> My Profile
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => { signOut(); navigate('/'); }}>
+                  <DropdownMenuItem onClick={async () => { await signOut(); }}>
                     <LogOut className="mr-2 h-4 w-4" /> Logout
                   </DropdownMenuItem>
                 </DropdownMenuContent>

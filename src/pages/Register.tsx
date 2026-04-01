@@ -48,7 +48,16 @@ export default function Register() {
     if (!isValidEmail(cleanEmail)) { toast.error('Please enter a valid email address'); return; }
     if (cleanPhone && !isValidPhone(cleanPhone)) { toast.error('Please enter a valid 10-digit phone number'); return; }
     if (!cleanName) { toast.error('Please enter your full name'); return; }
+    
     setLoading(true);
+    // Check if email already exists
+    const { data: existingUser } = await supabase.from('profiles').select('id').eq('email', cleanEmail).maybeSingle();
+    if (existingUser) {
+      setLoading(false);
+      toast.error('This email is already registered. Please use a different email or login.');
+      return;
+    }
+    
     const { data, error } = await supabase.auth.signUp({
       email: cleanEmail,
       password: form.password,

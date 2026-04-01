@@ -88,6 +88,10 @@ export default function AdvisorRegister() {
       toast.error('Please accept all terms to proceed');
       return;
     }
+    if (form.bio && form.bio.length < 80) {
+      toast.error('Please write a proper bio describing your experience (minimum 80 characters)');
+      return;
+    }
     setLoading(true);
     try {
       if (form.phone) await supabase.from('profiles').update({ phone: sanitizePhone(form.phone) }).eq('id', user.id);
@@ -98,6 +102,9 @@ export default function AdvisorRegister() {
         address: sanitizeText(form.address), status: 'pending',
       }).select('id').single();
       if (advError) throw advError;
+
+      // Update profile role to advisor
+      await supabase.from('profiles').update({ role: 'advisor' }).eq('id', user.id);
 
       // Save legal acceptance
       const ip = await getIpAddress();
@@ -147,7 +154,7 @@ export default function AdvisorRegister() {
             <h2 className="tc-card-title">SEBI & Strategy Details</h2>
             <div className="space-y-2"><Label>SEBI Registration Number *</Label><Input value={form.sebiRegNo} onChange={e => update('sebiRegNo', e.target.value)} placeholder="INH000XXXXXX" className="tc-input-focus" /></div>
             <div className="space-y-2"><Label>Phone Number</Label><Input value={form.phone} onChange={e => update('phone', e.target.value)} placeholder="+91 XXXXX XXXXX" className="tc-input-focus" /></div>
-            <div className="space-y-2"><Label>Brief Bio</Label><Textarea value={form.bio} onChange={e => update('bio', e.target.value)} placeholder="Tell traders about your experience and approach..." rows={4} /></div>
+            <div className="space-y-2"><Label>Brief Bio</Label><Textarea value={form.bio} onChange={e => update('bio', e.target.value)} placeholder="Tell traders about your experience and approach..." rows={4} /><p className={`text-xs ${form.bio.length < 80 ? 'text-orange-600' : 'text-green-600'}`}>{form.bio.length}/80 characters (minimum 80 required)</p></div>
             <div className="space-y-2">
               <Label>Strategy Type *</Label>
               <Select value={form.strategyType} onValueChange={v => update('strategyType', v)}>

@@ -41,7 +41,7 @@ export default function AdvisorProfile() {
   const [groupAccessMap, setGroupAccessMap] = useState<Record<string, { hasAccess: boolean; expiresAt: string | null; isExpired: boolean }>>({});
   const [loading, setLoading] = useState(true);
   const [subscribing, setSubscribing] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'feed' | 'signals' | 'about'>('feed');
+  const [activeTab, setActiveTab] = useState<'feed' | 'signals' | 'about'>('about');
   const [riskAlreadyAccepted, setRiskAlreadyAccepted] = useState(false);
   const [signalStats, setSignalStats] = useState<{ total_signals: number; win_count: number; loss_count: number; resolved_count: number }>({ total_signals: 0, win_count: 0, loss_count: 0, resolved_count: 0 });
   const [totalSubs, setTotalSubs] = useState(0);
@@ -247,22 +247,8 @@ export default function AdvisorProfile() {
   const lossCount = signals.filter(s => s.result === 'LOSS' || s.result === 'SL_HIT').length;
 
   return (
-    <div className="min-h-screen flex flex-col bg-muted">
+    <div className="min-h-screen flex flex-col bg-gray-50">
       <Navbar />
-
-      {/* COVER PHOTO */}
-      <div className="relative w-full h-[160px] md:h-[200px] bg-gradient-to-br from-primary to-secondary overflow-hidden">
-        {coverUrl && <img src={coverUrl} alt="Cover" className="absolute inset-0 w-full h-full object-cover" />}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-        {isOwner && (
-          <>
-            <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} />
-            <button onClick={() => coverInputRef.current?.click()} className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/60 transition-colors">
-              <Camera className="h-4 w-4" />
-            </button>
-          </>
-        )}
-      </div>
 
       {/* EXPIRY / EXPIRED BANNER */}
       {anyExpired && !isOwner && (
@@ -286,80 +272,137 @@ export default function AdvisorProfile() {
         </div>
       )}
 
-      {/* PROFILE HEADER */}
-      <section className="bg-card border-b border-border relative">
-        <div className="px-4 pb-4">
-          {/* Avatar */}
-          <div className="flex items-end gap-3 -mt-10 relative z-10">
-            <div className="relative">
-              <div className="flex h-20 w-20 items-center justify-center rounded-full border-[3px] border-primary bg-gradient-to-br from-primary to-secondary text-2xl font-extrabold text-primary-foreground shadow-lg overflow-hidden ring-4 ring-card">
-                {advisor.profile_photo_url
-                  ? <img src={advisor.profile_photo_url} alt={advisor.full_name} className="h-full w-full object-cover" />
-                  : toTitleCase(advisor.full_name).charAt(0)}
+      {/* PROFILE HEADER CARD */}
+      <section className="px-4 py-6 md:py-8">
+        <div className="max-w-4xl mx-auto">
+          <div className="bg-white rounded-xl shadow-md border border-gray-100 p-6 md:p-8">
+            {/* Row 1: Avatar + Name + Verified badge + Follow/Share buttons */}
+            <div className="flex items-start gap-4 mb-6">
+              <div className="relative shrink-0">
+                <div className="flex h-20 w-20 items-center justify-center rounded-full border-4 border-green-600 bg-gradient-to-br from-green-600 to-teal-600 text-2xl font-extrabold text-white shadow-lg overflow-hidden">
+                  {advisor.profile_photo_url
+                    ? <img src={advisor.profile_photo_url} alt={advisor.full_name} className="h-full w-full object-cover" />
+                    : toTitleCase(advisor.full_name).charAt(0)}
+                </div>
+                {isOwner && (
+                  <>
+                    <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+                    <button onClick={() => avatarInputRef.current?.click()} className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-green-600 text-white shadow-md border-2 border-white hover:bg-green-700 transition-colors">
+                      <Camera className="h-3 w-3" />
+                    </button>
+                  </>
+                )}
               </div>
-              {isOwner && (
-                <>
-                  <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
-                  <button onClick={() => avatarInputRef.current?.click()} className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-md border-2 border-card">
-                    <Camera className="h-3 w-3" />
-                  </button>
-                </>
+              
+              <div className="flex-1 min-w-0">
+                <h1 className="text-2xl font-bold text-foreground mb-1">{toTitleCase(advisor.full_name)}</h1>
+                <div className="flex items-center gap-2 mb-1">
+                  <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+                  <p className="text-sm font-semibold text-green-600">TradeCircle Verified</p>
+                </div>
+                <a href="https://www.sebi.gov.in/sebiweb/other/OtherAction.do?doRecognisedFpi=yes&intmId=13" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm text-primary hover:text-primary/80 font-medium hover:underline">
+                  <Shield className="h-4 w-4" /> SEBI {advisor.sebi_reg_no}
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              </div>
+
+              <div className="flex items-center gap-2 shrink-0">
+                {!isOwner && firstGroupId && <FollowButton groupId={firstGroupId} />}
+                <button
+                  onClick={async () => {
+                    try { await navigator.share({ url: window.location.href, title: document.title }); }
+                    catch { await navigator.clipboard.writeText(window.location.href); toast.success('Link copied!'); }
+                  }}
+                  className="flex h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 transition-colors"
+                >
+                  <Share2 className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Row 2: Stats bar */}
+            <div className="grid grid-cols-4 gap-1 bg-gray-50 rounded-lg p-3 mb-6">
+              {[
+                { value: signalStats.total_signals, label: 'Signals' },
+                { value: totalSubs, label: 'Members' },
+                { value: winRate !== null ? `${winRate}%` : (signalStats.total_signals > 0 ? '—' : 'New'), label: 'Accuracy' },
+                { value: groups.length, label: 'Groups' },
+              ].map((stat, i) => (
+                <div key={i} className={`text-center flex-1 ${i > 0 ? 'border-l border-gray-200' : ''}`}>
+                  <p className="text-lg font-bold text-foreground">{stat.value}</p>
+                  <p className="text-xs text-gray-500 mt-0.5">{stat.label}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Row 3: Bio section */}
+            {publicDescription || publicTagline ? (
+              <div className="mb-6">
+                <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-2">About</p>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  {publicDescription || publicTagline || 'SEBI registered Research Analyst. Specialises in F&O and intraday strategies.'}
+                </p>
+              </div>
+            ) : null}
+
+            {/* Row 4: Info pills (horizontal scroll) */}
+            <div className="mb-6 flex gap-3 overflow-x-auto pb-2">
+              {advisor.public_years_experience && (
+                <div className="flex items-center gap-2 rounded-full bg-blue-50 px-4 py-2 whitespace-nowrap border border-blue-100 shrink-0">
+                  <TrendingUp className="h-4 w-4 text-blue-600 flex-shrink-0" />
+                  <span className="text-sm font-semibold text-blue-900">{advisor.public_years_experience}+ Years</span>
+                </div>
               )}
-            </div>
-            <div className="flex-1 min-w-0 pb-1">
-              <h1 className="text-[18px] font-extrabold text-foreground truncate leading-tight">{toTitleCase(advisor.full_name)}</h1>
-              <p className="text-[12px] font-medium text-primary flex items-center gap-1">
-                <CheckCircle className="h-3 w-3" /> TradeCircle Verified
-              </p>
-            </div>
-            <div className="flex items-center gap-2 pb-1">
-              {!isOwner && firstGroupId && <FollowButton groupId={firstGroupId} />}
-              <button
-                onClick={async () => {
-                  try { await navigator.share({ url: window.location.href, title: document.title }); }
-                  catch { await navigator.clipboard.writeText(window.location.href); toast.success('Link copied!'); }
-                }}
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-card text-muted-foreground"
-              >
-                <Share2 className="h-3.5 w-3.5" />
-              </button>
-            </div>
-          </div>
-
-          {/* Bio */}
-          {publicTagline && (
-            <p className="mt-2 text-[13px] font-medium text-foreground/90 leading-snug">{publicTagline}</p>
-          )}
-          {!publicTagline && advisor.bio && (
-            <p className="mt-2 text-[13px] text-muted-foreground leading-snug line-clamp-2">{advisor.bio}</p>
-          )}
-
-          {/* SEBI badge */}
-          <div className="mt-2">
-            <a href="https://www.sebi.gov.in/sebiweb/other/OtherAction.do?doRecognisedFpi=yes&intmId=13" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/5 px-2.5 py-1 text-[11px] font-bold text-primary hover:bg-primary/10 transition-colors">
-              <Shield className="h-3 w-3" /> SEBI ✓ {advisor.sebi_reg_no}
-              <ExternalLink className="h-2.5 w-2.5 ml-0.5" />
-            </a>
-          </div>
-
-          {/* Stats row */}
-          <div className="mt-3 flex items-center justify-between rounded-xl bg-muted p-3">
-            {[
-              { value: signalStats.total_signals, label: 'Signals' },
-              { value: totalSubs, label: 'Members' },
-              { value: winRate !== null ? `${winRate}%` : (signalStats.total_signals > 0 ? '—' : 'New'), label: 'Accuracy' },
-              { value: groups.length, label: 'Groups' },
-            ].map((stat, i) => (
-              <div key={i} className={`text-center flex-1 ${i > 0 ? 'border-l border-border' : ''}`}>
-                <p className="text-[16px] font-bold text-foreground">{stat.value}</p>
-                <p className="text-[10px] text-muted-foreground mt-0.5">{stat.label}</p>
+              {advisor.strategy_type && (
+                <div className="flex items-center gap-2 rounded-full bg-purple-50 px-4 py-2 whitespace-nowrap border border-purple-100 shrink-0">
+                  <BarChart3 className="h-4 w-4 text-purple-600 flex-shrink-0" />
+                  <span className="text-sm font-semibold text-purple-900">{advisor.strategy_type}</span>
+                </div>
+              )}
+              <div className="flex items-center gap-2 rounded-full bg-green-50 px-4 py-2 whitespace-nowrap border border-green-100 shrink-0">
+                <CheckCircle className="h-4 w-4 text-green-600 flex-shrink-0" />
+                <span className="text-sm font-semibold text-green-900">SEBI Verified</span>
               </div>
-            ))}
+            </div>
+
+            {/* Row 5: Groups section */}
+            {groups.length > 0 && (
+              <div>
+                <p className="text-sm font-bold text-foreground mb-3">Trading Groups</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {groups.map(g => {
+                    const access = groupAccessMap[g.id];
+                    const isSub = access?.hasAccess || isOwner;
+                    return (
+                      <div key={g.id} className="rounded-lg border border-gray-100 bg-gray-50 p-3">
+                        <p className="font-semibold text-sm text-foreground mb-1">{g.name}</p>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-xs text-gray-600">
+                            <Users className="h-3 w-3" />
+                            {g.subCount} members
+                          </div>
+                          <p className="font-bold text-sm text-green-600">₹{g.monthly_price}</p>
+                        </div>
+                        {!isSub && !isOwner && (
+                          <button
+                            onClick={() => { setSelectedGroupForSubscription(g); setSubscriptionModalOpen(true); }}
+                            className="mt-2 w-full rounded-lg bg-green-600 py-2 text-xs font-bold text-white hover:bg-green-700 transition-colors"
+                          >
+                            Subscribe
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
           </div>
         </div>
+      </section>
 
         {/* Tabs */}
-        <div className="flex">
+        <div className="flex border-b border-gray-200 bg-white max-w-4xl mx-auto w-full">
           {[
             { key: 'feed' as const, label: 'Feed' },
             { key: 'signals' as const, label: 'Signals' },
@@ -368,15 +411,14 @@ export default function AdvisorProfile() {
             <button
               key={t.key}
               onClick={() => setActiveTab(t.key)}
-              className={`flex-1 py-3 text-[14px] font-medium text-center transition-colors border-b-2 ${
-                activeTab === t.key ? 'border-primary text-primary' : 'border-transparent text-muted-foreground'
+              className={`flex-1 py-4 text-sm font-semibold text-center transition-colors border-b-2 ${
+                activeTab === t.key ? 'border-green-600 text-green-600' : 'border-transparent text-gray-600 hover:text-gray-900'
               }`}
             >
               {t.label}
             </button>
           ))}
         </div>
-      </section>
 
       {/* TAB CONTENT */}
       <div className="flex-1 flex flex-col">
@@ -556,118 +598,168 @@ export default function AdvisorProfile() {
 
         {/* ABOUT TAB */}
         {activeTab === 'about' && (
-          <div className="px-4 py-4 space-y-4">
-            {/* Advisor card */}
-            <div className="rounded-2xl border border-border bg-card p-5 text-center">
-              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-primary to-secondary text-3xl font-extrabold text-primary-foreground overflow-hidden ring-4 ring-primary/20">
-                {advisor.profile_photo_url ? <img src={advisor.profile_photo_url} alt="" className="h-full w-full object-cover" /> : toTitleCase(advisor.full_name).charAt(0)}
+          <div className="px-4 py-6 bg-white">
+            <div className="max-w-4xl mx-auto space-y-4">
+              {/* Card 1: SEBI Registration */}
+              <div className="rounded-xl border border-gray-100 shadow-sm bg-white p-5 hover:shadow-md transition-shadow">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-green-50 flex-shrink-0">
+                    <Shield className="h-6 w-6 text-green-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">SEBI Registration Number</p>
+                    <a href="https://www.sebi.gov.in/sebiweb/other/OtherAction.do?doRecognisedFpi=yes&intmId=13" target="_blank" rel="noopener noreferrer" className="text-lg font-bold text-green-600 hover:text-green-700 flex items-center gap-2 mt-1">
+                      {advisor.sebi_reg_no}
+                      <ExternalLink className="h-4 w-4" />
+                    </a>
+                    <p className="text-xs text-gray-600 mt-1">Verified & Authentic</p>
+                  </div>
+                </div>
               </div>
-              <h2 className="mt-3 text-xl font-extrabold text-foreground">{toTitleCase(advisor.full_name)}</h2>
-              <p className="text-[12px] text-primary font-medium flex items-center justify-center gap-1 mt-1">
-                <CheckCircle className="h-3 w-3" /> TradeCircle Verified Advisor
-              </p>
-            </div>
 
-            {/* Details */}
-            <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
-              <div className="flex items-center gap-3">
-                <Shield className="h-4 w-4 text-primary shrink-0" />
-                <div>
-                  <p className="text-[11px] text-muted-foreground">SEBI Registration</p>
-                  <a href="https://www.sebi.gov.in/sebiweb/other/OtherAction.do?doRecognisedFpi=yes&intmId=13" target="_blank" rel="noopener noreferrer" className="text-[14px] font-semibold text-primary hover:underline flex items-center gap-1">
-                    {advisor.sebi_reg_no} <ExternalLink className="h-3 w-3" />
-                  </a>
+              {/* Card 2: Experience */}
+              <div className="rounded-xl border border-gray-100 shadow-sm bg-white p-5 hover:shadow-md transition-shadow">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-blue-50 flex-shrink-0">
+                    <TrendingUp className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Experience</p>
+                    <p className="text-lg font-bold text-foreground mt-1">
+                      {advisor.public_years_experience ? `${advisor.public_years_experience}+ Years` : 'SEBI Verified Advisor'}
+                    </p>
+                    <p className="text-xs text-gray-600 mt-1">Trading & Market Analysis</p>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center gap-3">
-                <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
-                <div>
-                  <p className="text-[11px] text-muted-foreground">Member Since</p>
-                  <p className="text-[14px] font-semibold text-foreground">
-                    {advisor.created_at ? new Date(advisor.created_at).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }) : '—'}
-                  </p>
-                </div>
-              </div>
+
+              {/* Card 3: Strategy */}
               {advisor.strategy_type && (
-                <div className="flex items-center gap-3">
-                  <TrendingUp className="h-4 w-4 text-secondary shrink-0" />
-                  <div>
-                    <p className="text-[11px] text-muted-foreground">Speciality</p>
-                    <div className="flex flex-wrap gap-1.5 mt-1">
-                      {advisor.strategy_type.split(',').map((tag, i) => (
-                        <span key={i} className="tc-badge-strategy text-[11px]">{tag.trim()}</span>
-                      ))}
+                <div className="rounded-xl border border-gray-100 shadow-sm bg-white p-5 hover:shadow-md transition-shadow">
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-purple-50 flex-shrink-0">
+                      <BarChart3 className="h-6 w-6 text-purple-600" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Specialisation</p>
+                      <p className="text-lg font-bold text-foreground mt-1">{advisor.strategy_type}</p>
+                      <p className="text-xs text-gray-600 mt-1">Trading Strategy</p>
                     </div>
                   </div>
                 </div>
               )}
-            </div>
 
-            {/* Bio */}
-            {publicDescription && (
-              <div className="rounded-2xl border border-border bg-card p-5">
-                <h3 className="text-[14px] font-bold text-foreground mb-2">About</h3>
-                <p className="text-[13px] text-muted-foreground leading-relaxed whitespace-pre-wrap">{publicDescription}</p>
+              {/* Card 4: About the Advisor */}
+              <div className="rounded-xl border border-gray-100 shadow-sm bg-white p-5">
+                <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-3">Bio</p>
+                {publicDescription && publicDescription.length >= 30 ? (
+                  <p className="text-sm leading-relaxed text-gray-700 whitespace-pre-wrap">{publicDescription}</p>
+                ) : (
+                  <p className="text-sm leading-relaxed text-gray-600 italic">This advisor has not added a bio yet.</p>
+                )}
               </div>
-            )}
 
-            {/* Stats card */}
-            <div className="rounded-2xl border border-border bg-card p-5">
-              <h3 className="text-[14px] font-bold text-foreground mb-3">Performance Stats</h3>
-              {signalStats.total_signals === 0 ? (
-                <p className="text-[13px] text-muted-foreground text-center py-4">No signals posted yet. Member since {advisor.created_at ? new Date(advisor.created_at).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' }) : '—'}.</p>
-              ) : (
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-xl bg-muted p-3 text-center">
-                    <p className="text-2xl font-black text-foreground">{signalStats.total_signals}</p>
-                    <p className="text-[11px] text-muted-foreground">Total Signals</p>
-                  </div>
-                  <div className="rounded-xl bg-primary/5 p-3 text-center">
-                    <p className="text-2xl font-black text-primary">{winRate !== null ? `${winRate}%` : 'No closed signals yet'}</p>
-                    <p className="text-[11px] text-muted-foreground">Accuracy</p>
-                  </div>
-                  <div className="rounded-xl bg-primary/5 p-3 text-center">
-                    <p className="text-2xl font-black text-primary">{signalStats.win_count}</p>
-                    <p className="text-[11px] text-muted-foreground">Target Hit ✅</p>
-                  </div>
-                  <div className="rounded-xl bg-destructive/5 p-3 text-center">
-                    <p className="text-2xl font-black text-destructive">{signalStats.loss_count}</p>
-                    <p className="text-[11px] text-muted-foreground">SL Hit ❌</p>
-                  </div>
+              {/* Card 5: Performance Statistics */}
+              <div className="rounded-xl border border-gray-100 shadow-sm bg-white overflow-hidden">
+                <div className="bg-gray-50 px-5 py-4 border-b border-gray-100">
+                  <h3 className="text-sm font-bold text-foreground">Performance Statistics</h3>
                 </div>
-              )}
+                <div className="p-5">
+                  {signalStats.total_signals === 0 ? (
+                    <div className="text-center py-6">
+                      <p className="text-sm text-gray-600 font-medium">
+                        No signals posted yet
+                      </p>
+                      <p className="text-xs text-gray-600 mt-1">
+                        Member since {advisor.created_at ? new Date(advisor.created_at).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }) : '—'}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      {/* Total Signals */}
+                      <div className="rounded-lg bg-slate-50 p-4 text-center border border-gray-100">
+                        <p className="text-2xl font-bold text-foreground">{signalStats.total_signals}</p>
+                        <p className="text-xs text-gray-600 mt-1 font-medium">Total Signals</p>
+                      </div>
+
+                      {/* Accuracy Rate */}
+                      <div className="rounded-lg bg-green-50 p-4 text-center border border-green-100">
+                        <p className="text-2xl font-bold text-green-600">
+                          {winRate !== null ? `${winRate}%` : '—'}
+                        </p>
+                        <p className="text-xs text-gray-600 mt-1 font-medium">Accuracy</p>
+                      </div>
+
+                      {/* Target Hit */}
+                      <div className="rounded-lg bg-emerald-50 p-4 text-center border border-emerald-100">
+                        <p className="text-2xl font-bold text-emerald-600">{signalStats.win_count}</p>
+                        <p className="text-xs text-gray-600 mt-1 font-medium">Target Hit</p>
+                      </div>
+
+                      {/* SL Hit */}
+                      <div className="rounded-lg bg-red-50 p-4 text-center border border-red-100">
+                        <p className="text-2xl font-bold text-red-600">{signalStats.loss_count}</p>
+                        <p className="text-xs text-gray-600 mt-1 font-medium">SL Hit</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
 
-            {/* Groups list */}
+            {/* Card 6: Trading Groups */}
             {groups.length > 0 && (
-              <div className="rounded-2xl border border-border bg-card p-5">
-                <h3 className="text-[14px] font-bold text-foreground mb-3">Groups</h3>
-                <div className="space-y-3">
-                  {groups.map(g => {
+              <div className="rounded-xl border border-gray-100 shadow-sm bg-white overflow-hidden">
+                <div className="bg-gray-50 px-5 py-4 border-b border-gray-100">
+                  <h3 className="text-sm font-bold text-foreground">Official Trading Groups ({groups.length})</h3>
+                  <p className="text-xs text-gray-600 mt-1">Join to receive exclusive trading signals</p>
+                </div>
+                <div className="p-5 space-y-3">
+                  {groups.map((g, idx) => {
                     const access = groupAccessMap[g.id];
                     const isSub = access?.hasAccess || isOwner;
                     const expiry = access?.expiresAt ? getExpiryStatus(access.expiresAt) : null;
                     return (
-                      <div key={g.id} className="flex items-center justify-between rounded-xl border border-border bg-muted/50 p-3">
-                        <div>
-                          <p className="text-[14px] font-semibold text-foreground">{g.name}</p>
-                          <p className="text-[12px] text-muted-foreground">₹{g.monthly_price}/mo · {g.subCount} members</p>
-                          {expiry?.isExpired && (
-                            <p className="text-[11px] text-destructive font-medium mt-0.5">Subscription expired</p>
-                          )}
-                          {expiry?.isExpiringSoon && !expiry.isExpired && (
-                            <p className="text-[11px] text-[hsl(35,100%,35%)] font-medium mt-0.5">{expiry.message}</p>
-                          )}
+                      <div key={g.id} className="rounded-lg border border-border bg-gradient-to-r from-card to-muted/50 p-4 hover:border-primary/50 transition-colors">
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="inline-flex items-center justify-center h-6 w-6 rounded-full bg-primary/10 text-xs font-bold text-primary">
+                                {idx + 1}
+                              </span>
+                              <p className="text-base font-bold text-foreground truncate">{g.name}</p>
+                            </div>
+                            <p className="text-sm text-muted-foreground mt-1.5 ml-8">
+                              ₹<span className="font-bold text-foreground">{g.monthly_price}</span>/month <span className="mx-2">•</span> <span className="font-semibold text-foreground">{g.subCount}</span> active members
+                            </p>
+                            {g.description && (
+                              <p className="text-sm text-muted-foreground mt-2 ml-8 line-clamp-2">{g.description}</p>
+                            )}
+                            {expiry?.isExpired && (
+                              <p className="text-xs text-destructive font-semibold mt-2 ml-8">⚠️ Your subscription has expired</p>
+                            )}
+                            {expiry?.isExpiringSoon && !expiry.isExpired && (
+                              <p className="text-xs text-[hsl(35,100%,35%)] font-semibold mt-2 ml-8">📅 {expiry.message}</p>
+                            )}
+                          </div>
+                          <div className="flex-shrink-0">
+                            {isSub ? (
+                              <div className="flex items-center gap-2 rounded-lg bg-primary/10 px-3 py-2 text-xs font-bold text-primary">
+                                <CheckCircle className="h-4 w-4" />
+                                {isOwner ? 'Owner' : 'Subscribed'}
+                              </div>
+                            ) : (
+                              <Button 
+                                size="sm" 
+                                onClick={() => handleSubscribe(g)} 
+                                disabled={subscribing === g.id}
+                                className="rounded-lg font-bold whitespace-nowrap"
+                              >
+                                {subscribing === g.id ? 'Processing...' : access?.isExpired ? 'Renew Now' : 'Join Group'}
+                              </Button>
+                            )}
+                          </div>
                         </div>
-                        {isSub ? (
-                          <span className="flex items-center gap-1 text-[12px] font-semibold text-primary">
-                            <CheckCircle className="h-3.5 w-3.5" /> {isOwner ? 'Owner' : 'Subscribed'}
-                          </span>
-                        ) : (
-                          <Button size="sm" className="text-[12px] rounded-full h-8" onClick={() => handleSubscribe(g)} disabled={subscribing === g.id}>
-                            {access?.isExpired ? 'Renew' : 'Subscribe'}
-                          </Button>
-                        )}
                       </div>
                     );
                   })}
@@ -675,10 +767,12 @@ export default function AdvisorProfile() {
               </div>
             )}
 
-            {/* Disclaimer */}
-            <p className="text-[11px] text-center text-muted-foreground italic px-4 pb-4">
-              All advisors on TradeCircle are SEBI registered. SEBI does not endorse any advisor's performance. Past performance ≠ future results.
-            </p>
+            {/* Regulatory Disclaimer */}
+            <div className="rounded-lg border border-gray-100 bg-gray-50 p-4">
+              <p className="text-xs text-gray-600 text-center leading-relaxed">
+                <span className="font-semibold">Regulatory Disclaimer:</span> All advisors on TradeCircle are SEBI registered. SEBI does not endorse any advisor's performance statements. Past performance is not indicative of future results. Trading involves substantial risk of loss.
+              </p>
+            </div>
           </div>
         )}
       </div>

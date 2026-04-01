@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Shield, Users, BarChart2, ArrowRight } from 'lucide-react';
+import { Shield, Users, BarChart2, ArrowRight, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface GroupCardProps {
@@ -31,8 +31,8 @@ export function GroupCard({
 
   return (
     <Link to={`/advisor/${advisorId}`}>
-      <div className={`group overflow-hidden rounded-2xl border-[1.5px] bg-card shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 ${
-        hasHighAccuracy ? 'border-l-4 border-l-primary border-r-border border-t-border border-b-border' : 'border-border'
+      <div className={`group overflow-hidden rounded-2xl border-[1.5px] border-l-4 border-l-green-500 bg-card shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all ${
+        hasHighAccuracy ? 'border-green-500' : 'border-border'
       }`}>
         <div className={compact ? 'p-3.5' : 'p-4'}>
           {/* Header: Photo + Name + Price */}
@@ -44,11 +44,14 @@ export function GroupCard({
                 ) : toTitleCase(advisorName).charAt(0)}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-foreground text-sm truncate">{toTitleCase(advisorName)}</p>
+                <div className="flex items-center gap-1.5">
+                  <p className="font-bold text-foreground text-sm truncate">{toTitleCase(advisorName)}</p>
+                  <CheckCircle className="h-4 w-4 text-green-500 shrink-0" />
+                </div>
                 <p className="text-xs text-muted-foreground truncate">{groupName}</p>
               </div>
             </div>
-            <span className="shrink-0 text-lg font-extrabold text-primary whitespace-nowrap">
+            <span className="shrink-0 text-lg font-extrabold text-green-500 whitespace-nowrap">
               ₹{monthlyPrice}
             </span>
           </div>
@@ -67,7 +70,7 @@ export function GroupCard({
             </div>
             <div className={`rounded-lg p-2 text-center ${hasHighAccuracy ? 'bg-primary/10' : 'bg-muted'}`}>
               <p className={`text-xs font-bold ${hasHighAccuracy ? 'text-primary' : 'text-foreground'}`}>
-                {accuracy !== null ? `${accuracy}%` : '—'}
+                {accuracy !== null ? `${accuracy}%` : <span className="text-gray-400">New</span>}
               </p>
               <p className={`text-[10px] ${hasHighAccuracy ? 'text-primary' : 'text-muted-foreground'}`}>Accuracy</p>
             </div>

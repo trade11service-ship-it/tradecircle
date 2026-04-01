@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { GroupCard } from '@/components/GroupCard';
 import { Button } from '@/components/ui/button';
-import { Shield, ShieldCheck, ArrowRight, BarChart2, Bell, CreditCard, Search, Users, CheckCircle } from 'lucide-react';
+import { Shield, ShieldCheck, ArrowRight, BarChart2, Bell, CreditCard, Search, Users, CheckCircle, Unlock, Rss } from 'lucide-react';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { useAuth } from '@/lib/auth';
 import { PublicMixedFeed } from "@/components/PublicMixedFeed";
@@ -78,48 +78,82 @@ export default function Landing() {
     setFeaturedAdvisors((data || []) as FeaturedAdvisor[]);
   };
 
+  const getValidBio = (tagline: string | null, description: string | null): string => {
+    const text = tagline || description || '';
+    
+    // Check if bio is less than 50 characters
+    if (text.length < 50) {
+      return 'SEBI registered Research Analyst. Specialises in F&O and intraday strategies.';
+    }
+    
+    // Check for poor patterns
+    const lowerText = text.toLowerCase();
+    const badPatterns = ['we r', 'r the', 'dvisor', 'experince', 'yars', 'registerd'];
+    const hasBadPattern = badPatterns.some(pattern => lowerText.includes(pattern));
+    const isAllLowercaseNoPunct = /^[a-z\s]+$/.test(text);
+    
+    if (hasBadPattern || isAllLowercaseNoPunct) {
+      return 'SEBI registered Research Analyst. Specialises in F&O and intraday strategies.';
+    }
+    
+    return text;
+  };
+
+  const navigate = useNavigate();
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      {/* HERO — Dark navy */}
+      {/* HERO — Dark navy with enhanced gradient */}
       <section className="relative overflow-hidden" style={{ background: 'linear-gradient(135deg, hsl(240,25%,14%) 0%, hsl(214,89%,20%) 100%)' }}>
-        <div className="absolute inset-0 opacity-20" style={{ background: 'radial-gradient(circle at 30% 20%, hsl(123,56%,24%) 0%, transparent 50%)' }} />
+        <div className="absolute inset-0 opacity-30" style={{ background: 'radial-gradient(circle at 50% 50%, hsl(123,56%,28%) 0%, transparent 60%)' }} />
         <div className="container relative mx-auto max-w-xl px-5 pt-12 pb-14 md:pt-20 md:pb-20 text-center">
           <div className="inline-flex items-center gap-2 rounded-full border border-primary/40 px-4 py-1.5 text-[12px] font-semibold text-primary" style={{ background: 'hsla(123,56%,24%,0.15)' }}>
             <Shield className="h-3.5 w-3.5" /> SEBI Verified Advisors Only
           </div>
           <h1 className="mt-5 text-[28px] md:text-[38px] font-extrabold leading-[1.15] tracking-tight text-white">
-            India's Most Trusted<br />
-            <span className="text-primary">Trading Advisory</span> Platform
+            India's First<br />
+            <span className="text-primary">SEBI-Only Trading</span> Marketplace
           </h1>
           <p className="mx-auto mt-4 max-w-sm text-[15px] leading-relaxed text-white/60">
-            Every advisor is manually verified by our team. Browse track records, subscribe, and get signals on Telegram.
+            Every advisor is SEBI-registered and manually verified. Browse real track records, subscribe, and get signals instantly on Telegram.
           </p>
           <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-center">
             <Link to="/discover">
-              <Button className="w-full sm:w-auto h-12 px-8 rounded-xl bg-primary text-[15px] font-bold shadow-[0_4px_16px_rgba(27,94,32,0.4)] hover:bg-primary/90 tc-btn-click">
+              <Button className="w-full sm:w-auto h-14 px-10 rounded-full bg-primary text-[15px] font-bold shadow-[0_4px_16px_rgba(27,94,32,0.4)] hover:bg-primary/90 hover:scale-[1.02] transition-all duration-200 tc-btn-click">
                 Browse Advisors <ArrowRight className="ml-1.5 h-4 w-4" />
               </Button>
             </Link>
             <Link to="/advisor-register">
-              <Button variant="outline" className="w-full sm:w-auto h-12 px-8 rounded-xl border-2 border-white/20 text-white text-[15px] font-semibold hover:bg-white/10 bg-transparent">
+              <Button variant="outline" className="w-full sm:w-auto h-14 px-10 rounded-full border-2 border-white/20 text-white text-[15px] font-semibold hover:bg-white/10 hover:scale-[1.02] transition-all duration-200 bg-transparent">
                 Join as Advisor
               </Button>
             </Link>
           </div>
-          {/* Stats */}
-          <div className="mt-8 flex items-center justify-center gap-6 md:gap-10">
-            {[
-              { val: '100%', label: 'SEBI Verified' },
-              { val: '₹0', label: 'Listing Fee' },
-              { val: 'No Lock-in', label: 'Cancel Anytime' },
-            ].map((s, i) => (
-              <div key={i} className="text-center">
-                <p className="text-xl md:text-2xl font-extrabold text-white">{s.val}</p>
-                <p className="text-[11px] text-white/40 mt-0.5">{s.label}</p>
+          {/* Stats with icons and green top borders */}
+          <div className="mt-10 grid grid-cols-3 gap-4 md:gap-6 max-w-md mx-auto">
+            <div className="rounded-xl border-t-4 border-t-green-500 bg-white/5 backdrop-blur-sm border border-white/10 p-4 text-center">
+              <div className="flex justify-center mb-2">
+                <ShieldCheck className="h-5 w-5 text-green-500" />
               </div>
-            ))}
+              <p className="text-lg md:text-xl font-extrabold text-white">100%</p>
+              <p className="text-[11px] text-white/60 mt-1">SEBI Verified</p>
+            </div>
+            <div className="rounded-xl border-t-4 border-t-green-500 bg-white/5 backdrop-blur-sm border border-white/10 p-4 text-center">
+              <div className="flex justify-center mb-2">
+                <span className="text-lg font-bold text-green-500">₹</span>
+              </div>
+              <p className="text-lg md:text-xl font-extrabold text-white">₹0</p>
+              <p className="text-[11px] text-white/60 mt-1">Listing Fee</p>
+            </div>
+            <div className="rounded-xl border-t-4 border-t-green-500 bg-white/5 backdrop-blur-sm border border-white/10 p-4 text-center">
+              <div className="flex justify-center mb-2">
+                <span className="text-lg">🔓</span>
+              </div>
+              <p className="text-lg md:text-xl font-extrabold text-white">No Lock-in</p>
+              <p className="text-[11px] text-white/60 mt-1">Cancel Anytime</p>
+            </div>
           </div>
         </div>
       </section>
@@ -141,7 +175,7 @@ export default function Landing() {
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-6">
             <div>
               <p className="text-[11px] font-bold text-primary uppercase tracking-[2px]">TOP ADVISORS</p>
-              <h2 className="mt-1 text-2xl font-extrabold text-foreground tracking-tight">Browse Verified Advisors</h2>
+              <h2 className="mt-1 text-2xl font-extrabold text-foreground tracking-tight">Find Your SEBI Advisor</h2>
               <p className="mt-1 text-sm text-muted-foreground">SEBI verified · Transparent track records · No login required</p>
             </div>
             <Link to="/discover">
@@ -191,13 +225,13 @@ export default function Landing() {
           </div>
           <div className="grid gap-4 md:grid-cols-3">
             {[
-              { num: '1', icon: Search, title: 'Browse Advisors', desc: 'Filter by strategy, check signal history & SEBI credentials.' },
-              { num: '2', icon: CreditCard, title: 'Subscribe', desc: 'Choose your advisor group. Pay securely via Razorpay.' },
-              { num: '3', icon: Bell, title: 'Get Signals', desc: 'Receive trade alerts on Telegram and in your app feed.' },
+              { num: '1', icon: Search, title: 'Browse Advisors', desc: 'Filter by strategy, check signal history & SEBI credentials. No account needed.' },
+              { num: '2', icon: CreditCard, title: 'Subscribe', desc: 'Choose your advisor group. Pay securely via Razorpay. Monthly. Cancel anytime.' },
+              { num: '3', icon: Bell, title: 'Get Signals', desc: 'Real-time alerts on Telegram. Every signal permanently timestamped. Cannot be deleted or faked.' },
             ].map(step => (
-              <div key={step.num} className="rounded-xl border border-border bg-background p-5 text-center">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-lg font-extrabold text-primary mb-3">{step.num}</div>
-                <step.icon className="mx-auto h-6 w-6 text-primary mb-2" />
+              <div key={step.num} className="relative rounded-xl border border-green-500/30 border-l-4 border-l-green-500 bg-green-50 p-5 text-center dark:bg-green-950/20 dark:border-green-500/50">
+                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-500 text-lg font-extrabold text-white mb-3">{step.num}</div>
+                <step.icon className="mx-auto h-6 w-6 text-green-500 mb-2" />
                 <h3 className="text-[15px] font-bold text-foreground">{step.title}</h3>
                 <p className="mt-1 text-[13px] text-muted-foreground">{step.desc}</p>
               </div>
@@ -212,7 +246,7 @@ export default function Landing() {
           <div className="text-center mb-6">
             <p className="text-[11px] font-bold text-primary uppercase tracking-[2px]">PUBLIC FEED</p>
             <h2 className="mt-1 text-2xl font-extrabold text-foreground tracking-tight">Analysis + Signals Preview</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Browse recent posts from verified advisors. Signals unlock after the preview.</p>
+            <p className="mt-1 text-sm text-muted-foreground">Analysis is always free. Subscribe to unlock real-time trading signals from verified advisors.</p>
           </div>
 
           <div className="rounded-2xl border border-border bg-card p-3 md:p-4">
@@ -234,9 +268,9 @@ export default function Landing() {
         <div className="container mx-auto">
           <div className="mb-6 flex items-end justify-between">
             <div>
-              <p className="text-[11px] font-bold text-primary uppercase tracking-[2px]">ADVISOR FRAMES</p>
-              <h2 className="mt-1 text-2xl font-extrabold text-foreground tracking-tight">Meet Our Listed Advisors</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Quick profile cards. Tap any frame for full bio, details, and all groups.</p>
+              <p className="text-[11px] font-bold text-primary uppercase tracking-[2px]">FEATURED ADVISORS</p>
+              <h2 className="mt-1 text-2xl font-extrabold text-foreground tracking-tight">Advisors on TradeCircle</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Tap any card to see full track record, signals, and subscription details.</p>
             </div>
             <Link to="/discover">
               <Button variant="outline" className="hidden sm:inline-flex">View all</Button>
@@ -250,7 +284,7 @@ export default function Landing() {
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {featuredAdvisors.map((a) => (
-                <Link key={a.id} to={`/advisor/${a.id}`} className="group">
+                <div key={a.id} onClick={() => navigate(`/advisor/${a.id}`)} className="group cursor-pointer">
                   <div className="h-full rounded-2xl border border-border bg-background p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
                     <div className="mb-3 flex items-center gap-3">
                       <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-primary to-secondary text-lg font-bold text-primary-foreground">
@@ -266,7 +300,7 @@ export default function Landing() {
                       </div>
                     </div>
                     <p className="line-clamp-2 text-xs text-muted-foreground">
-                      {a.public_tagline || a.public_description || 'SEBI verified advisor on TradeCircle.'}
+                      {getValidBio(a.public_tagline, a.public_description)}
                     </p>
                     <div className="mt-3 flex items-center justify-between text-[11px]">
                       <span className="rounded-full bg-primary/10 px-2 py-0.5 font-semibold text-primary">
@@ -274,11 +308,9 @@ export default function Landing() {
                       </span>
                       <span className="font-semibold text-foreground group-hover:text-primary">Full profile →</span>
                     </div>
-                    <Button variant="outline" size="sm" className="mt-3 h-8 w-full text-xs group-hover:border-primary group-hover:text-primary">
-                      Show Full Version
-                    </Button>
+
                   </div>
-                </Link>
+                </div>
               ))}
             </div>
           )}
@@ -296,7 +328,7 @@ export default function Landing() {
             {[
               { icon: Shield, title: 'SEBI Verified Only', desc: 'Every advisor manually checked.' },
               { icon: BarChart2, title: 'Full Track Record', desc: 'WIN/LOSS history always public.' },
-              { icon: Bell, title: 'Telegram Alerts', desc: 'Signals delivered instantly.' },
+              { icon: Bell, title: 'Telegram Alerts', desc: 'Real-time signals with blockchain timestamps. Tamper-proof forever.' },
               { icon: CheckCircle, title: 'Cancel Anytime', desc: 'Monthly. No lock-in period.' },
             ].map((f, i) => (
               <div key={i} className="rounded-xl border border-border bg-card p-4">
@@ -309,56 +341,48 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* TESTIMONIALS / SOCIAL PROOF */}
-      <section className="bg-background px-5 py-12 md:py-16 border-t border-border">
+      {/* WHY CHOOSE TRADECIRCLE STATS */}
+      <section className="bg-gray-50 dark:bg-gray-900/20 px-5 py-12 md:py-16 border-t border-border">
         <div className="container mx-auto max-w-3xl">
           <div className="text-center mb-8">
-            <p className="text-[11px] font-bold text-primary uppercase tracking-[2px]">TRUSTED BY TRADERS</p>
-            <h2 className="mt-1 text-2xl font-extrabold text-foreground tracking-tight">Real Feedback from Real Traders</h2>
+            <p className="text-[11px] font-bold text-primary uppercase tracking-[2px]">WHY TRADERS CHOOSE TRADECIRCLE</p>
+            <h2 className="mt-1 text-2xl font-extrabold text-foreground tracking-tight">Built with Transparency in Mind</h2>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {[
               {
-                name: 'Rajiv M.',
-                text: 'Finally found a platform where I can verify advisors properly. The SEBI registration check saved me from fake tips on Telegram.',
-                rating: 5,
+                icon: '₹',
+                iconBg: 'bg-green-50',
+                title: '₹0 Listing Fee',
+                desc: 'Advisors pay nothing to list. They only earn when traders subscribe.',
               },
               {
-                name: 'Priya S.',
-                text: 'Love the track record transparency. I can see exactly how accurate each advisor is before subscribing.',
-                rating: 5,
+                icon: '🛡️',
+                iconBg: 'bg-blue-50',
+                title: '100% SEBI Verified',
+                desc: 'Every advisor manually checked on sebi.gov.in before approval.',
               },
               {
-                name: 'Amit K.',
-                text: 'Cancel anytime is a game changer. No more worrying about locked-in subscriptions. Great platform!',
-                rating: 5,
+                icon: '⛓️',
+                iconBg: 'bg-purple-50',
+                title: 'Tamper-Proof Records',
+                desc: 'Blockchain-timestamped signals. Track records permanently immutable.',
               },
               {
-                name: 'Neha P.',
-                text: 'The Telegram signal delivery is instant and reliable. Got into my first intraday trade within seconds.',
-                rating: 5,
+                icon: '✓',
+                iconBg: 'bg-teal-50',
+                title: 'Cancel Anytime',
+                desc: 'Monthly subscriptions. No lock-in. Full refund on cancellation.',
               },
-            ].map((testimonial, idx) => (
-              <div key={idx} className="rounded-xl border border-border bg-card p-6">
-                <div className="flex gap-1 mb-3">
-                  {Array.from({ length: testimonial.rating }).map((_, i) => (
-                    <span key={i} className="text-lg">⭐</span>
-                  ))}
+            ].map((stat, idx) => (
+              <div key={idx} className="rounded-xl border border-gray-100 dark:border-gray-700 bg-card shadow-sm p-6 text-center hover:shadow-md hover:border-gray-200 transition-all">
+                <div className={`${stat.iconBg} dark:bg-gray-800 w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-3 text-lg font-bold`}>
+                  {stat.icon}
                 </div>
-                <p className="text-[14px] text-muted-foreground italic mb-4">
-                  "{testimonial.text}"
-                </p>
-                <p className="text-[13px] font-semibold text-foreground">
-                  — {testimonial.name}
-                </p>
+                <h3 className="text-[15px] font-bold text-foreground">{stat.title}</h3>
+                <p className="text-[13px] text-muted-foreground mt-2">{stat.desc}</p>
               </div>
             ))}
-          </div>
-          <div className="mt-8 text-center">
-            <p className="text-[13px] text-muted-foreground">
-              <span className="font-bold text-foreground">100K+</span> active traders • 
-              <span className="font-bold text-foreground ml-1">4.8★</span> platform rating
-            </p>
           </div>
         </div>
       </section>
@@ -368,18 +392,18 @@ export default function Landing() {
         <div className="container mx-auto max-w-2xl">
           <div className="text-center mb-6">
             <p className="text-[11px] font-bold text-primary uppercase tracking-[2px]">FAQ</p>
-            <h2 className="mt-1 text-2xl font-extrabold text-foreground tracking-tight">Common Questions</h2>
+            <h2 className="mt-1 text-2xl font-extrabold text-foreground tracking-tight">Frequently Asked Questions</h2>
           </div>
           <div className="rounded-xl border border-border bg-background overflow-hidden">
             <Accordion type="single" collapsible defaultValue="faq-0">
               {[
-                { q: 'Is TradeCircle a SEBI registered advisor?', a: "No — TradeCircle is a technology marketplace operated by STREZONIC PRIVATE LIMITED. We verify SEBI-registered advisors but don't give any advice ourselves." },
-                { q: 'How do you verify advisors?', a: "Every advisor submits their SEBI registration number, Aadhaar, PAN, and documents. Our team manually checks their license on SEBI's official database." },
-                { q: 'Can I cancel my subscription?', a: 'Yes. Cancel anytime. Your subscription stays active until the end of the billing period.' },
-                { q: 'How do I receive signals?', a: 'Signals are delivered via Telegram bot directly to your personal Telegram. You also see them in your app feed.' },
-                { q: 'What if an advisor gives bad advice?', a: 'Each advisor is independently SEBI registered. TradeCircle provides track record transparency so you can make informed decisions.' },
+                { q: 'Is TradeCircle a SEBI registered advisor?', a: "No. TradeCircle is a technology marketplace by STREZONIC PRIVATE LIMITED. We verify SEBI-registered advisors but do not give investment advice ourselves." },
+                { q: 'How do you verify advisors?', a: "We manually check each advisor's SEBI registration number on sebi.gov.in before approval. Unverified advisors are never listed." },
+                { q: 'Can I cancel my subscription?', a: 'Yes. Cancel anytime from your profile. Monthly billing, no lock-in, no questions asked.' },
+                { q: 'How do I receive signals?', a: 'After subscribing, you will be added to the advisor\'s private Telegram group. All signals arrive instantly with entry, target, and stop loss.' },
+                { q: 'What if an advisor gives bad advice?', a: 'All advisors are SEBI-registered and individually accountable. You can file a complaint on SEBI SCORES at scores.gov.in anytime.' },
               ].map((faq, i) => (
-                <AccordionItem key={i} value={`faq-${i}`} className="border-b border-border last:border-0">
+                <AccordionItem key={i} value={`faq-${i}`} className="border-b border-border last:border-0 hover:bg-gray-50">
                   <AccordionTrigger className="px-5 py-4 text-[14px] font-semibold text-foreground hover:text-primary transition-colors">{faq.q}</AccordionTrigger>
                   <AccordionContent className="px-5 pb-4 text-[13px] text-muted-foreground leading-relaxed">{faq.a}</AccordionContent>
                 </AccordionItem>
@@ -390,26 +414,30 @@ export default function Landing() {
       </section>
 
       {/* CTA */}
-      <section className="bg-background px-5 py-12">
+      <section className="px-5 py-12" style={{ background: 'linear-gradient(135deg, hsl(240,25%,14%) 0%, hsl(214,89%,20%) 100%)' }}>
         <div className="container mx-auto max-w-md text-center">
-          <div className="rounded-2xl p-8" style={{ background: 'linear-gradient(135deg, hsl(120,52%,93%), hsl(213,100%,94%))' }}>
-            <p className="text-xl font-extrabold text-foreground">Start following verified advisors today</p>
-            <p className="mt-2 text-sm text-muted-foreground">Browse groups, check track records, subscribe with confidence.</p>
+          <div className="rounded-2xl p-8 bg-transparent">
+            <p className="text-xl font-extrabold text-white">Stop Following Fake Telegram Tips.</p>
+            <p className="mt-2 text-sm text-white/70">Every advisor on TradeCircle is SEBI registered, manually verified, and has a public tamper-proof track record.</p>
             <Link to="/discover">
-              <Button className="mt-5 h-12 px-8 rounded-xl bg-primary text-[15px] font-bold tc-btn-click">
-                Explore Advisors <ArrowRight className="ml-1 h-4 w-4" />
+              <Button className="mt-5 h-12 px-8 rounded-full bg-white text-primary font-bold hover:bg-white/90 hover:scale-[1.02] transition-all duration-200 tc-btn-click">
+                Browse Verified Advisors <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
             </Link>
           </div>
         </div>
       </section>
 
-      {/* SEBI Disclaimer bar */}
-      <div className="border-t bg-card px-4 py-3 text-center">
-        <p className="text-[11px] text-muted-foreground">
-          <Shield className="inline h-3 w-3 text-primary mr-1" />
-          All advisors on TradeCircle are SEBI registered. SEBI does not endorse any advisor's performance.
-        </p>
+      {/* SEBI Disclaimer box */}
+      <div className="border-t bg-card px-5 py-6 text-center">
+        <div className="container mx-auto max-w-2xl">
+          <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/20 px-4 py-3">
+            <p className="text-[11px] text-muted-foreground">
+              <Shield className="inline h-3 w-3 text-primary mr-1" />
+              All advisors on TradeCircle are SEBI registered. SEBI does not endorse any advisor's performance.
+            </p>
+          </div>
+        </div>
       </div>
 
       <Footer />

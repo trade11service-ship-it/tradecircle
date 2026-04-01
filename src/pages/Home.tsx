@@ -23,6 +23,17 @@ type FeedItem = {
   advisor_id: string;
 };
 
+type FeaturedAdvisor = {
+  id: string;
+  full_name: string;
+  profile_photo_url: string | null;
+  strategy_type: string | null;
+  sebi_reg_no: string;
+  public_tagline: string | null;
+  public_description: string | null;
+  public_years_experience: number | null;
+};
+
 export default function Home() {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
@@ -31,6 +42,7 @@ export default function Home() {
   const [groupNames, setGroupNames] = useState<Record<string, string>>({});
   const [advisorNames, setAdvisorNames] = useState<Record<string, string>>({});
   const [advisorPhotos, setAdvisorPhotos] = useState<Record<string, string>>({});
+  const [featuredAdvisors, setFeaturedAdvisors] = useState<FeaturedAdvisor[]>([]);
 
   // Set meta tags
   useEffect(() => {
@@ -43,6 +55,7 @@ export default function Home() {
     } else {
       setLoading(false);
     }
+    fetchFeaturedAdvisors();
   }, [user]);
 
   const fetchFeed = async () => {
@@ -84,6 +97,16 @@ export default function Home() {
     setAdvisorNames(Object.fromEntries((advisors || []).map((a) => [a.id, a.full_name])));
     setAdvisorPhotos(Object.fromEntries((advisors || []).map((a) => [a.id, a.profile_photo_url || ""])));
     setLoading(false);
+  };
+
+  const fetchFeaturedAdvisors = async () => {
+    const { data } = await (supabase.from('advisors') as any)
+      .select('id, full_name, profile_photo_url, strategy_type, sebi_reg_no, public_tagline, public_description, public_years_experience, is_public_featured, public_sort_order')
+      .eq('status', 'approved')
+      .eq('is_public_featured', true)
+      .order('public_sort_order', { ascending: true })
+      .limit(2);
+    setFeaturedAdvisors((data || []) as FeaturedAdvisor[]);
   };
 
   const greeting = useMemo(() => {
@@ -163,6 +186,23 @@ export default function Home() {
             </Link>
           </div>
         </div>
+
+        {/* Featured Advisors Section - Link to Listed Advisors Page */}
+        {featuredAdvisors.length > 0 && (
+          <div className="mb-4 rounded-2xl border border-border bg-card p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-bold text-foreground">Listed Advisors</h2>
+                <p className="text-xs text-muted-foreground mt-1">Explore our featured SEBI verified advisors</p>
+              </div>
+              <Link to="/listed-advisors">
+                <Button className="gap-2 bg-primary hover:bg-primary/90">
+                  View All Advisors <ArrowRight size={16} />
+                </Button>
+              </Link>
+            </div>
+          </div>
+        )}
 
         <div className="rounded-2xl border border-border bg-[hsl(var(--chat-bg))] p-3">
           {loading ? (

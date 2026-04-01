@@ -31,6 +31,7 @@ import Contact from "./pages/Contact";
 import Notifications from "./pages/Notifications";
 import Subscriptions from "./pages/Subscriptions";
 import Explore from "./pages/Explore";
+import ListedAdvisors from "./pages/ListedAdvisors";
 import { useAuth } from "@/lib/auth";
 
 const queryClient = new QueryClient();
@@ -61,6 +62,7 @@ const App = () => (
               <Route path="/" element={<Landing />} />
               <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
               <Route path="/discover" element={<Discover />} />
+              <Route path="/listed-advisors" element={<ListedAdvisors />} />
               <Route path="/groups" element={<Discover />} />
               <Route path="/explore" element={<Explore />} />
               <Route path="/about" element={<About />} />
