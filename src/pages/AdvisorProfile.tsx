@@ -626,7 +626,7 @@ export default function AdvisorProfile() {
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Experience</p>
                     <p className="text-lg font-bold text-foreground mt-1">
-                      {advisor.public_years_experience ? `${advisor.public_years_experience}+ Years` : 'SEBI Verified Advisor'}
+                      {(advisor as any).public_years_experience ? `${(advisor as any).public_years_experience}+ Years` : 'SEBI Verified Advisor'}
                     </p>
                     <p className="text-xs text-gray-600 mt-1">Trading & Market Analysis</p>
                   </div>
