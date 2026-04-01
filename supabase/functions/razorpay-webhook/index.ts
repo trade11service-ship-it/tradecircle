@@ -91,6 +91,6 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), { status: 405, headers: corsHeaders });
   } catch (error) {
     console.error('Webhook error:', error);
-    return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
+    return new Response(JSON.stringify({ error: (error as Error).message }), { status: 500, headers: corsHeaders });
   }
 });

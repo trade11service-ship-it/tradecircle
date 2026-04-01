@@ -347,10 +347,10 @@ export default function AdvisorProfile() {
 
             {/* Row 4: Info pills (horizontal scroll) */}
             <div className="mb-6 flex gap-3 overflow-x-auto pb-2">
-              {advisor.public_years_experience && (
+              {(advisor as any).public_years_experience && (
                 <div className="flex items-center gap-2 rounded-full bg-blue-50 px-4 py-2 whitespace-nowrap border border-blue-100 shrink-0">
                   <TrendingUp className="h-4 w-4 text-blue-600 flex-shrink-0" />
-                  <span className="text-sm font-semibold text-blue-900">{advisor.public_years_experience}+ Years</span>
+                  <span className="text-sm font-semibold text-blue-900">{(advisor as any).public_years_experience}+ Years</span>
                 </div>
               )}
               {advisor.strategy_type && (
@@ -626,7 +626,7 @@ export default function AdvisorProfile() {
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1">Experience</p>
                     <p className="text-lg font-bold text-foreground mt-1">
-                      {advisor.public_years_experience ? `${advisor.public_years_experience}+ Years` : 'SEBI Verified Advisor'}
+                      {(advisor as any).public_years_experience ? `${(advisor as any).public_years_experience}+ Years` : 'SEBI Verified Advisor'}
                     </p>
                     <p className="text-xs text-gray-600 mt-1">Trading & Market Analysis</p>
                   </div>

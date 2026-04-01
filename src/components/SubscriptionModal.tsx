@@ -115,7 +115,7 @@ export function SubscriptionModal({
               <Checkbox
                 id="consent"
                 checked={consented}
-                onCheckedChange={setConsented}
+                onCheckedChange={(checked) => setConsented(checked === true)}
                 disabled={isLoading}
                 className="mt-1"
               />
