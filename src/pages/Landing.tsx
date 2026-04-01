@@ -272,7 +272,7 @@ export default function Landing() {
               <h2 className="mt-1 text-2xl font-extrabold text-foreground tracking-tight">Advisors on TradeCircle</h2>
               <p className="mt-1 text-sm text-muted-foreground">Tap any card to see full track record, signals, and subscription details.</p>
             </div>
-            <Link to="/discover">
+            <Link to="/featured-advisors">
               <Button variant="outline" className="hidden sm:inline-flex">View all</Button>
             </Link>
           </div>
