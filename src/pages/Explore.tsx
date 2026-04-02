@@ -17,7 +17,7 @@ export default function Explore() {
         {/* Hero Section */}
         <div className="mb-12 text-center max-w-2xl mx-auto">
           <h1 className="text-3xl md:text-4xl font-extrabold text-foreground tracking-tight mb-4">
-            Free Trading Insights
+            Public Feed
           </h1>
           <p className="text-lg text-muted-foreground mb-6">
             Discover public analysis and insights from SEBI verified trading advisors. Follow advisors to get their latest free posts directly in your feed.
