@@ -827,6 +827,17 @@ export default function AdvisorProfile() {
   );
 }
 
+function formatSmartDateGroup(dateStr: string): string {
+  const d = new Date(dateStr);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today.getTime() - 86400000);
+  const dateOnly = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  if (dateOnly.getTime() === today.getTime()) return 'TODAY';
+  if (dateOnly.getTime() === yesterday.getTime()) return 'YESTERDAY';
+  return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: d.getFullYear() !== now.getFullYear() ? 'numeric' : undefined }).toUpperCase();
+}
+
 function formatSmartDate(dateStr: string): string {
   const d = new Date(dateStr);
   const now = new Date();
