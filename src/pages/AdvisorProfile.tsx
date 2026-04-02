@@ -539,7 +539,7 @@ export default function AdvisorProfile() {
                   // Group signals by date
                   const dateGroups: { label: string; items: Signal[] }[] = [];
                   filteredSignals.forEach(s => {
-                    const label = s.created_at ? formatSmartDateLabel(s.created_at) : 'Unknown';
+                    const label = s.created_at ? formatSmartDateGroup(s.created_at) : 'Unknown';
                     const last = dateGroups[dateGroups.length - 1];
                     if (last && last.label === label) last.items.push(s);
                     else dateGroups.push({ label, items: [s] });
