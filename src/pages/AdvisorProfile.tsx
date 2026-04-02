@@ -525,7 +525,7 @@ export default function AdvisorProfile() {
               ))}
             </div>
 
-            {/* Signal cards */}
+            {/* Signal cards grouped by date */}
             {filteredSignals.length === 0 ? (
               <div className="py-12 text-center">
                 <BarChart3 className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
@@ -534,63 +534,81 @@ export default function AdvisorProfile() {
                 </p>
               </div>
             ) : (
-              <div className="space-y-2">
-                {filteredSignals.map(s => {
-                  const isBuy = s.signal_type === 'BUY';
-                  const resultStatus = (s.result === 'WIN' || s.result === 'TARGET_HIT') ? 'win'
-                    : (s.result === 'LOSS' || s.result === 'SL_HIT') ? 'loss' : 'pending';
-                  const borderColor = resultStatus === 'win' ? 'border-l-primary' : resultStatus === 'loss' ? 'border-l-destructive' : 'border-l-[hsl(45,100%,51%)]';
-
-                  // Check if signal should be visible to non-subscriber
-                  const isSubToGroup = groupAccessMap[s.group_id]?.hasAccess || isOwner;
-                  const shouldBlurSignal = !isSubToGroup && s.post_type === 'signal';
-
-                  return (
-                    <div key={s.id} className={`rounded-xl border border-border bg-card p-3 pl-4 border-l-[3px] ${borderColor} relative group`}>
-                      {/* Blur overlay for locked signals */}
-                      {shouldBlurSignal && (
-                        <div className="absolute inset-0 rounded-xl bg-muted/80 backdrop-blur-[8px] flex items-center justify-center z-10 group-hover:bg-muted/90 transition-all">
-                          <div className="text-center">
-                            <Lock className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
-                            <p className="text-[12px] font-semibold text-foreground">Subscribe to unlock</p>
-                          </div>
-                        </div>
-                      )}
-                      
-                      <div className={`flex items-center justify-between ${shouldBlurSignal ? 'blur-[3px] select-none' : ''}`}>
-                        <span className="text-[15px] font-bold text-foreground">{s.instrument}</span>
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${isBuy ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive'}`}>
-                          {isBuy ? '🟢' : '🔴'} {s.signal_type}
+              <div className="space-y-1">
+                {(() => {
+                  // Group signals by date
+                  const dateGroups: { label: string; items: Signal[] }[] = [];
+                  filteredSignals.forEach(s => {
+                    const label = s.created_at ? formatSmartDateLabel(s.created_at) : 'Unknown';
+                    const last = dateGroups[dateGroups.length - 1];
+                    if (last && last.label === label) last.items.push(s);
+                    else dateGroups.push({ label, items: [s] });
+                  });
+                  return dateGroups.map((dg, dgi) => (
+                    <div key={dgi}>
+                      <div className="flex justify-center my-3">
+                        <span className="rounded-lg bg-muted px-3 py-1 text-[11px] font-medium text-muted-foreground shadow-sm border border-border">
+                          {dg.label}
                         </span>
                       </div>
-                      <div className={`mt-1.5 flex gap-4 text-[12px] ${shouldBlurSignal ? 'blur-[3px] select-none' : ''}`}>
-                        <span className="text-muted-foreground">Entry <span className="font-bold text-foreground">₹{Number(s.entry_price).toLocaleString('en-IN')}</span></span>
-                        <span className="text-muted-foreground">Target <span className="font-bold text-primary">₹{Number(s.target_price).toLocaleString('en-IN')}</span></span>
-                        <span className="text-muted-foreground">SL <span className="font-bold text-destructive">₹{Number(s.stop_loss).toLocaleString('en-IN')}</span></span>
+                      <div className="space-y-2">
+                        {dg.items.map(s => {
+                          const isBuy = s.signal_type === 'BUY';
+                          const resultStatus = (s.result === 'WIN' || s.result === 'TARGET_HIT') ? 'win'
+                            : (s.result === 'LOSS' || s.result === 'SL_HIT') ? 'loss' : 'pending';
+                          const borderColor = resultStatus === 'win' ? 'border-l-primary' : resultStatus === 'loss' ? 'border-l-destructive' : 'border-l-[hsl(45,100%,51%)]';
+
+                          const isSubToGroup = groupAccessMap[s.group_id]?.hasAccess || isOwner;
+                          const shouldBlurSignal = !isSubToGroup && s.post_type === 'signal';
+
+                          return (
+                            <div key={s.id} className={`rounded-xl border border-border bg-card p-3 pl-4 border-l-[3px] ${borderColor} relative group`}>
+                              {shouldBlurSignal && (
+                                <div className="absolute inset-0 rounded-xl bg-muted/80 backdrop-blur-[8px] flex items-center justify-center z-10 group-hover:bg-muted/90 transition-all">
+                                  <div className="text-center">
+                                    <Lock className="h-6 w-6 text-muted-foreground mx-auto mb-2" />
+                                    <p className="text-[12px] font-semibold text-foreground">Subscribe to unlock</p>
+                                  </div>
+                                </div>
+                              )}
+                              <div className={`flex items-center justify-between ${shouldBlurSignal ? 'blur-[3px] select-none' : ''}`}>
+                                <span className="text-[15px] font-bold text-foreground">{s.instrument}</span>
+                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${isBuy ? 'bg-primary/10 text-primary' : 'bg-destructive/10 text-destructive'}`}>
+                                  {isBuy ? '🟢' : '🔴'} {s.signal_type}
+                                </span>
+                              </div>
+                              <div className={`mt-1.5 flex gap-4 text-[12px] ${shouldBlurSignal ? 'blur-[3px] select-none' : ''}`}>
+                                <span className="text-muted-foreground">Entry <span className="font-bold text-foreground">₹{Number(s.entry_price).toLocaleString('en-IN')}</span></span>
+                                <span className="text-muted-foreground">Target <span className="font-bold text-primary">₹{Number(s.target_price).toLocaleString('en-IN')}</span></span>
+                                <span className="text-muted-foreground">SL <span className="font-bold text-destructive">₹{Number(s.stop_loss).toLocaleString('en-IN')}</span></span>
+                              </div>
+                              <div className={`mt-2 flex items-center justify-between ${shouldBlurSignal ? 'blur-[3px]' : ''}`}>
+                                <div className="flex items-center gap-2">
+                                  {s.timeframe && <span className="text-[10px] rounded-full bg-muted px-2 py-0.5 text-muted-foreground">{s.timeframe}</span>}
+                                  <span className="text-[10px] text-muted-foreground">
+                                    {s.created_at ? formatSmartDate(s.created_at) : ''}
+                                  </span>
+                                </div>
+                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                                  resultStatus === 'win' ? 'bg-primary/10 text-primary' :
+                                  resultStatus === 'loss' ? 'bg-destructive/10 text-destructive' :
+                                  'bg-[hsl(45,100%,92%)] text-[hsl(35,100%,35%)]'
+                                }`}>
+                                  {resultStatus === 'win' ? '✅ Target Hit' : resultStatus === 'loss' ? '❌ SL Hit' : '⏳ Pending'}
+                                </span>
+                              </div>
+                              {s.notes && (
+                                <p className={`mt-1.5 text-[12px] text-muted-foreground italic ${shouldBlurSignal ? 'blur-[3px] select-none' : ''}`}>
+                                  {s.notes}
+                                </p>
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
-                      <div className={`mt-2 flex items-center justify-between ${shouldBlurSignal ? 'blur-[3px]' : ''}`}>
-                        <div className="flex items-center gap-2">
-                          {s.timeframe && <span className="text-[10px] rounded-full bg-muted px-2 py-0.5 text-muted-foreground">{s.timeframe}</span>}
-                          <span className="text-[10px] text-muted-foreground">
-                            {s.created_at ? formatSmartDate(s.created_at) : ''}
-                          </span>
-                        </div>
-                        <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                          resultStatus === 'win' ? 'bg-primary/10 text-primary' :
-                          resultStatus === 'loss' ? 'bg-destructive/10 text-destructive' :
-                          'bg-[hsl(45,100%,92%)] text-[hsl(35,100%,35%)]'
-                        }`}>
-                          {resultStatus === 'win' ? '✅ Target Hit' : resultStatus === 'loss' ? '❌ SL Hit' : '⏳ Pending'}
-                        </span>
-                      </div>
-                      {s.notes && (
-                        <p className={`mt-1.5 text-[12px] text-muted-foreground italic ${shouldBlurSignal ? 'blur-[3px] select-none' : ''}`}>
-                          {s.notes}
-                        </p>
-                      )}
                     </div>
-                  );
-                })}
+                  ));
+                })()}
               </div>
             )}
           </div>
