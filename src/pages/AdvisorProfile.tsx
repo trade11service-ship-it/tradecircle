@@ -777,26 +777,20 @@ export default function AdvisorProfile() {
         )}
       </div>
 
-      {/* STICKY BOTTOM BAR */}
-      {groups.length > 0 && !isOwner && (
+      {/* STICKY BOTTOM BAR — only show for non-subscribers */}
+      {groups.length > 0 && !isOwner && !isSubscribedToSelectedGroup && (
         <div className="sticky bottom-14 md:bottom-0 bg-card border-t border-border p-3 safe-area-bottom z-20">
-          {isSubscribedToSelectedGroup ? (
-            <div className="flex items-center justify-center gap-2 rounded-xl bg-primary/5 py-3 text-[14px] font-bold text-primary">
-              <CheckCircle className="h-4 w-4" /> Subscribed ✓
-            </div>
-          ) : (
-            <button
-              onClick={() => selectedGroup && handleSubscribe(selectedGroup)}
-              disabled={!selectedGroup || subscribing === selectedGroup.id}
-              className="w-full rounded-xl bg-primary py-3.5 text-[15px] font-bold text-primary-foreground shadow-lg disabled:opacity-60 transition-all active:scale-[0.98]"
-            >
-              {selectedGroup && subscribing === selectedGroup.id
-                ? 'Processing...'
-                : selectedGroupAccess?.isExpired
-                  ? `Renew — ₹${selectedGroup?.monthly_price}/month`
-                  : `Subscribe — ₹${selectedGroup?.monthly_price}/month`}
-            </button>
-          )}
+          <button
+            onClick={() => selectedGroup && handleSubscribe(selectedGroup)}
+            disabled={!selectedGroup || subscribing === selectedGroup.id}
+            className="w-full rounded-xl bg-primary py-3.5 text-[15px] font-bold text-primary-foreground shadow-lg disabled:opacity-60 transition-all active:scale-[0.98]"
+          >
+            {selectedGroup && subscribing === selectedGroup.id
+              ? 'Processing...'
+              : selectedGroupAccess?.isExpired
+                ? `Renew — ₹${selectedGroup?.monthly_price}/month`
+                : `Subscribe — ₹${selectedGroup?.monthly_price}/month`}
+          </button>
         </div>
       )}
 
