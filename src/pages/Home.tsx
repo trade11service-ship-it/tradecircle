@@ -38,6 +38,12 @@ export default function Home() {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+
+  // Redirect advisors/admins to their dashboards
+  useEffect(() => {
+    if (profile?.role === 'advisor') navigate('/advisor/dashboard', { replace: true });
+    else if (profile?.role === 'admin') navigate('/admin', { replace: true });
+  }, [profile?.role, navigate]);
   const [posts, setPosts] = useState<FeedItem[]>([]);
   const [groupNames, setGroupNames] = useState<Record<string, string>>({});
   const [advisorNames, setAdvisorNames] = useState<Record<string, string>>({});
