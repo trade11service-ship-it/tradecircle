@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Lock, ChevronDown, User, MessageCircle, Rss } from "lucide-react";
+import { ChevronDown, User, Rss } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { getPostVisibility } from "@/lib/accessControl";
+import { shouldShowFree } from "@/lib/accessControl";
 import { Button } from "@/components/ui/button";
 import { FollowButton } from "@/components/FollowButton";
 
@@ -34,6 +34,18 @@ function formatTime(date: string | null) {
   return d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true }).toUpperCase();
 }
 
+function getDateLabel(date: string | null) {
+  if (!date) return "";
+  const d = new Date(date);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today.getTime() - 86400000);
+  const dateOnly = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  if (dateOnly.getTime() === today.getTime()) return "TODAY";
+  if (dateOnly.getTime() === yesterday.getTime()) return "YESTERDAY";
+  return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: d.getFullYear() !== now.getFullYear() ? "numeric" : undefined }).toUpperCase();
+}
+
 function DateSeparator({ label }: { label: string }) {
   return (
     <div className="flex justify-center my-3">
@@ -41,6 +53,14 @@ function DateSeparator({ label }: { label: string }) {
         {label}
       </span>
     </div>
+  );
+}
+
+function FreeBadge({ text }: { text: string }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-[hsl(45,100%,92%)] px-2 py-0.5 text-[10px] font-semibold text-[hsl(35,100%,35%)] mb-1">
+      🔓 {text}
+    </span>
   );
 }
 
@@ -59,40 +79,38 @@ function MessageBubble({
   const text = post.message_text || "";
 
   return (
-    <>
-      <div className="flex gap-2 max-w-full">
-        <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground overflow-hidden mt-1">
-          {advisorPhoto ? <img src={advisorPhoto} alt="" className="h-full w-full object-cover" /> : <User className="h-3.5 w-3.5" />}
-        </div>
-        <div className="min-w-0 flex-1">
-          <div className="rounded-2xl rounded-tl-sm bg-card border border-border p-3 shadow-sm">
-            <div className="flex items-center justify-between gap-2 mb-1">
-              <span className="text-[12px] font-bold text-primary">{advisorName}</span>
-              {groupId && <FollowButton groupId={groupId} size="sm" />}
+    <div className="flex gap-2 max-w-full">
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground overflow-hidden mt-1">
+        {advisorPhoto ? <img src={advisorPhoto} alt="" className="h-full w-full object-cover" /> : <User className="h-3.5 w-3.5" />}
+      </div>
+      <div className="min-w-0 flex-1">
+        <div className="rounded-2xl rounded-tl-sm bg-card border border-border p-3 shadow-sm">
+          <div className="flex items-center justify-between gap-2 mb-1">
+            <span className="text-[12px] font-bold text-primary">{advisorName}</span>
+            {groupId && <FollowButton groupId={groupId} size="sm" />}
+          </div>
+          {text && (
+            <p className={`text-[14px] text-foreground leading-relaxed whitespace-pre-wrap ${!expanded && text.length > 300 ? "line-clamp-4" : ""}`}>
+              {text}
+            </p>
+          )}
+          {text && text.length > 300 && (
+            <button onClick={() => setExpanded(!expanded)} className="text-[12px] font-medium text-primary mt-1">
+              {expanded ? "Show less" : "Read more"}
+            </button>
+          )}
+          {post.image_url && (
+            <div className="mt-2">
+              <img src={post.image_url} alt="Post" className="w-full rounded-lg max-h-64 object-cover" />
             </div>
-            {text && (
-              <p className={`text-[14px] text-foreground leading-relaxed whitespace-pre-wrap ${!expanded && text.length > 300 ? "line-clamp-4" : ""}`}>
-                {text}
-              </p>
-            )}
-            {text && text.length > 300 && (
-              <button onClick={() => setExpanded(!expanded)} className="text-[12px] font-medium text-primary mt-1">
-                {expanded ? "Show less" : "Read more"}
-              </button>
-            )}
-            {post.image_url && (
-              <div className="mt-2">
-                <img src={post.image_url} alt="Post" className="w-full rounded-lg max-h-64 object-cover" />
-              </div>
-            )}
-            <div className="flex items-center justify-between gap-1 mt-1">
-              <span className="text-[10px] text-muted-foreground">{formatTime(post.created_at)}</span>
-              <span className="text-[10px] text-primary">✓✓</span>
-            </div>
+          )}
+          <div className="flex items-center justify-between gap-1 mt-1">
+            <span className="text-[10px] text-muted-foreground">{formatTime(post.created_at)}</span>
+            <span className="text-[10px] text-primary">✓✓</span>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 }
 
@@ -100,12 +118,14 @@ function SignalBubble({
   post,
   advisorName,
   advisorPhoto,
-  blurred,
+  groupId,
+  freeBadge,
 }: {
   post: FeedPost;
   advisorName: string;
   advisorPhoto?: string | null;
-  blurred?: boolean;
+  groupId?: string;
+  freeBadge?: string | null;
 }) {
   const isBuy = post.signal_type === "BUY";
   const bgClass = isBuy ? "bg-[hsl(120,60%,97%)]" : "bg-[hsl(0,70%,97%)]";
@@ -119,7 +139,7 @@ function SignalBubble({
         : { cls: "bg-[hsl(45,100%,92%)] text-[hsl(35,100%,35%)]", label: "⏳ Pending" };
 
   return (
-    <div className="flex gap-2 max-w-[88%]">
+    <div className="flex gap-2 max-w-full">
       <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground overflow-hidden mt-1">
         {advisorPhoto ? <img src={advisorPhoto} alt="" className="h-full w-full object-cover" /> : <User className="h-3.5 w-3.5" />}
       </div>
@@ -127,10 +147,13 @@ function SignalBubble({
         <div className={`rounded-2xl rounded-tl-sm ${bgClass} ${borderClass} border border-border p-3 shadow-sm`}>
           <div className="flex items-center justify-between mb-2">
             <span className="text-[12px] font-bold text-primary">{advisorName}</span>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-card border border-border text-muted-foreground">
-              📊 SIGNAL
-            </span>
+            <div className="flex items-center gap-2">
+              {groupId && <FollowButton groupId={groupId} size="sm" />}
+              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-card border border-border text-muted-foreground">📊 SIGNAL</span>
+            </div>
           </div>
+
+          {freeBadge && <FreeBadge text={freeBadge} />}
 
           <div className="flex items-center justify-between mb-2">
             <span className="text-[16px] font-extrabold text-foreground">{post.instrument}</span>
@@ -139,7 +162,7 @@ function SignalBubble({
             </span>
           </div>
 
-          <div className={`grid grid-cols-3 gap-2 text-center rounded-lg bg-card/60 p-2 ${blurred ? "blur-[6px] select-none pointer-events-none" : ""}`}>
+          <div className="grid grid-cols-3 gap-2 text-center rounded-lg bg-card/60 p-2">
             <div>
               <p className="text-[10px] text-muted-foreground">Entry</p>
               <p className="text-[15px] font-bold text-foreground">₹{Number(post.entry_price || 0).toLocaleString("en-IN")}</p>
@@ -159,13 +182,11 @@ function SignalBubble({
             <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${resultBadge.cls}`}>{resultBadge.label}</span>
           </div>
 
-          {post.notes && !blurred && (
-            <p className="mt-2 text-[13px] text-muted-foreground italic leading-relaxed">
-              "{post.notes}"
-            </p>
+          {post.notes && (
+            <p className="mt-2 text-[13px] text-muted-foreground italic leading-relaxed line-clamp-2">"{post.notes}"</p>
           )}
 
-          {post.image_url && !blurred && (
+          {post.image_url && (
             <img src={post.image_url} alt="Signal" className="mt-2 rounded-lg max-h-48 object-cover w-full" />
           )}
 
@@ -193,25 +214,35 @@ export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedF
   const pageSize = 12;
   const [hasMore, setHasMore] = useState(true);
 
-  const canLoadMore = preview ? false : true;
-
   const fetchPage = async (nextOffset: number) => {
     setLoading(true);
 
-    // Query only public posts (is_public=true, post_type='message') from approved advisors
+    // Fetch ALL public posts (both signals and messages where is_public=true)
     const { data: rows } = await supabase
       .from("signals")
-      .select(
-        "id,post_type,instrument,signal_type,entry_price,target_price,stop_loss,timeframe,notes,message_text,image_url,created_at,group_id,advisor_id,is_public,result,signal_date, groups(id,name), advisors(id,full_name,profile_photo_url,sebi_reg_no,strategy_type)"
-      )
-      .eq("post_type", "message")
+      .select("id,post_type,instrument,signal_type,entry_price,target_price,stop_loss,timeframe,notes,message_text,image_url,created_at,group_id,advisor_id,is_public,result,signal_date")
       .eq("is_public", true)
       .order("created_at", { ascending: false })
       .range(nextOffset, nextOffset + pageSize - 1);
 
     const pagePosts = (rows || []) as any as FeedPost[];
-    const uniqueAdvisorIds = [...new Set((pagePosts || []).map((p: any) => p.advisor_id))];
-    const uniqueGroupIds = [...new Set((pagePosts || []).map((p: any) => p.group_id))];
+
+    // For signals, also check if they qualify as free (F&O 24h rule or public_after_24h)
+    const visiblePosts = pagePosts.filter((p: any) => {
+      if (p.post_type === 'message') return true; // analysis always public
+      // For signals marked is_public, check the free logic
+      const freeCheck = shouldShowFree({
+        post_type: p.post_type,
+        timeframe: p.timeframe,
+        is_public: p.is_public,
+        created_at: p.created_at,
+        signal_type: p.signal_type,
+      });
+      return freeCheck.isFree;
+    });
+
+    const uniqueAdvisorIds = [...new Set(visiblePosts.map((p: any) => p.advisor_id))];
+    const uniqueGroupIds = [...new Set(visiblePosts.map((p: any) => p.group_id))];
 
     if (uniqueAdvisorIds.length > 0) {
       const { data: adv } = await supabase
@@ -223,14 +254,15 @@ export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedF
       (adv || []).forEach((a: any) => (map[a.id] = a));
       setAdvisorMap((prev) => ({ ...prev, ...map }));
 
-      // Filter out posts from non-approved advisors.
-      const filtered = (pagePosts || []).filter((p: any) => !!map[p.advisor_id]);
+      const filtered = visiblePosts.filter((p: any) => !!map[p.advisor_id]);
       setPosts((prev) => (nextOffset === 0 ? filtered : [...prev, ...filtered]));
       if (filtered.length === 0) {
         setHasMore(false);
         setLoading(false);
         return;
       }
+    } else {
+      setPosts((prev) => (nextOffset === 0 ? visiblePosts : [...prev, ...visiblePosts]));
     }
 
     if (uniqueGroupIds.length > 0) {
@@ -243,14 +275,12 @@ export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedF
       setGroupMap((prev) => ({ ...prev, ...map }));
     }
 
-    // If approved filtering reduced rows, keep hasMore based on original page size.
-    setHasMore((pagePosts || []).length === pageSize);
+    setHasMore(pagePosts.length === pageSize);
     setLoading(false);
   };
 
   useEffect(() => {
     fetchPage(0);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const visiblePosts = useMemo(() => {
@@ -258,15 +288,11 @@ export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedF
     return posts.slice(0, maxItems);
   }, [posts, preview, maxItems]);
 
-  const hasAny = visiblePosts.length > 0;
-
   const grouped = useMemo(() => {
-    // Date separator labels, newest-first.
     const result: { label: string; items: FeedPost[] }[] = [];
     visiblePosts.forEach((p) => {
-      const d = p.created_at ? new Date(p.created_at) : null;
-      if (!d) return;
-      const label = d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" }).toUpperCase();
+      const label = getDateLabel(p.created_at);
+      if (!label) return;
       const last = result[result.length - 1];
       if (last && last.label === label) last.items.push(p);
       else result.push({ label, items: [p] });
@@ -286,7 +312,7 @@ export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedF
     );
   }
 
-  if (!hasAny) {
+  if (visiblePosts.length === 0) {
     return (
       <div className="rounded-xl border border-green-200 bg-green-50 py-12 text-center dark:bg-green-950/20 dark:border-green-500/30">
         <Rss className="mx-auto h-12 w-12 text-green-500 mb-3" />
@@ -298,36 +324,58 @@ export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedF
 
   return (
     <div className="space-y-1">
-      {grouped.map((group, gi) => {
-        return (
-          <div key={gi}>
-            <DateSeparator label={group.label} />
-            <div className="space-y-3">
-              {group.items.map((post, localIdx) => {
-                const advisor = advisorMap[post.advisor_id];
-                const grp = groupMap[post.group_id];
-                const advisorName = advisor?.full_name || "Advisor";
-                const advisorPhoto = advisor?.profile_photo_url || undefined;
+      {grouped.map((group, gi) => (
+        <div key={gi}>
+          <DateSeparator label={group.label} />
+          <div className="space-y-3">
+            {group.items.map((post) => {
+              const advisor = advisorMap[post.advisor_id];
+              const advisorName = advisor?.full_name || "Advisor";
+              const advisorPhoto = advisor?.profile_photo_url || undefined;
 
-                // Only show public message posts
-                if (post.post_type !== "message") return null;
+              // Determine free badge for signals
+              let freeBadge: string | null = null;
+              if (post.post_type === 'signal') {
+                const freeCheck = shouldShowFree({
+                  post_type: post.post_type,
+                  timeframe: post.timeframe,
+                  is_public: post.is_public,
+                  created_at: post.created_at,
+                  signal_type: post.signal_type,
+                });
+                freeBadge = freeCheck.reason === 'fno_expired' ? 'F&O Signal — 24hr delay'
+                  : freeCheck.reason === 'public_delayed' ? 'Free — Signal expired'
+                  : null;
+              }
 
+              if (post.post_type === 'signal') {
                 return (
-                  <MessageBubble 
-                    key={post.id} 
-                    post={post} 
-                    advisorName={advisorName} 
+                  <SignalBubble
+                    key={post.id}
+                    post={post}
+                    advisorName={advisorName}
                     advisorPhoto={advisorPhoto}
                     groupId={post.group_id}
+                    freeBadge={freeBadge}
                   />
                 );
-              })}
-            </div>
-          </div>
-        );
-      })}
+              }
 
-      {canLoadMore && (
+              return (
+                <MessageBubble
+                  key={post.id}
+                  post={post}
+                  advisorName={advisorName}
+                  advisorPhoto={advisorPhoto}
+                  groupId={post.group_id}
+                />
+              );
+            })}
+          </div>
+        </div>
+      ))}
+
+      {!preview && (
         <div className="pt-4 flex items-center justify-center">
           <Button
             variant="outline"
@@ -346,4 +394,3 @@ export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedF
     </div>
   );
 }
-
