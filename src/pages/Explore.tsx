@@ -40,7 +40,7 @@ export default function Explore() {
 
         {/* Feed Section */}
         <div className="mb-8">
-          <h2 className="text-2xl font-bold text-foreground mb-6">Latest Public Posts</h2>
+          <h2 className="text-2xl font-bold text-foreground mb-6">Latest Public Posts & Signals</h2>
           <div className="rounded-2xl border border-border bg-card p-3 md:p-4">
             <PublicMixedFeed preview={false} maxItems={999} />
           </div>
