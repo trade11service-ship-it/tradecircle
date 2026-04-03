@@ -24,7 +24,7 @@ export default function Explore() {
           </p>
           <div className="grid grid-cols-3 gap-4 text-center">
             <div>
-              <p className="text-2xl font-bold text-primary mb-1">500+</p>
+              <p className="text-2xl font-bold text-primary mb-1">✓</p>
               <p className="text-xs text-muted-foreground">Verified Advisors</p>
             </div>
             <div>

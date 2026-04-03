@@ -116,7 +116,7 @@ export default function Groups() {
       {/* Hero Section */}
       <HeroSection
         title="Find SEBI Verified Trading Advisors"
-        subtitle="Browse 500+ manually verified advisors with public track records. Subscribe to get intraday signals, swing trades, and F&O analysis directly to Telegram."
+        subtitle="Browse manually verified advisors with public track records. Subscribe to get intraday signals, swing trades, and F&O analysis directly to Telegram."
       />
 
       <div className="container mx-auto px-4 py-6 md:py-10 flex-1">

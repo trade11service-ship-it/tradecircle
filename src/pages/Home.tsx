@@ -219,7 +219,7 @@ export default function Home() {
                 You haven't subscribed to any advisors yet.
               </p>
               <p className="text-base font-semibold text-foreground mb-4">
-                Browse 500+ SEBI verified advisors and start receiving trading signals.
+                Browse SEBI verified advisors and start receiving trading signals.
               </p>
               <Link to="/discover">
                 <Button className="gap-2">
