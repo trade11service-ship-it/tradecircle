@@ -127,7 +127,7 @@ export default function Home() {
         <Navbar />
         <HeroSection
           title="Get Trading Signals from SEBI Verified Advisors"
-          subtitle="Discover 500+ manually verified trading advisors with public track records. Subscribe to premium signals delivered directly to Telegram."
+          subtitle="Discover SEBI-verified trading advisors with public track records. Subscribe to premium signals delivered directly to Telegram."
           cta={{
             text: "Browse Advisors",
             href: "/discover",
@@ -219,7 +219,7 @@ export default function Home() {
                 You haven't subscribed to any advisors yet.
               </p>
               <p className="text-base font-semibold text-foreground mb-4">
-                Browse 500+ SEBI verified advisors and start receiving trading signals.
+                Browse SEBI verified advisors and start receiving trading signals.
               </p>
               <Link to="/discover">
                 <Button className="gap-2">

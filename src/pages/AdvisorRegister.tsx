@@ -103,8 +103,8 @@ export default function AdvisorRegister() {
       }).select('id').single();
       if (advError) throw advError;
 
-      // Update profile role to advisor
-      await supabase.from('profiles').update({ role: 'advisor' }).eq('id', user.id);
+      // NOTE: Do NOT set role to 'advisor' here. Role stays 'trader' until admin approves.
+      // Admin approval flow in AdminDashboard handles the role change.
 
       // Save legal acceptance
       const ip = await getIpAddress();

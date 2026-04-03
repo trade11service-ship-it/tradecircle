@@ -86,6 +86,21 @@ export default function PaymentSuccess() {
     const consentGiven = sessionStorage.getItem('subscription_consent') === 'true';
     const consentTimestamp = sessionStorage.getItem('subscription_consent_timestamp');
 
+    // Store PAN acceptance in user_legal_acceptances for compliance
+    if (panNumber && consentGiven) {
+      await supabase.from('user_legal_acceptances').insert({
+        user_id: user!.id,
+        acceptance_type: 'subscription_pan',
+        checkbox_text: `PAN: ${panNumber} — Subscription consent for group ${groupId}`,
+        accepted: true,
+        full_name: null,
+        email: user!.email || null,
+        page_url: window.location.href,
+        user_agent: navigator.userAgent,
+        device_info: navigator.platform,
+      }).then(() => {});
+    }
+
     const { error } = await supabase.from('subscriptions').insert({
       user_id: user!.id,
       group_id: groupId,
@@ -97,10 +112,6 @@ export default function PaymentSuccess() {
       from_referral: fromReferral,
       referral_code: referralCode,
       platform_fee_percent: platformFee,
-      pan_number: panNumber || null,
-      consent_given: consentGiven,
-      consent_timestamp: consentTimestamp || null,
-      consent_ip: null, // Could capture IP if needed, but session storage is sufficient
     });
 
     if (error) { console.error('Subscription error:', error); setStatus('error'); }
