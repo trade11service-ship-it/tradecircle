@@ -127,7 +127,7 @@ export default function Home() {
         <Navbar />
         <HeroSection
           title="Get Trading Signals from SEBI Verified Advisors"
-          subtitle="Discover 500+ manually verified trading advisors with public track records. Subscribe to premium signals delivered directly to Telegram."
+          subtitle="Discover SEBI-verified trading advisors with public track records. Subscribe to premium signals delivered directly to Telegram."
           cta={{
             text: "Browse Advisors",
             href: "/discover",
