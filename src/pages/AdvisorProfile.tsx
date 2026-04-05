@@ -31,6 +31,7 @@ function FollowButton({ groupId }: { groupId: string }) {
 }
 
 export default function AdvisorProfile() {
+  const [searchParams] = useSearchParams();
   const { id } = useParams<{ id: string }>();
   const { user, profile } = useAuth();
   const navigate = useNavigate();
