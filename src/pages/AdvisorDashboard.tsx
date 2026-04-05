@@ -111,7 +111,7 @@ export default function AdvisorDashboard() {
     if (res.ok) toast.success('Group created with payment link!');
     else toast.warning('Group created but payment link generation failed: ' + (result.error || 'Unknown error'));
     setShowGroupForm(false);
-    setGroupForm({ name: '', description: '', monthlyPrice: '' });
+    setGroupForm({ name: '', description: '', monthlyPrice: '', strategyCategory: 'All' });
     fetchData();
   };
 
