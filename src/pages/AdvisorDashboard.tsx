@@ -359,6 +359,19 @@ export default function AdvisorDashboard() {
                 <div><Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Group Name</Label><Input value={groupForm.name} onChange={e => setGroupForm({ ...groupForm, name: e.target.value })} className="mt-1.5" /></div>
                 <div><Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Description</Label><Textarea value={groupForm.description} onChange={e => setGroupForm({ ...groupForm, description: e.target.value })} className="mt-1.5" /></div>
                 <div><Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Monthly Price (₹)</Label><Input type="number" value={groupForm.monthlyPrice} onChange={e => setGroupForm({ ...groupForm, monthlyPrice: e.target.value })} className="mt-1.5" /></div>
+                <div>
+                  <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Strategy Category</Label>
+                  <Select value={groupForm.strategyCategory} onValueChange={v => setGroupForm({ ...groupForm, strategyCategory: v })}>
+                    <SelectTrigger className="mt-1.5 border-[1.5px]"><SelectValue placeholder="Select category" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="All">All</SelectItem>
+                      <SelectItem value="Intraday">Intraday</SelectItem>
+                      <SelectItem value="Swing">Swing</SelectItem>
+                      <SelectItem value="Options">Options</SelectItem>
+                      <SelectItem value="Equity">Equity</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div><Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Group Photo</Label><Input type="file" accept="image/*" onChange={e => setGroupDp(e.target.files?.[0] || null)} className="mt-1.5" /></div>
                 <Button onClick={createGroup} className="font-semibold">Create Group</Button>
               </div>

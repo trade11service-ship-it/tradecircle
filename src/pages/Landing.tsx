@@ -284,7 +284,7 @@ export default function Landing() {
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               {featuredAdvisors.map((a) => (
-                <div key={a.id} onClick={() => navigate(`/advisor/${a.id}`)} className="group cursor-pointer">
+                <div key={a.id} onClick={() => navigate(`/advisor/${a.id}?tab=about`)} className="group cursor-pointer">
                   <div className="h-full rounded-2xl border border-border bg-background p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
                     <div className="mb-3 flex items-center gap-3">
                       <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-primary to-secondary text-lg font-bold text-primary-foreground">
