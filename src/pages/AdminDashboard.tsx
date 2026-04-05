@@ -19,7 +19,7 @@ import {
 
 type Advisor = Tables<'advisors'>;
 
-type TabKey = 'dashboard' | 'pending' | 'advisors' | 'users' | 'payments' | 'referrals' | 'legal' | 'requests';
+type TabKey = 'dashboard' | 'pending' | 'advisors' | 'users' | 'payments' | 'referrals' | 'legal' | 'requests' | 'content';
 
 const NAV_SECTIONS = [
   {
@@ -31,6 +31,7 @@ const NAV_SECTIONS = [
     items: [
       { key: 'pending' as TabKey, label: 'Pending', icon: Clock, hasBadge: true },
       { key: 'advisors' as TabKey, label: 'All Advisors', icon: UserCheck },
+      { key: 'content' as TabKey, label: 'Content Manager', icon: Radio },
       { key: 'users' as TabKey, label: 'All Users', icon: Users },
       { key: 'payments' as TabKey, label: 'Payments', icon: CreditCard },
       { key: 'referrals' as TabKey, label: 'Referrals', icon: Gift },
