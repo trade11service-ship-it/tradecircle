@@ -130,6 +130,56 @@ export default function AdminDashboard() {
   const [deletionRequestModalOpen, setDeletionRequestModalOpen] = useState(false);
   const [selectedDeletionRequest, setSelectedDeletionRequest] = useState<any | null>(null);
 
+  // Content Manager state
+  const [contentAdvisorId, setContentAdvisorId] = useState<string | null>(null);
+  const [contentSignals, setContentSignals] = useState<any[]>([]);
+  const [contentGroups, setContentGroups] = useState<any[]>([]);
+  const [loadingContent, setLoadingContent] = useState(false);
+  const [deletingSignalId, setDeletingSignalId] = useState<string | null>(null);
+  const [deletingGroupId, setDeletingGroupId] = useState<string | null>(null);
+
+  const fetchAdvisorContent = async (advisorId: string) => {
+    setContentAdvisorId(advisorId);
+    setLoadingContent(true);
+    const [sigs, grps] = await Promise.all([
+      supabase.from('signals').select('*').eq('advisor_id', advisorId).order('created_at', { ascending: false }).limit(50),
+      supabase.from('groups').select('*').eq('advisor_id', advisorId),
+    ]);
+    setContentSignals(sigs.data || []);
+    setContentGroups(grps.data || []);
+    setLoadingContent(false);
+  };
+
+  const adminDeleteSignal = async (signalId: string) => {
+    setDeletingSignalId(signalId);
+    const { error } = await supabase.from('signals').delete().eq('id', signalId);
+    if (error) toast.error('Failed to delete post: ' + error.message);
+    else { toast.success('Post deleted'); setContentSignals(prev => prev.filter(s => s.id !== signalId)); }
+    setDeletingSignalId(null);
+  };
+
+  const adminDeleteGroup = async (groupId: string) => {
+    setDeletingGroupId(groupId);
+    // First delete signals in that group
+    await supabase.from('signals').delete().eq('group_id', groupId);
+    const { error } = await supabase.from('groups').delete().eq('id', groupId);
+    if (error) toast.error('Failed to delete group: ' + error.message);
+    else { toast.success('Group deleted'); setContentGroups(prev => prev.filter(g => g.id !== groupId)); setContentSignals(prev => prev.filter(s => s.group_id !== groupId)); }
+    setDeletingGroupId(null);
+  };
+
+  const handleApproveDeletionRequest = async (reqId: string) => {
+    const { error } = await supabase.from('deletion_requests').update({ status: 'approved', reviewed_at: new Date().toISOString(), reviewed_by: user!.id }).eq('id', reqId);
+    if (error) toast.error('Failed to approve request');
+    else { toast.success('Request approved'); fetchData(); setDeletionRequestModalOpen(false); }
+  };
+
+  const handleRejectDeletionRequest = async (reqId: string) => {
+    const { error } = await supabase.from('deletion_requests').update({ status: 'rejected', reviewed_at: new Date().toISOString(), reviewed_by: user!.id }).eq('id', reqId);
+    if (error) toast.error('Failed to reject request');
+    else { toast.success('Request rejected'); fetchData(); setDeletionRequestModalOpen(false); }
+  };
+
   useEffect(() => {
     if (authLoading) return;
     if (!user) { navigate('/login', { replace: true }); return; }
