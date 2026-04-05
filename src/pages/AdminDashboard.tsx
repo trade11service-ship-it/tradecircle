@@ -1472,14 +1472,30 @@ export default function AdminDashboard() {
                 >
                   Close
                 </Button>
+                {selectedDeletionRequest.status === 'pending' && (
+                  <>
+                    <Button 
+                      variant="destructive"
+                      onClick={() => handleRejectDeletionRequest(selectedDeletionRequest.id)}
+                    >
+                      Reject Request
+                    </Button>
+                    <Button 
+                      className="bg-primary hover:bg-primary/90"
+                      onClick={() => handleApproveDeletionRequest(selectedDeletionRequest.id)}
+                    >
+                      Approve & Delete
+                    </Button>
+                  </>
+                )}
                 <Button 
+                  variant="outline"
                   onClick={() => {
                     navigator.clipboard.writeText(selectedDeletionRequest.reason || '');
                     toast.success('Reason copied to clipboard');
                   }}
-                  className="gap-2"
                 >
-                  Copy Request
+                  Copy
                 </Button>
               </div>
             </div>
