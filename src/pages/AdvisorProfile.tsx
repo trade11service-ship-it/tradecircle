@@ -42,7 +42,11 @@ export default function AdvisorProfile() {
   const [groupAccessMap, setGroupAccessMap] = useState<Record<string, { hasAccess: boolean; expiresAt: string | null; isExpired: boolean }>>({});
   const [loading, setLoading] = useState(true);
   const [subscribing, setSubscribing] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'feed' | 'signals' | 'about'>('feed');
+  const [activeTab, setActiveTab] = useState<'feed' | 'signals' | 'about'>(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'about' || tabParam === 'signals') return tabParam;
+    return 'feed';
+  });
   const [riskAlreadyAccepted, setRiskAlreadyAccepted] = useState(false);
   const [signalStats, setSignalStats] = useState<{ total_signals: number; win_count: number; loss_count: number; resolved_count: number }>({ total_signals: 0, win_count: 0, loss_count: 0, resolved_count: 0 });
   const [totalSubs, setTotalSubs] = useState(0);
