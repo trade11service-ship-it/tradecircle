@@ -102,7 +102,7 @@ export default function AdvisorDashboard() {
       const { data } = await supabase.storage.from('kyc-documents').upload(`groups/${advisor.id}/${Date.now()}.${groupDp.name.split('.').pop()}`, groupDp);
       if (data) dpUrl = supabase.storage.from('kyc-documents').getPublicUrl(data.path).data.publicUrl;
     }
-    const { data: newGroup, error } = await supabase.from('groups').insert({ advisor_id: advisor.id, name: sanitizeText(groupForm.name), description: sanitizeTextarea(groupForm.description), monthly_price: parseInt(groupForm.monthlyPrice) || 0, dp_url: dpUrl }).select().single();
+    const { data: newGroup, error } = await (supabase.from('groups') as any).insert({ advisor_id: advisor.id, name: sanitizeText(groupForm.name), description: sanitizeTextarea(groupForm.description), monthly_price: parseInt(groupForm.monthlyPrice) || 0, dp_url: dpUrl, strategy_category: groupForm.strategyCategory || 'All' }).select().single();
     if (error) { toast.error(error.message); return; }
     toast.info('Creating payment link...');
     const { data: session } = await supabase.auth.getSession();
