@@ -50,6 +50,7 @@ const PAGE_TITLES: Record<TabKey, string> = {
   dashboard: 'Dashboard Overview',
   pending: 'Pending Approvals',
   advisors: 'All Advisors',
+  content: 'Content Manager',
   users: 'All Users',
   payments: 'Payments',
   referrals: 'Referral Program',
