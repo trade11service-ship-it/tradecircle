@@ -36,7 +36,7 @@ export default function AdvisorDashboard() {
   const [earningsSummary, setEarningsSummary] = useState<any>(null);
   const [tab, setTab] = useState<'groups' | 'post' | 'signals_history' | 'subscribers' | 'revenue' | 'referrals' | 'profile'>('groups');
   const [loading, setLoading] = useState(true);
-  const [groupForm, setGroupForm] = useState({ name: '', description: '', monthlyPrice: '' });
+  const [groupForm, setGroupForm] = useState({ name: '', description: '', monthlyPrice: '', strategyCategory: 'All' });
   const [groupDp, setGroupDp] = useState<File | null>(null);
   const [showGroupForm, setShowGroupForm] = useState(false);
 
