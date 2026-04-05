@@ -1089,6 +1089,97 @@ export default function AdminDashboard() {
           </div>
         )}
 
+        {/* ===== CONTENT MANAGER TAB ===== */}
+        {tab === 'content' && !loading && (
+          <div className="space-y-4">
+            <p className="text-[13px] text-muted-foreground">Select an advisor to manage their posts and groups. Only admins can delete advisor content.</p>
+            <div className="flex flex-wrap gap-2">
+              {allAdvisors.filter(a => a.status === 'approved').map(a => (
+                <Button
+                  key={a.id}
+                  variant={contentAdvisorId === a.id ? 'default' : 'outline'}
+                  size="sm"
+                  className="rounded-lg"
+                  onClick={() => fetchAdvisorContent(a.id)}
+                >
+                  {a.full_name}
+                </Button>
+              ))}
+            </div>
+
+            {loadingContent && <div className="py-10 text-center text-muted-foreground">Loading content...</div>}
+
+            {contentAdvisorId && !loadingContent && (
+              <div className="space-y-6">
+                {/* Groups */}
+                <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
+                  <div className="px-5 py-4 bg-muted border-b border-border flex items-center justify-between">
+                    <span className="text-[15px] font-bold text-foreground">Groups ({contentGroups.length})</span>
+                  </div>
+                  {contentGroups.length === 0 ? (
+                    <div className="p-8 text-center text-muted-foreground text-sm">No groups</div>
+                  ) : (
+                    contentGroups.map(g => (
+                      <div key={g.id} className="px-5 py-3 border-b border-muted last:border-0 flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-bold text-foreground">{g.name}</p>
+                          <p className="text-xs text-muted-foreground">₹{g.monthly_price}/mo · {g.is_active ? 'Active' : 'Inactive'}</p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-destructive border-destructive/30 hover:bg-destructive/10 rounded-lg text-[12px] gap-1"
+                          onClick={() => { if (confirm(`Delete group "${g.name}" and all its signals? This cannot be undone.`)) adminDeleteGroup(g.id); }}
+                          disabled={deletingGroupId === g.id}
+                        >
+                          <Trash2 size={12} /> {deletingGroupId === g.id ? 'Deleting...' : 'Delete Group'}
+                        </Button>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Signals/Posts */}
+                <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
+                  <div className="px-5 py-4 bg-muted border-b border-border">
+                    <span className="text-[15px] font-bold text-foreground">Posts & Signals ({contentSignals.length})</span>
+                  </div>
+                  {contentSignals.length === 0 ? (
+                    <div className="p-8 text-center text-muted-foreground text-sm">No posts</div>
+                  ) : (
+                    contentSignals.map(s => (
+                      <div key={s.id} className="px-5 py-3 border-b border-muted last:border-0 flex items-center justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${s.post_type === 'signal' ? 'bg-primary/10 text-primary' : 'bg-secondary/10 text-secondary'}`}>
+                              {s.post_type === 'signal' ? '📊 Signal' : '💬 Update'}
+                            </span>
+                            {s.instrument && <span className="text-sm font-bold text-foreground">{s.instrument}</span>}
+                            {s.signal_type && <span className={`text-[10px] font-bold ${s.signal_type === 'BUY' ? 'text-primary' : 'text-destructive'}`}>{s.signal_type}</span>}
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate mt-0.5">
+                            {s.message_text || s.notes || `Entry: ₹${s.entry_price} | Target: ₹${s.target_price} | SL: ₹${s.stop_loss}`}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">{formatDate(s.created_at)} · {s.is_public ? 'Public' : 'Private'}</p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-destructive border-destructive/30 hover:bg-destructive/10 rounded-lg text-[12px] gap-1 shrink-0"
+                          onClick={() => { if (confirm('Delete this post? This cannot be undone.')) adminDeleteSignal(s.id); }}
+                          disabled={deletingSignalId === s.id}
+                        >
+                          <Trash2 size={12} /> {deletingSignalId === s.id ? '...' : 'Delete'}
+                        </Button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ===== USERS TAB ===== */}
         {tab === 'users' && !loading && (
           <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
