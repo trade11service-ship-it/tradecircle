@@ -14,12 +14,12 @@ import type { Tables } from '@/integrations/supabase/types';
 import {
   LayoutDashboard, Clock, UserCheck, Users, CreditCard, Gift, FileText, Mail,
   ShieldAlert, IndianRupee, Search, Download, CheckCircle, UserPlus, BarChart3,
-  ChevronRight, Lock, Shield, Eye, ExternalLink,
+  ChevronRight, Lock, Shield, Eye, ExternalLink, Trash2, Radio,
 } from 'lucide-react';
 
 type Advisor = Tables<'advisors'>;
 
-type TabKey = 'dashboard' | 'pending' | 'advisors' | 'users' | 'payments' | 'referrals' | 'legal' | 'requests';
+type TabKey = 'dashboard' | 'pending' | 'advisors' | 'users' | 'payments' | 'referrals' | 'legal' | 'requests' | 'content';
 
 const NAV_SECTIONS = [
   {
@@ -31,6 +31,7 @@ const NAV_SECTIONS = [
     items: [
       { key: 'pending' as TabKey, label: 'Pending', icon: Clock, hasBadge: true },
       { key: 'advisors' as TabKey, label: 'All Advisors', icon: UserCheck },
+      { key: 'content' as TabKey, label: 'Content Manager', icon: Radio },
       { key: 'users' as TabKey, label: 'All Users', icon: Users },
       { key: 'payments' as TabKey, label: 'Payments', icon: CreditCard },
       { key: 'referrals' as TabKey, label: 'Referrals', icon: Gift },
@@ -49,6 +50,7 @@ const PAGE_TITLES: Record<TabKey, string> = {
   dashboard: 'Dashboard Overview',
   pending: 'Pending Approvals',
   advisors: 'All Advisors',
+  content: 'Content Manager',
   users: 'All Users',
   payments: 'Payments',
   referrals: 'Referral Program',
@@ -127,6 +129,56 @@ export default function AdminDashboard() {
   // Deletion Request Review Modal
   const [deletionRequestModalOpen, setDeletionRequestModalOpen] = useState(false);
   const [selectedDeletionRequest, setSelectedDeletionRequest] = useState<any | null>(null);
+
+  // Content Manager state
+  const [contentAdvisorId, setContentAdvisorId] = useState<string | null>(null);
+  const [contentSignals, setContentSignals] = useState<any[]>([]);
+  const [contentGroups, setContentGroups] = useState<any[]>([]);
+  const [loadingContent, setLoadingContent] = useState(false);
+  const [deletingSignalId, setDeletingSignalId] = useState<string | null>(null);
+  const [deletingGroupId, setDeletingGroupId] = useState<string | null>(null);
+
+  const fetchAdvisorContent = async (advisorId: string) => {
+    setContentAdvisorId(advisorId);
+    setLoadingContent(true);
+    const [sigs, grps] = await Promise.all([
+      supabase.from('signals').select('*').eq('advisor_id', advisorId).order('created_at', { ascending: false }).limit(50),
+      supabase.from('groups').select('*').eq('advisor_id', advisorId),
+    ]);
+    setContentSignals(sigs.data || []);
+    setContentGroups(grps.data || []);
+    setLoadingContent(false);
+  };
+
+  const adminDeleteSignal = async (signalId: string) => {
+    setDeletingSignalId(signalId);
+    const { error } = await supabase.from('signals').delete().eq('id', signalId);
+    if (error) toast.error('Failed to delete post: ' + error.message);
+    else { toast.success('Post deleted'); setContentSignals(prev => prev.filter(s => s.id !== signalId)); }
+    setDeletingSignalId(null);
+  };
+
+  const adminDeleteGroup = async (groupId: string) => {
+    setDeletingGroupId(groupId);
+    // First delete signals in that group
+    await supabase.from('signals').delete().eq('group_id', groupId);
+    const { error } = await supabase.from('groups').delete().eq('id', groupId);
+    if (error) toast.error('Failed to delete group: ' + error.message);
+    else { toast.success('Group deleted'); setContentGroups(prev => prev.filter(g => g.id !== groupId)); setContentSignals(prev => prev.filter(s => s.group_id !== groupId)); }
+    setDeletingGroupId(null);
+  };
+
+  const handleApproveDeletionRequest = async (reqId: string) => {
+    const { error } = await supabase.from('deletion_requests').update({ status: 'approved', reviewed_at: new Date().toISOString(), reviewed_by: user!.id }).eq('id', reqId);
+    if (error) toast.error('Failed to approve request');
+    else { toast.success('Request approved'); fetchData(); setDeletionRequestModalOpen(false); }
+  };
+
+  const handleRejectDeletionRequest = async (reqId: string) => {
+    const { error } = await supabase.from('deletion_requests').update({ status: 'rejected', reviewed_at: new Date().toISOString(), reviewed_by: user!.id }).eq('id', reqId);
+    if (error) toast.error('Failed to reject request');
+    else { toast.success('Request rejected'); fetchData(); setDeletionRequestModalOpen(false); }
+  };
 
   useEffect(() => {
     if (authLoading) return;
@@ -1037,6 +1089,97 @@ export default function AdminDashboard() {
           </div>
         )}
 
+        {/* ===== CONTENT MANAGER TAB ===== */}
+        {tab === 'content' && !loading && (
+          <div className="space-y-4">
+            <p className="text-[13px] text-muted-foreground">Select an advisor to manage their posts and groups. Only admins can delete advisor content.</p>
+            <div className="flex flex-wrap gap-2">
+              {allAdvisors.filter(a => a.status === 'approved').map(a => (
+                <Button
+                  key={a.id}
+                  variant={contentAdvisorId === a.id ? 'default' : 'outline'}
+                  size="sm"
+                  className="rounded-lg"
+                  onClick={() => fetchAdvisorContent(a.id)}
+                >
+                  {a.full_name}
+                </Button>
+              ))}
+            </div>
+
+            {loadingContent && <div className="py-10 text-center text-muted-foreground">Loading content...</div>}
+
+            {contentAdvisorId && !loadingContent && (
+              <div className="space-y-6">
+                {/* Groups */}
+                <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
+                  <div className="px-5 py-4 bg-muted border-b border-border flex items-center justify-between">
+                    <span className="text-[15px] font-bold text-foreground">Groups ({contentGroups.length})</span>
+                  </div>
+                  {contentGroups.length === 0 ? (
+                    <div className="p-8 text-center text-muted-foreground text-sm">No groups</div>
+                  ) : (
+                    contentGroups.map(g => (
+                      <div key={g.id} className="px-5 py-3 border-b border-muted last:border-0 flex items-center justify-between">
+                        <div>
+                          <p className="text-sm font-bold text-foreground">{g.name}</p>
+                          <p className="text-xs text-muted-foreground">₹{g.monthly_price}/mo · {g.is_active ? 'Active' : 'Inactive'}</p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-destructive border-destructive/30 hover:bg-destructive/10 rounded-lg text-[12px] gap-1"
+                          onClick={() => { if (confirm(`Delete group "${g.name}" and all its signals? This cannot be undone.`)) adminDeleteGroup(g.id); }}
+                          disabled={deletingGroupId === g.id}
+                        >
+                          <Trash2 size={12} /> {deletingGroupId === g.id ? 'Deleting...' : 'Delete Group'}
+                        </Button>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Signals/Posts */}
+                <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
+                  <div className="px-5 py-4 bg-muted border-b border-border">
+                    <span className="text-[15px] font-bold text-foreground">Posts & Signals ({contentSignals.length})</span>
+                  </div>
+                  {contentSignals.length === 0 ? (
+                    <div className="p-8 text-center text-muted-foreground text-sm">No posts</div>
+                  ) : (
+                    contentSignals.map(s => (
+                      <div key={s.id} className="px-5 py-3 border-b border-muted last:border-0 flex items-center justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${s.post_type === 'signal' ? 'bg-primary/10 text-primary' : 'bg-secondary/10 text-secondary'}`}>
+                              {s.post_type === 'signal' ? '📊 Signal' : '💬 Update'}
+                            </span>
+                            {s.instrument && <span className="text-sm font-bold text-foreground">{s.instrument}</span>}
+                            {s.signal_type && <span className={`text-[10px] font-bold ${s.signal_type === 'BUY' ? 'text-primary' : 'text-destructive'}`}>{s.signal_type}</span>}
+                          </div>
+                          <p className="text-xs text-muted-foreground truncate mt-0.5">
+                            {s.message_text || s.notes || `Entry: ₹${s.entry_price} | Target: ₹${s.target_price} | SL: ₹${s.stop_loss}`}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground">{formatDate(s.created_at)} · {s.is_public ? 'Public' : 'Private'}</p>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="text-destructive border-destructive/30 hover:bg-destructive/10 rounded-lg text-[12px] gap-1 shrink-0"
+                          onClick={() => { if (confirm('Delete this post? This cannot be undone.')) adminDeleteSignal(s.id); }}
+                          disabled={deletingSignalId === s.id}
+                        >
+                          <Trash2 size={12} /> {deletingSignalId === s.id ? '...' : 'Delete'}
+                        </Button>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         {/* ===== USERS TAB ===== */}
         {tab === 'users' && !loading && (
           <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
@@ -1329,14 +1472,30 @@ export default function AdminDashboard() {
                 >
                   Close
                 </Button>
+                {selectedDeletionRequest.status === 'pending' && (
+                  <>
+                    <Button 
+                      variant="destructive"
+                      onClick={() => handleRejectDeletionRequest(selectedDeletionRequest.id)}
+                    >
+                      Reject Request
+                    </Button>
+                    <Button 
+                      className="bg-primary hover:bg-primary/90"
+                      onClick={() => handleApproveDeletionRequest(selectedDeletionRequest.id)}
+                    >
+                      Approve & Delete
+                    </Button>
+                  </>
+                )}
                 <Button 
+                  variant="outline"
                   onClick={() => {
                     navigator.clipboard.writeText(selectedDeletionRequest.reason || '');
                     toast.success('Reason copied to clipboard');
                   }}
-                  className="gap-2"
                 >
-                  Copy Request
+                  Copy
                 </Button>
               </div>
             </div>

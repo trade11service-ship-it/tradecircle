@@ -36,7 +36,7 @@ export default function AdvisorDashboard() {
   const [earningsSummary, setEarningsSummary] = useState<any>(null);
   const [tab, setTab] = useState<'groups' | 'post' | 'signals_history' | 'subscribers' | 'revenue' | 'referrals' | 'profile'>('groups');
   const [loading, setLoading] = useState(true);
-  const [groupForm, setGroupForm] = useState({ name: '', description: '', monthlyPrice: '' });
+  const [groupForm, setGroupForm] = useState({ name: '', description: '', monthlyPrice: '', strategyCategory: 'All' });
   const [groupDp, setGroupDp] = useState<File | null>(null);
   const [showGroupForm, setShowGroupForm] = useState(false);
 
@@ -102,7 +102,7 @@ export default function AdvisorDashboard() {
       const { data } = await supabase.storage.from('kyc-documents').upload(`groups/${advisor.id}/${Date.now()}.${groupDp.name.split('.').pop()}`, groupDp);
       if (data) dpUrl = supabase.storage.from('kyc-documents').getPublicUrl(data.path).data.publicUrl;
     }
-    const { data: newGroup, error } = await supabase.from('groups').insert({ advisor_id: advisor.id, name: sanitizeText(groupForm.name), description: sanitizeTextarea(groupForm.description), monthly_price: parseInt(groupForm.monthlyPrice) || 0, dp_url: dpUrl }).select().single();
+    const { data: newGroup, error } = await (supabase.from('groups') as any).insert({ advisor_id: advisor.id, name: sanitizeText(groupForm.name), description: sanitizeTextarea(groupForm.description), monthly_price: parseInt(groupForm.monthlyPrice) || 0, dp_url: dpUrl, strategy_category: groupForm.strategyCategory || 'All' }).select().single();
     if (error) { toast.error(error.message); return; }
     toast.info('Creating payment link...');
     const { data: session } = await supabase.auth.getSession();
@@ -111,7 +111,7 @@ export default function AdvisorDashboard() {
     if (res.ok) toast.success('Group created with payment link!');
     else toast.warning('Group created but payment link generation failed: ' + (result.error || 'Unknown error'));
     setShowGroupForm(false);
-    setGroupForm({ name: '', description: '', monthlyPrice: '' });
+    setGroupForm({ name: '', description: '', monthlyPrice: '', strategyCategory: 'All' });
     fetchData();
   };
 
@@ -359,6 +359,19 @@ export default function AdvisorDashboard() {
                 <div><Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Group Name</Label><Input value={groupForm.name} onChange={e => setGroupForm({ ...groupForm, name: e.target.value })} className="mt-1.5" /></div>
                 <div><Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Description</Label><Textarea value={groupForm.description} onChange={e => setGroupForm({ ...groupForm, description: e.target.value })} className="mt-1.5" /></div>
                 <div><Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Monthly Price (₹)</Label><Input type="number" value={groupForm.monthlyPrice} onChange={e => setGroupForm({ ...groupForm, monthlyPrice: e.target.value })} className="mt-1.5" /></div>
+                <div>
+                  <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Strategy Category</Label>
+                  <Select value={groupForm.strategyCategory} onValueChange={v => setGroupForm({ ...groupForm, strategyCategory: v })}>
+                    <SelectTrigger className="mt-1.5 border-[1.5px]"><SelectValue placeholder="Select category" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="All">All</SelectItem>
+                      <SelectItem value="Intraday">Intraday</SelectItem>
+                      <SelectItem value="Swing">Swing</SelectItem>
+                      <SelectItem value="Options">Options</SelectItem>
+                      <SelectItem value="Equity">Equity</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <div><Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Group Photo</Label><Input type="file" accept="image/*" onChange={e => setGroupDp(e.target.files?.[0] || null)} className="mt-1.5" /></div>
                 <Button onClick={createGroup} className="font-semibold">Create Group</Button>
               </div>

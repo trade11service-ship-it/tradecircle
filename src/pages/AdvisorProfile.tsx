@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Navbar } from '@/components/Navbar';
 import { GroupFeed } from '@/components/GroupFeed';
@@ -31,6 +31,7 @@ function FollowButton({ groupId }: { groupId: string }) {
 }
 
 export default function AdvisorProfile() {
+  const [searchParams] = useSearchParams();
   const { id } = useParams<{ id: string }>();
   const { user, profile } = useAuth();
   const navigate = useNavigate();
@@ -41,7 +42,11 @@ export default function AdvisorProfile() {
   const [groupAccessMap, setGroupAccessMap] = useState<Record<string, { hasAccess: boolean; expiresAt: string | null; isExpired: boolean }>>({});
   const [loading, setLoading] = useState(true);
   const [subscribing, setSubscribing] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'feed' | 'signals' | 'about'>('feed');
+  const [activeTab, setActiveTab] = useState<'feed' | 'signals' | 'about'>(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam === 'about' || tabParam === 'signals') return tabParam;
+    return 'feed';
+  });
   const [riskAlreadyAccepted, setRiskAlreadyAccepted] = useState(false);
   const [signalStats, setSignalStats] = useState<{ total_signals: number; win_count: number; loss_count: number; resolved_count: number }>({ total_signals: 0, win_count: 0, loss_count: 0, resolved_count: 0 });
   const [totalSubs, setTotalSubs] = useState(0);

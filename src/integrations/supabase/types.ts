@@ -300,6 +300,7 @@ export type Database = {
           monthly_price: number
           name: string
           razorpay_payment_link: string | null
+          strategy_category: string | null
         }
         Insert: {
           advisor_id: string
@@ -311,6 +312,7 @@ export type Database = {
           monthly_price: number
           name: string
           razorpay_payment_link?: string | null
+          strategy_category?: string | null
         }
         Update: {
           advisor_id?: string
@@ -322,6 +324,7 @@ export type Database = {
           monthly_price?: number
           name?: string
           razorpay_payment_link?: string | null
+          strategy_category?: string | null
         }
         Relationships: [
           {
