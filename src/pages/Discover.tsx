@@ -21,11 +21,22 @@ interface GroupWithDetails {
   advisor_photo: string | null;
   sebi_reg_no: string;
   strategy_type: string | null;
+  strategy_category: string | null;
   sub_count: number;
   signal_count: number;
   win_count: number;
   resolved_count: number;
+  created_at: string;
 }
+
+const isBadBio = (bio: string) => {
+  if (!bio || bio.trim().length < 60) return true;
+  const badPatterns = ['we r', 'r the', 'evrday', 'evry', 'dvisor', 'experince', 'yars', 'registerd', 'proper calls', 'byu'];
+  return badPatterns.some(p => bio.toLowerCase().includes(p));
+};
+
+const getDisplayBio = (bio: string | null | undefined) =>
+  isBadBio(bio || '') ? 'SEBI registered Research Analyst. Specialises in F&O and intraday strategies.' : bio!;
 
 const toTitleCase = (s: string) => s.replace(/\b\w/g, c => c.toUpperCase());
 
