@@ -267,11 +267,9 @@ export default function Groups() {
                       </div>
 
                       {/* Row 3: Description */}
-                      {g.description && (
-                        <p className="text-[13px] text-muted-foreground leading-relaxed line-clamp-2 mb-3">
-                          "{g.description}"
-                        </p>
-                      )}
+                      <p className="text-[13px] text-muted-foreground leading-relaxed line-clamp-2 mb-3">
+                        "{getDisplayBio(g.description)}"
+                      </p>
 
                       {/* CTA */}
                       <Button className="w-full h-11 rounded-xl bg-primary font-bold hover:bg-primary/90 transition-all">
