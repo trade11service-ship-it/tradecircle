@@ -125,11 +125,13 @@ export default function Landing() {
                 Browse Advisors <ArrowRight className="ml-1.5 h-4 w-4" />
               </Button>
             </Link>
-            <Link to="/login">
-              <Button variant="outline" className="w-full sm:w-auto h-14 px-10 rounded-full border-2 border-white/20 text-white text-[15px] font-semibold hover:bg-white/10 hover:scale-[1.02] transition-all duration-200 bg-transparent">
-                Sign In / Sign Up
-              </Button>
-            </Link>
+            {!user && (
+              <Link to="/login">
+                <Button variant="outline" className="w-full sm:w-auto h-14 px-10 rounded-full border-2 border-white/20 text-white text-[15px] font-semibold hover:bg-white/10 hover:scale-[1.02] transition-all duration-200 bg-transparent">
+                  Sign In / Sign Up
+                </Button>
+              </Link>
+            )}
           </div>
           {/* Stats with icons and green top borders */}
           <div className="mt-10 grid grid-cols-3 gap-4 md:gap-6 max-w-md mx-auto">
