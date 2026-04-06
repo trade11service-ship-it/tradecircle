@@ -125,11 +125,13 @@ export default function Landing() {
                 Browse Advisors <ArrowRight className="ml-1.5 h-4 w-4" />
               </Button>
             </Link>
-            <Link to="/login">
-              <Button variant="outline" className="w-full sm:w-auto h-14 px-10 rounded-full border-2 border-white/20 text-white text-[15px] font-semibold hover:bg-white/10 hover:scale-[1.02] transition-all duration-200 bg-transparent">
-                Sign In / Sign Up
-              </Button>
-            </Link>
+            {!user && (
+              <Link to="/login">
+                <Button variant="outline" className="w-full sm:w-auto h-14 px-10 rounded-full border-2 border-white/20 text-white text-[15px] font-semibold hover:bg-white/10 hover:scale-[1.02] transition-all duration-200 bg-transparent">
+                  Sign In / Sign Up
+                </Button>
+              </Link>
+            )}
           </div>
           {/* Stats with icons and green top borders */}
           <div className="mt-10 grid grid-cols-3 gap-4 md:gap-6 max-w-md mx-auto">
@@ -240,26 +242,21 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* PUBLIC MIXED FEED PREVIEW */}
-      <section className="bg-background px-5 py-12 md:py-16 border-y border-border">
-        <div className="container mx-auto max-w-2xl">
-          <div className="text-center mb-6">
-            <p className="text-[11px] font-bold text-primary uppercase tracking-[2px]">PUBLIC FEED</p>
-            <h2 className="mt-1 text-2xl font-extrabold text-foreground tracking-tight">Analysis + Signals Preview</h2>
-            <p className="mt-1 text-sm text-muted-foreground">Analysis is always free. Subscribe to unlock real-time trading signals from verified advisors.</p>
-          </div>
-
-          <div className="rounded-2xl border border-border bg-card p-3 md:p-4">
-            <PublicMixedFeed preview maxItems={8} />
-          </div>
-
-          <div className="mt-5 text-center">
-            <a href="/explore">
-              <Button className="h-12 px-8 rounded-xl bg-primary text-[15px] font-bold tc-btn-click">
-                Open Full Feed <ArrowRight className="ml-1 h-4 w-4" />
+      {/* PUBLIC FEED PREVIEW — compact horizontal scroll */}
+      <section className="bg-muted/40 px-5 py-8 md:py-10 border-y border-border">
+        <div className="container mx-auto">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="text-[11px] font-bold text-primary uppercase tracking-[2px]">LIVE FEED</p>
+              <h2 className="mt-0.5 text-lg font-extrabold text-foreground tracking-tight">Recent Signals & Analysis</h2>
+            </div>
+            <Link to="/explore">
+              <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-primary/5 rounded-lg text-xs">
+                View All <ArrowRight className="ml-1 h-3 w-3" />
               </Button>
-            </a>
+            </Link>
           </div>
+          <PublicMixedFeed preview maxItems={4} />
         </div>
       </section>
 
