@@ -68,10 +68,12 @@ export default function Groups() {
         advisor_photo: g.advisors.profile_photo_url,
         sebi_reg_no: g.advisors.sebi_reg_no,
         strategy_type: g.advisors.strategy_type,
+        strategy_category: (g as any).strategy_category || null,
         sub_count: (subCount as number) || 0,
         signal_count: s.total_signals || 0,
         win_count: s.win_count || 0,
         resolved_count: s.resolved_count || 0,
+        created_at: g.created_at || '',
       };
     }));
 
