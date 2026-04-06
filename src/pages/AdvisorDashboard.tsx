@@ -843,15 +843,34 @@ export default function AdvisorDashboard() {
 
         {/* PROFILE TAB */}
         {tab === 'profile' && (
-          <div className="max-w-lg">
+          <div className="max-w-lg space-y-4">
             <div className="rounded-2xl border-[1.5px] border-border bg-card p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
               <div className="flex items-center gap-4 mb-6">
-                <div className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-gradient-to-br from-primary to-secondary text-2xl font-bold text-primary-foreground overflow-hidden">
-                  {advisor.profile_photo_url ? <img src={advisor.profile_photo_url} alt="" className="h-full w-full object-cover" /> : advisor.full_name.charAt(0).toUpperCase()}
-                </div>
+                <label className="relative cursor-pointer group">
+                  <div className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-gradient-to-br from-primary to-secondary text-2xl font-bold text-primary-foreground overflow-hidden">
+                    {advisor.profile_photo_url ? <img src={advisor.profile_photo_url} alt="" className="h-full w-full object-cover" /> : advisor.full_name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <ImageIcon className="h-5 w-5 text-white" />
+                  </div>
+                  <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    if (file.size > 5 * 1024 * 1024) { toast.error('Max 5MB'); return; }
+                    const ext = file.name.split('.').pop();
+                    const path = `${advisor.id}/${Date.now()}.${ext}`;
+                    const { data, error } = await supabase.storage.from('advisor-avatars').upload(path, file);
+                    if (error) { toast.error('Upload failed'); return; }
+                    const url = supabase.storage.from('advisor-avatars').getPublicUrl(data.path).data.publicUrl;
+                    await supabase.from('advisors').update({ profile_photo_url: url }).eq('id', advisor.id);
+                    toast.success('Profile photo updated!');
+                    fetchData();
+                  }} />
+                </label>
                 <div>
                   <h2 className="text-[22px] font-extrabold text-foreground capitalize">{advisor.full_name}</h2>
                   <span className="inline-flex items-center rounded-full bg-light-green px-3 py-0.5 text-xs font-semibold text-primary mt-1">✓ {advisor.status}</span>
+                  <p className="text-[11px] text-muted-foreground mt-1">Tap photo to change</p>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-2.5">
@@ -873,6 +892,42 @@ export default function AdvisorDashboard() {
                     <p className="mt-1 text-sm text-foreground leading-relaxed">{advisor.bio}</p>
                   </div>
                 )}
+              </div>
+            </div>
+
+            {/* Edit Strategy & Bio */}
+            <div className="rounded-2xl border-[1.5px] border-border bg-card p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+              <h3 className="text-sm font-bold text-foreground mb-4">Update Profile Details</h3>
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Strategy Type</Label>
+                  <Select defaultValue={advisor.strategy_type || ''} onValueChange={async (v) => {
+                    await supabase.from('advisors').update({ strategy_type: v }).eq('id', advisor.id);
+                    toast.success('Strategy updated');
+                    fetchData();
+                  }}>
+                    <SelectTrigger className="mt-1.5 border-[1.5px]"><SelectValue placeholder="Select strategy" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="All">All</SelectItem>
+                      <SelectItem value="Intraday">Intraday</SelectItem>
+                      <SelectItem value="Swing">Swing</SelectItem>
+                      <SelectItem value="Options">Options</SelectItem>
+                      <SelectItem value="Equity">Equity</SelectItem>
+                      <SelectItem value="F&O">F&O</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Bio</Label>
+                  <Textarea defaultValue={advisor.bio || ''} placeholder="Describe your trading style..." className="mt-1.5 border-[1.5px] min-h-[80px]" onBlur={async (e) => {
+                    const val = e.target.value.trim();
+                    if (val !== (advisor.bio || '')) {
+                      await supabase.from('advisors').update({ bio: val }).eq('id', advisor.id);
+                      toast.success('Bio updated');
+                      fetchData();
+                    }
+                  }} />
+                </div>
               </div>
             </div>
           </div>
