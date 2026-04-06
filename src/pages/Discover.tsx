@@ -57,7 +57,7 @@ export default function Groups() {
   const fetchGroups = async () => {
     const { data: grps } = await supabase
       .from('groups')
-      .select('id, name, description, monthly_price, dp_url, advisor_id, advisors!inner(full_name, profile_photo_url, sebi_reg_no, strategy_type)')
+      .select('id, name, description, monthly_price, dp_url, advisor_id, created_at, strategy_category, advisors!inner(full_name, profile_photo_url, sebi_reg_no, strategy_type)')
       .eq('is_active', true);
 
     if (!grps) { setLoading(false); return; }
