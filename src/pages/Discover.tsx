@@ -99,7 +99,12 @@ export default function Groups() {
       const matchSearch = g.name.toLowerCase().includes(search.toLowerCase()) ||
         g.advisor_name.toLowerCase().includes(search.toLowerCase()) ||
         (g.strategy_type || '').toLowerCase().includes(search.toLowerCase());
-      const matchFilter = filter === 'All' || (g.strategy_type || '').toLowerCase().includes(filter.toLowerCase());
+      if (filter === 'All') return matchSearch;
+      // Match against strategy_category (group-level) or strategy_type (advisor-level)
+      const cat = (g.strategy_category || '').toLowerCase();
+      const strat = (g.strategy_type || '').toLowerCase();
+      const f = filter.toLowerCase();
+      const matchFilter = cat === f || cat === 'all' || strat.includes(f);
       return matchSearch && matchFilter;
     })
     .sort((a, b) => {
@@ -109,7 +114,8 @@ export default function Groups() {
         const accB = b.resolved_count > 0 ? b.win_count / b.resolved_count : 0;
         return accB - accA;
       }
-      return 0; // newest — groups already ordered
+      if (sort === 'newest') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      return 0;
     });
 
   const getAccuracy = (g: GroupWithDetails) =>
