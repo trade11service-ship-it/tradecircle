@@ -21,11 +21,22 @@ interface GroupWithDetails {
   advisor_photo: string | null;
   sebi_reg_no: string;
   strategy_type: string | null;
+  strategy_category: string | null;
   sub_count: number;
   signal_count: number;
   win_count: number;
   resolved_count: number;
+  created_at: string;
 }
+
+const isBadBio = (bio: string) => {
+  if (!bio || bio.trim().length < 60) return true;
+  const badPatterns = ['we r', 'r the', 'evrday', 'evry', 'dvisor', 'experince', 'yars', 'registerd', 'proper calls', 'byu'];
+  return badPatterns.some(p => bio.toLowerCase().includes(p));
+};
+
+const getDisplayBio = (bio: string | null | undefined) =>
+  isBadBio(bio || '') ? 'SEBI registered Research Analyst. Specialises in F&O and intraday strategies.' : bio!;
 
 const toTitleCase = (s: string) => s.replace(/\b\w/g, c => c.toUpperCase());
 
@@ -46,7 +57,7 @@ export default function Groups() {
   const fetchGroups = async () => {
     const { data: grps } = await supabase
       .from('groups')
-      .select('id, name, description, monthly_price, dp_url, advisor_id, advisors!inner(full_name, profile_photo_url, sebi_reg_no, strategy_type)')
+      .select('id, name, description, monthly_price, dp_url, advisor_id, created_at, strategy_category, advisors!inner(full_name, profile_photo_url, sebi_reg_no, strategy_type)')
       .eq('is_active', true);
 
     if (!grps) { setLoading(false); return; }
@@ -68,10 +79,12 @@ export default function Groups() {
         advisor_photo: g.advisors.profile_photo_url,
         sebi_reg_no: g.advisors.sebi_reg_no,
         strategy_type: g.advisors.strategy_type,
+        strategy_category: (g as any).strategy_category || null,
         sub_count: (subCount as number) || 0,
         signal_count: s.total_signals || 0,
         win_count: s.win_count || 0,
         resolved_count: s.resolved_count || 0,
+        created_at: g.created_at || '',
       };
     }));
 
@@ -86,7 +99,12 @@ export default function Groups() {
       const matchSearch = g.name.toLowerCase().includes(search.toLowerCase()) ||
         g.advisor_name.toLowerCase().includes(search.toLowerCase()) ||
         (g.strategy_type || '').toLowerCase().includes(search.toLowerCase());
-      const matchFilter = filter === 'All' || (g.strategy_type || '').toLowerCase().includes(filter.toLowerCase());
+      if (filter === 'All') return matchSearch;
+      // Match against strategy_category (group-level) or strategy_type (advisor-level)
+      const cat = (g.strategy_category || '').toLowerCase();
+      const strat = (g.strategy_type || '').toLowerCase();
+      const f = filter.toLowerCase();
+      const matchFilter = cat === f || cat === 'all' || strat.includes(f);
       return matchSearch && matchFilter;
     })
     .sort((a, b) => {
@@ -96,7 +114,8 @@ export default function Groups() {
         const accB = b.resolved_count > 0 ? b.win_count / b.resolved_count : 0;
         return accB - accA;
       }
-      return 0; // newest — groups already ordered
+      if (sort === 'newest') return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      return 0;
     });
 
   const getAccuracy = (g: GroupWithDetails) =>
@@ -248,11 +267,9 @@ export default function Groups() {
                       </div>
 
                       {/* Row 3: Description */}
-                      {g.description && (
-                        <p className="text-[13px] text-muted-foreground leading-relaxed line-clamp-2 mb-3">
-                          "{g.description}"
-                        </p>
-                      )}
+                      <p className="text-[13px] text-muted-foreground leading-relaxed line-clamp-2 mb-3">
+                        "{getDisplayBio(g.description)}"
+                      </p>
 
                       {/* CTA */}
                       <Button className="w-full h-11 rounded-xl bg-primary font-bold hover:bg-primary/90 transition-all">
