@@ -218,24 +218,25 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* HOW IT WORKS */}
-      <section className="bg-card px-5 py-12 md:py-16 border-y border-border">
+      {/* HOW IT WORKS — Compact */}
+      <section className="bg-card px-5 py-8 border-y border-border">
         <div className="container mx-auto max-w-2xl">
-          <div className="text-center mb-8">
-            <p className="text-[11px] font-bold text-secondary uppercase tracking-[2px]">HOW IT WORKS</p>
-            <h2 className="mt-1 text-2xl font-extrabold text-foreground tracking-tight">3 Simple Steps</h2>
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="text-[11px] font-bold text-secondary uppercase tracking-[2px]">HOW IT WORKS</p>
+              <h2 className="mt-0.5 text-lg font-extrabold text-foreground tracking-tight">3 Simple Steps</h2>
+            </div>
           </div>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="flex gap-3 overflow-x-auto pb-1">
             {[
-              { num: '1', icon: Search, title: 'Browse Advisors', desc: 'Filter by strategy, check signal history & SEBI credentials. No account needed.' },
-              { num: '2', icon: CreditCard, title: 'Subscribe', desc: 'Choose your advisor group. Pay securely via Razorpay. Monthly. Cancel anytime.' },
-              { num: '3', icon: Bell, title: 'Get Signals', desc: 'Real-time alerts on Telegram. Every signal permanently timestamped. Cannot be deleted or faked.' },
+              { num: '1', icon: Search, title: 'Browse', desc: 'Filter by strategy & SEBI credentials' },
+              { num: '2', icon: CreditCard, title: 'Subscribe', desc: 'Pay via Razorpay. Cancel anytime.' },
+              { num: '3', icon: Bell, title: 'Get Signals', desc: 'Real-time on Telegram. Tamper-proof.' },
             ].map(step => (
-              <div key={step.num} className="relative rounded-xl border border-green-500/30 border-l-4 border-l-green-500 bg-green-50 p-5 text-center dark:bg-green-950/20 dark:border-green-500/50">
-                <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-green-500 text-lg font-extrabold text-white mb-3">{step.num}</div>
-                <step.icon className="mx-auto h-6 w-6 text-green-500 mb-2" />
-                <h3 className="text-[15px] font-bold text-foreground">{step.title}</h3>
-                <p className="mt-1 text-[13px] text-muted-foreground">{step.desc}</p>
+              <div key={step.num} className="min-w-[140px] flex-1 rounded-xl border border-primary/20 bg-primary/5 p-3 text-center shrink-0">
+                <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground mb-2">{step.num}</div>
+                <h3 className="text-[13px] font-bold text-foreground">{step.title}</h3>
+                <p className="mt-0.5 text-[11px] text-muted-foreground leading-tight">{step.desc}</p>
               </div>
             ))}
           </div>

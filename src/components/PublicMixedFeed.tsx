@@ -345,6 +345,9 @@ export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedF
     );
   }
 
+  // Track which advisors already showed follow button
+  const seenAdvisors = new Set<string>();
+
   return (
     <div className="space-y-1">
       {grouped.map((group, gi) => (
@@ -355,6 +358,10 @@ export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedF
               const advisor = advisorMap[post.advisor_id];
               const advisorName = advisor?.full_name || "Advisor";
               const advisorPhoto = advisor?.profile_photo_url || undefined;
+
+              // Only show follow button for first post by each advisor
+              const showFollow = !seenAdvisors.has(post.advisor_id);
+              if (showFollow) seenAdvisors.add(post.advisor_id);
 
               // Determine free badge for signals
               let freeBadge: string | null = null;
@@ -378,7 +385,7 @@ export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedF
                     post={post}
                     advisorName={advisorName}
                     advisorPhoto={advisorPhoto}
-                    groupId={post.group_id}
+                    groupId={showFollow ? post.group_id : undefined}
                     freeBadge={freeBadge}
                   />
                 );
@@ -390,7 +397,7 @@ export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedF
                   post={post}
                   advisorName={advisorName}
                   advisorPhoto={advisorPhoto}
-                  groupId={post.group_id}
+                  groupId={showFollow ? post.group_id : undefined}
                 />
               );
             })}
