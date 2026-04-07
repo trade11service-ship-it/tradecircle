@@ -285,9 +285,19 @@ export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedF
   }, []);
 
   const visiblePosts = useMemo(() => {
-    if (!preview) return posts;
-    return posts.slice(0, maxItems);
-  }, [posts, preview, maxItems]);
+    let sorted = [...posts];
+    // Followed advisors' posts first
+    if (followedGroupIds.size > 0) {
+      sorted.sort((a, b) => {
+        const aFollowed = followedGroupIds.has(a.group_id) ? 1 : 0;
+        const bFollowed = followedGroupIds.has(b.group_id) ? 1 : 0;
+        if (aFollowed !== bFollowed) return bFollowed - aFollowed;
+        return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+      });
+    }
+    if (!preview) return sorted;
+    return sorted.slice(0, maxItems);
+  }, [posts, preview, maxItems, followedGroupIds]);
 
   const grouped = useMemo(() => {
     const result: { label: string; items: FeedPost[] }[] = [];

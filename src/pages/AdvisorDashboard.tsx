@@ -99,8 +99,11 @@ export default function AdvisorDashboard() {
     if (!advisor) return;
     let dpUrl = '';
     if (groupDp) {
-      const { data } = await supabase.storage.from('kyc-documents').upload(`groups/${advisor.id}/${Date.now()}.${groupDp.name.split('.').pop()}`, groupDp);
-      if (data) dpUrl = supabase.storage.from('kyc-documents').getPublicUrl(data.path).data.publicUrl;
+      const ext = groupDp.name.split('.').pop();
+      const path = `${advisor.id}/${Date.now()}.${ext}`;
+      const { data, error: uploadErr } = await supabase.storage.from('group-media').upload(path, groupDp, { upsert: true });
+      if (uploadErr) { toast.error('Group photo upload failed: ' + uploadErr.message); return; }
+      if (data) dpUrl = supabase.storage.from('group-media').getPublicUrl(data.path).data.publicUrl;
     }
     const { data: newGroup, error } = await (supabase.from('groups') as any).insert({ advisor_id: advisor.id, name: sanitizeText(groupForm.name), description: sanitizeTextarea(groupForm.description), monthly_price: parseInt(groupForm.monthlyPrice) || 0, dp_url: dpUrl, strategy_category: groupForm.strategyCategory || 'All' }).select().single();
     if (error) { toast.error(error.message); return; }
