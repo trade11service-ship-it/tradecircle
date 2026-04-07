@@ -48,6 +48,7 @@ export default function Profile() {
 
   // Following count
   const [followingCount, setFollowingCount] = useState(0);
+  const [followedGroups, setFollowedGroups] = useState<any[]>([]);
 
   useEffect(() => { if (profile) setForm({ fullName: profile.full_name || '', phone: profile.phone || '', telegramUsername: profile.telegram_username || '' }); }, [profile]);
   useEffect(() => { if (user) { fetchSubscriptions(); fetchAdvisorData(); fetchDeletionRequests(); fetchFollowingCount(); } }, [user]);
