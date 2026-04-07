@@ -207,14 +207,26 @@ type PublicMixedFeedProps = {
 };
 
 export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedFeedProps) {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [advisorMap, setAdvisorMap] = useState<Record<string, AdvisorMini>>({});
   const [groupMap, setGroupMap] = useState<Record<string, GroupMini>>({});
+  const [followedGroupIds, setFollowedGroupIds] = useState<Set<string>>(new Set());
   const [offset, setOffset] = useState(0);
   const pageSize = 12;
   const [hasMore, setHasMore] = useState(true);
 
+  // Track which advisors already have a follow button shown
+  const shownFollowAdvisors = useMemo(() => new Set<string>(), [posts]);
+
+  // Fetch user's followed groups
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("group_follows").select("group_id").eq("user_id", user.id).then(({ data }) => {
+      setFollowedGroupIds(new Set((data || []).map(d => d.group_id)));
+    });
+  }, [user]);
   const fetchPage = async (nextOffset: number) => {
     setLoading(true);
 
