@@ -639,14 +639,19 @@ export default function Profile() {
                             <p style={{ fontSize: 11, color: '#6B7280' }}>₹{g.monthly_price}/month</p>
                           </div>
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-destructive border-destructive/30 hover:bg-destructive/10 gap-1"
-                          onClick={() => openDeleteDialog('group', g)}
-                        >
-                          <Trash2 className="h-3 w-3" /> Remove
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => navigate(`/advisor/${advisor.id}`)}>
+                            View Group
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-destructive border-destructive/30 hover:bg-destructive/10 gap-1"
+                            onClick={() => openDeleteDialog('group', g)}
+                          >
+                            <Trash2 className="h-3 w-3" /> Remove
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>
