@@ -169,6 +169,7 @@ export default function Profile() {
   const tabs = [
     { key: 'details' as const, label: 'My Details', icon: '👤' },
     { key: 'subscriptions' as const, label: 'Subscriptions', icon: '📋' },
+    { key: 'following' as const, label: 'Following', icon: '❤️' },
     { key: 'security' as const, label: 'Security', icon: '🛡️' },
     { key: 'settings' as const, label: 'Settings', icon: '⚙️' },
   ];
