@@ -473,6 +473,44 @@ export default function Profile() {
           </div>
         )}
 
+        {/* FOLLOWING TAB */}
+        {tab === 'following' && (
+          <div>
+            <h2 className="mb-3" style={{ fontSize: 16, fontWeight: 700, color: '#1A1A2E' }}>Groups You Follow</h2>
+            {followedGroups.length === 0 ? (
+              <div className="flex flex-col items-center justify-center text-center" style={{ background: 'white', borderRadius: 16, border: '1.5px dashed #E5E7EB', padding: '40px 20px' }}>
+                <Users className="h-10 w-10" style={{ color: '#E5E7EB' }} />
+                <h3 className="mt-3" style={{ fontSize: 16, fontWeight: 700, color: '#1A1A2E' }}>Not following anyone yet</h3>
+                <p className="mt-1.5 max-w-xs" style={{ fontSize: 13, color: '#6B7280' }}>Browse the public feed and follow advisors to see their updates here</p>
+                <Button className="mt-4" onClick={() => navigate('/explore')} style={{ background: '#1B5E20', borderRadius: 8, padding: '10px 20px' }}>
+                  Browse Public Feed
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {followedGroups.map((fg: any) => (
+                  <div key={fg.id} style={{ background: 'white', borderRadius: 14, border: '1.5px solid #E5E7EB', padding: 16 }}>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center shrink-0 text-sm font-bold text-white" style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg, #1B5E20, #0D47A1)' }}>
+                        {fg.groups?.advisors?.profile_photo_url
+                          ? <img src={fg.groups.advisors.profile_photo_url} alt="" className="h-full w-full rounded-full object-cover" />
+                          : (fg.groups?.advisors?.full_name || 'A').charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="capitalize truncate" style={{ fontSize: 14, fontWeight: 700, color: '#1A1A2E' }}>{fg.groups?.advisors?.full_name}</p>
+                        <p className="truncate" style={{ fontSize: 12, color: '#6B7280' }}>{fg.groups?.name}</p>
+                      </div>
+                      <Button variant="outline" size="sm" className="shrink-0 text-xs" onClick={() => navigate(`/advisor/${fg.groups?.advisor_id}`)}>
+                        View Group
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* SECURITY TAB */}
         {tab === 'security' && (
           <div
