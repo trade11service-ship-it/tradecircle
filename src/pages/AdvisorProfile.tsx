@@ -623,6 +623,13 @@ export default function AdvisorProfile() {
         {activeTab === 'about' && (
           <div className="px-4 py-6 bg-white">
             <div className="max-w-4xl mx-auto space-y-4">
+              {isOwner && (
+                <div className="flex justify-end">
+                  <button onClick={() => navigate('/advisor/dashboard')} className="inline-flex items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-3 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50 transition-colors shadow-sm">
+                    <Camera className="h-3.5 w-3.5" /> Edit Profile
+                  </button>
+                </div>
+              )}
               {/* Card 1: SEBI Registration */}
               <div className="rounded-xl border border-gray-100 shadow-sm bg-white p-5 hover:shadow-md transition-shadow">
                 <div className="flex items-start gap-4">

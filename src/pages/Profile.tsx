@@ -23,7 +23,7 @@ import {
 export default function Profile() {
   const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<'details' | 'subscriptions' | 'security' | 'settings'>('details');
+  const [tab, setTab] = useState<'details' | 'subscriptions' | 'following' | 'security' | 'settings'>('details');
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ fullName: '', phone: '', telegramUsername: '' });
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
@@ -48,6 +48,7 @@ export default function Profile() {
 
   // Following count
   const [followingCount, setFollowingCount] = useState(0);
+  const [followedGroups, setFollowedGroups] = useState<any[]>([]);
 
   useEffect(() => { if (profile) setForm({ fullName: profile.full_name || '', phone: profile.phone || '', telegramUsername: profile.telegram_username || '' }); }, [profile]);
   useEffect(() => { if (user) { fetchSubscriptions(); fetchAdvisorData(); fetchDeletionRequests(); fetchFollowingCount(); } }, [user]);
@@ -58,8 +59,9 @@ export default function Profile() {
   };
 
   const fetchFollowingCount = async () => {
-    const { count } = await supabase.from('group_follows').select('*', { count: 'exact', head: true }).eq('user_id', user!.id);
-    setFollowingCount(count || 0);
+    const { data } = await supabase.from('group_follows').select('*, groups!inner(name, monthly_price, advisor_id, advisors!inner(full_name, profile_photo_url))').eq('user_id', user!.id);
+    setFollowedGroups(data || []);
+    setFollowingCount(data?.length || 0);
   };
 
   const fetchAdvisorData = async () => {
@@ -167,6 +169,7 @@ export default function Profile() {
   const tabs = [
     { key: 'details' as const, label: 'My Details', icon: '👤' },
     { key: 'subscriptions' as const, label: 'Subscriptions', icon: '📋' },
+    { key: 'following' as const, label: 'Following', icon: '❤️' },
     { key: 'security' as const, label: 'Security', icon: '🛡️' },
     { key: 'settings' as const, label: 'Settings', icon: '⚙️' },
   ];
@@ -470,6 +473,44 @@ export default function Profile() {
           </div>
         )}
 
+        {/* FOLLOWING TAB */}
+        {tab === 'following' && (
+          <div>
+            <h2 className="mb-3" style={{ fontSize: 16, fontWeight: 700, color: '#1A1A2E' }}>Groups You Follow</h2>
+            {followedGroups.length === 0 ? (
+              <div className="flex flex-col items-center justify-center text-center" style={{ background: 'white', borderRadius: 16, border: '1.5px dashed #E5E7EB', padding: '40px 20px' }}>
+                <Users className="h-10 w-10" style={{ color: '#E5E7EB' }} />
+                <h3 className="mt-3" style={{ fontSize: 16, fontWeight: 700, color: '#1A1A2E' }}>Not following anyone yet</h3>
+                <p className="mt-1.5 max-w-xs" style={{ fontSize: 13, color: '#6B7280' }}>Browse the public feed and follow advisors to see their updates here</p>
+                <Button className="mt-4" onClick={() => navigate('/explore')} style={{ background: '#1B5E20', borderRadius: 8, padding: '10px 20px' }}>
+                  Browse Public Feed
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2.5">
+                {followedGroups.map((fg: any) => (
+                  <div key={fg.id} style={{ background: 'white', borderRadius: 14, border: '1.5px solid #E5E7EB', padding: 16 }}>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center shrink-0 text-sm font-bold text-white" style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg, #1B5E20, #0D47A1)' }}>
+                        {fg.groups?.advisors?.profile_photo_url
+                          ? <img src={fg.groups.advisors.profile_photo_url} alt="" className="h-full w-full rounded-full object-cover" />
+                          : (fg.groups?.advisors?.full_name || 'A').charAt(0).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="capitalize truncate" style={{ fontSize: 14, fontWeight: 700, color: '#1A1A2E' }}>{fg.groups?.advisors?.full_name}</p>
+                        <p className="truncate" style={{ fontSize: 12, color: '#6B7280' }}>{fg.groups?.name}</p>
+                      </div>
+                      <Button variant="outline" size="sm" className="shrink-0 text-xs" onClick={() => navigate(`/advisor/${fg.groups?.advisor_id}`)}>
+                        View Group
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {/* SECURITY TAB */}
         {tab === 'security' && (
           <div
@@ -598,14 +639,19 @@ export default function Profile() {
                             <p style={{ fontSize: 11, color: '#6B7280' }}>₹{g.monthly_price}/month</p>
                           </div>
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="text-destructive border-destructive/30 hover:bg-destructive/10 gap-1"
-                          onClick={() => openDeleteDialog('group', g)}
-                        >
-                          <Trash2 className="h-3 w-3" /> Remove
-                        </Button>
+                        <div className="flex items-center gap-2">
+                          <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => navigate(`/advisor/${advisor.id}`)}>
+                            View Group
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="text-destructive border-destructive/30 hover:bg-destructive/10 gap-1"
+                            onClick={() => openDeleteDialog('group', g)}
+                          >
+                            <Trash2 className="h-3 w-3" /> Remove
+                          </Button>
+                        </div>
                       </div>
                     ))}
                   </div>

@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { shouldShowFree } from "@/lib/accessControl";
 import { Button } from "@/components/ui/button";
 import { FollowButton } from "@/components/FollowButton";
+import { useAuth } from "@/lib/auth";
 
 type FeedPost = {
   id: string;
@@ -206,14 +207,24 @@ type PublicMixedFeedProps = {
 };
 
 export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedFeedProps) {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [advisorMap, setAdvisorMap] = useState<Record<string, AdvisorMini>>({});
   const [groupMap, setGroupMap] = useState<Record<string, GroupMini>>({});
+  const [followedGroupIds, setFollowedGroupIds] = useState<Set<string>>(new Set());
   const [offset, setOffset] = useState(0);
   const pageSize = 12;
   const [hasMore, setHasMore] = useState(true);
 
+
+  // Fetch user's followed groups
+  useEffect(() => {
+    if (!user) return;
+    supabase.from("group_follows").select("group_id").eq("user_id", user.id).then(({ data }) => {
+      setFollowedGroupIds(new Set((data || []).map(d => d.group_id)));
+    });
+  }, [user]);
   const fetchPage = async (nextOffset: number) => {
     setLoading(true);
 
@@ -284,9 +295,19 @@ export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedF
   }, []);
 
   const visiblePosts = useMemo(() => {
-    if (!preview) return posts;
-    return posts.slice(0, maxItems);
-  }, [posts, preview, maxItems]);
+    let sorted = [...posts];
+    // Followed advisors' posts first
+    if (followedGroupIds.size > 0) {
+      sorted.sort((a, b) => {
+        const aFollowed = followedGroupIds.has(a.group_id) ? 1 : 0;
+        const bFollowed = followedGroupIds.has(b.group_id) ? 1 : 0;
+        if (aFollowed !== bFollowed) return bFollowed - aFollowed;
+        return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
+      });
+    }
+    if (!preview) return sorted;
+    return sorted.slice(0, maxItems);
+  }, [posts, preview, maxItems, followedGroupIds]);
 
   const grouped = useMemo(() => {
     const result: { label: string; items: FeedPost[] }[] = [];
@@ -322,6 +343,9 @@ export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedF
     );
   }
 
+  // Track which advisors already showed follow button
+  const seenAdvisors = new Set<string>();
+
   return (
     <div className="space-y-1">
       {grouped.map((group, gi) => (
@@ -332,6 +356,10 @@ export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedF
               const advisor = advisorMap[post.advisor_id];
               const advisorName = advisor?.full_name || "Advisor";
               const advisorPhoto = advisor?.profile_photo_url || undefined;
+
+              // Only show follow button for first post by each advisor
+              const showFollow = !seenAdvisors.has(post.advisor_id);
+              if (showFollow) seenAdvisors.add(post.advisor_id);
 
               // Determine free badge for signals
               let freeBadge: string | null = null;
@@ -355,7 +383,7 @@ export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedF
                     post={post}
                     advisorName={advisorName}
                     advisorPhoto={advisorPhoto}
-                    groupId={post.group_id}
+                    groupId={showFollow ? post.group_id : undefined}
                     freeBadge={freeBadge}
                   />
                 );
@@ -367,7 +395,7 @@ export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedF
                   post={post}
                   advisorName={advisorName}
                   advisorPhoto={advisorPhoto}
-                  groupId={post.group_id}
+                  groupId={showFollow ? post.group_id : undefined}
                 />
               );
             })}
