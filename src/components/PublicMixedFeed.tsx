@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { shouldShowFree } from "@/lib/accessControl";
 import { Button } from "@/components/ui/button";
 import { FollowButton } from "@/components/FollowButton";
+import { useAuth } from "@/lib/auth";
 
 type FeedPost = {
   id: string;
