@@ -59,8 +59,9 @@ export default function Profile() {
   };
 
   const fetchFollowingCount = async () => {
-    const { count } = await supabase.from('group_follows').select('*', { count: 'exact', head: true }).eq('user_id', user!.id);
-    setFollowingCount(count || 0);
+    const { data } = await supabase.from('group_follows').select('*, groups!inner(name, monthly_price, advisor_id, advisors!inner(full_name, profile_photo_url))').eq('user_id', user!.id);
+    setFollowedGroups(data || []);
+    setFollowingCount(data?.length || 0);
   };
 
   const fetchAdvisorData = async () => {
