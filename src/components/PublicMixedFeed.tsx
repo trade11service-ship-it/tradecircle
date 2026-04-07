@@ -217,8 +217,6 @@ export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedF
   const pageSize = 12;
   const [hasMore, setHasMore] = useState(true);
 
-  // Track which advisors already have a follow button shown
-  const shownFollowAdvisors = useMemo(() => new Set<string>(), [posts]);
 
   // Fetch user's followed groups
   useEffect(() => {
