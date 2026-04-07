@@ -23,7 +23,7 @@ import {
 export default function Profile() {
   const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
-  const [tab, setTab] = useState<'details' | 'subscriptions' | 'security' | 'settings'>('details');
+  const [tab, setTab] = useState<'details' | 'subscriptions' | 'following' | 'security' | 'settings'>('details');
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ fullName: '', phone: '', telegramUsername: '' });
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
