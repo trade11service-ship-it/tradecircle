@@ -73,6 +73,7 @@ function FreeBadge({ text }: { text: string }) {
 function MessageBubble({ post, advisorName, advisorPhoto, freeBadge }: { post: FeedPost; advisorName: string; advisorPhoto?: string; freeBadge?: string | null }) {
   const [expanded, setExpanded] = useState(false);
   const [imgOpen, setImgOpen] = useState(false);
+  const messageLabel = post.post_type === "message" ? "Mentor note" : "Update";
 
   return (
     <>
@@ -84,6 +85,7 @@ function MessageBubble({ post, advisorName, advisorPhoto, freeBadge }: { post: F
           <div className="rounded-2xl rounded-tl-sm bg-card border border-border p-3 shadow-sm">
             <div className="flex items-center gap-2 mb-1">
               <span className="text-[12px] font-bold text-primary">{advisorName}</span>
+              <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">{messageLabel}</span>
             </div>
             {freeBadge && <FreeBadge text={freeBadge} />}
             {post.message_text && (

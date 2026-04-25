@@ -218,6 +218,28 @@ export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedF
   const [hasMore, setHasMore] = useState(true);
 
 
+  const hydrateMapsForPosts = async (items: FeedPost[]) => {
+    const advisorIds = [...new Set(items.map((p) => p.advisor_id))].filter((id) => !advisorMap[id]);
+    const groupIds = [...new Set(items.map((p) => p.group_id))].filter((id) => !groupMap[id]);
+
+    if (advisorIds.length > 0) {
+      const { data } = await supabase
+        .from("advisors")
+        .select("id,full_name,profile_photo_url,sebi_reg_no,strategy_type")
+        .in("id", advisorIds);
+      const map: Record<string, AdvisorMini> = {};
+      (data || []).forEach((a: any) => (map[a.id] = a));
+      setAdvisorMap((prev) => ({ ...prev, ...map }));
+    }
+
+    if (groupIds.length > 0) {
+      const { data } = await supabase.from("groups").select("id,name").in("id", groupIds);
+      const map: Record<string, GroupMini> = {};
+      (data || []).forEach((g: any) => (map[g.id] = g));
+      setGroupMap((prev) => ({ ...prev, ...map }));
+    }
+  };
+
   // Fetch user's followed groups
   useEffect(() => {
     if (!user) return;
@@ -238,19 +260,7 @@ export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedF
 
     const pagePosts = (rows || []) as any as FeedPost[];
 
-    // For signals, also check if they qualify as free (F&O 24h rule or public_after_24h)
-    const visiblePosts = pagePosts.filter((p: any) => {
-      if (p.post_type === 'message') return true; // analysis always public
-      // For signals marked is_public, check the free logic
-      const freeCheck = shouldShowFree({
-        post_type: p.post_type,
-        timeframe: p.timeframe,
-        is_public: p.is_public,
-        created_at: p.created_at,
-        signal_type: p.signal_type,
-      });
-      return freeCheck.isFree;
-    });
+    const visiblePosts = pagePosts;
 
     const uniqueAdvisorIds = [...new Set(visiblePosts.map((p: any) => p.advisor_id))];
     const uniqueGroupIds = [...new Set(visiblePosts.map((p: any) => p.group_id))];
@@ -276,15 +286,7 @@ export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedF
       setPosts((prev) => (nextOffset === 0 ? visiblePosts : [...prev, ...visiblePosts]));
     }
 
-    if (uniqueGroupIds.length > 0) {
-      const { data: gr } = await supabase
-        .from("groups")
-        .select("id,name")
-        .in("id", uniqueGroupIds);
-      const map: Record<string, GroupMini> = {};
-      (gr || []).forEach((g: any) => (map[g.id] = g));
-      setGroupMap((prev) => ({ ...prev, ...map }));
-    }
+    if (uniqueGroupIds.length > 0) await hydrateMapsForPosts(visiblePosts);
 
     setHasMore(pagePosts.length === pageSize);
     setLoading(false);
@@ -294,19 +296,46 @@ export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedF
     fetchPage(0);
   }, []);
 
+  useEffect(() => {
+    const channel = supabase
+      .channel("public-mixed-feed-live")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "signals", filter: "is_public=eq.true" },
+        async (payload) => {
+          const incoming = payload.new as FeedPost;
+          setPosts((prev) => {
+            if (prev.some((p) => p.id === incoming.id)) return prev;
+            return [incoming, ...prev];
+          });
+          await hydrateMapsForPosts([incoming]);
+        },
+      )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "signals", filter: "is_public=eq.true" },
+        async (payload) => {
+          const updated = payload.new as FeedPost;
+          setPosts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)));
+          await hydrateMapsForPosts([updated]);
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   const visiblePosts = useMemo(() => {
-    let sorted = [...posts];
-    // Followed advisors' posts first
-    if (followedGroupIds.size > 0) {
-      sorted.sort((a, b) => {
-        const aFollowed = followedGroupIds.has(a.group_id) ? 1 : 0;
-        const bFollowed = followedGroupIds.has(b.group_id) ? 1 : 0;
-        if (aFollowed !== bFollowed) return bFollowed - aFollowed;
-        return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime();
-      });
-    }
+    const sorted = [...posts].sort(
+      (a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime(),
+    );
     if (!preview) return sorted;
-    return sorted.slice(0, maxItems);
+    if (followedGroupIds.size === 0) return sorted.slice(0, maxItems);
+    const followed = sorted.filter((p) => followedGroupIds.has(p.group_id));
+    const rest = sorted.filter((p) => !followedGroupIds.has(p.group_id));
+    return [...followed, ...rest].slice(0, maxItems);
   }, [posts, preview, maxItems, followedGroupIds]);
 
   const grouped = useMemo(() => {
@@ -376,27 +405,33 @@ export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedF
                   : null;
               }
 
+              const groupName = groupMap[post.group_id]?.name || "Group";
+
               if (post.post_type === 'signal') {
                 return (
-                  <SignalBubble
-                    key={post.id}
-                    post={post}
-                    advisorName={advisorName}
-                    advisorPhoto={advisorPhoto}
-                    groupId={showFollow ? post.group_id : undefined}
-                    freeBadge={freeBadge}
-                  />
+                  <div key={post.id}>
+                    <div className="mb-1 px-1 text-[11px] font-medium text-muted-foreground">{groupName}</div>
+                    <SignalBubble
+                      post={post}
+                      advisorName={advisorName}
+                      advisorPhoto={advisorPhoto}
+                      groupId={showFollow ? post.group_id : undefined}
+                      freeBadge={freeBadge}
+                    />
+                  </div>
                 );
               }
 
               return (
-                <MessageBubble
-                  key={post.id}
-                  post={post}
-                  advisorName={advisorName}
-                  advisorPhoto={advisorPhoto}
-                  groupId={showFollow ? post.group_id : undefined}
-                />
+                <div key={post.id}>
+                  <div className="mb-1 px-1 text-[11px] font-medium text-muted-foreground">{groupName}</div>
+                  <MessageBubble
+                    post={post}
+                    advisorName={advisorName}
+                    advisorPhoto={advisorPhoto}
+                    groupId={showFollow ? post.group_id : undefined}
+                  />
+                </div>
               );
             })}
           </div>

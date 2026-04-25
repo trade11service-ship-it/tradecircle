@@ -5,7 +5,7 @@ import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { CheckCircle, X, TrendingUp, Users } from "lucide-react";
+import { CheckCircle, X, ArrowRight, Clock3 } from "lucide-react";
 import { setMetaTags, SEO_CONFIG } from "@/lib/seo";
 
 interface Subscription {
@@ -87,14 +87,14 @@ export default function Subscriptions() {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      <main className="max-w-4xl mx-auto px-4 py-12">
+      <main className="max-w-4xl mx-auto px-4 py-8">
         {/* Page Header */}
-        <div className="mb-12">
-          <h1 className="text-4xl font-bold text-foreground mb-3">
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-foreground mb-2">
             My Subscriptions
           </h1>
-          <p className="text-lg text-muted-foreground">
-            Manage your active trading advisor subscriptions. Cancel anytime—no lock-in periods.
+          <p className="text-sm text-muted-foreground">
+            Renew, track expiry, and jump back into signals quickly.
           </p>
         </div>
 
@@ -160,19 +160,23 @@ export default function Subscriptions() {
                         <p className="font-semibold text-foreground">
                           {new Date(sub.end_date).toLocaleDateString("en-IN")}
                         </p>
+                        <p className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
+                          <Clock3 className="h-3.5 w-3.5" />
+                          {Math.max(0, Math.ceil((new Date(sub.end_date).getTime() - Date.now()) / 86400000))} day(s) left
+                        </p>
                       </div>
                     </div>
                   </div>
 
                   <div className="flex flex-col gap-2">
-                    <Link to={`/profile/${sub.advisor_id}`}>
+                    <Link to={`/advisor/${sub.advisor_id}`}>
                       <Button variant="outline" className="w-full">
                         View Profile
                       </Button>
                     </Link>
                     <Link to="/home">
                       <Button variant="secondary" className="w-full">
-                        View Signals
+                        View Signals <ArrowRight className="ml-1 h-4 w-4" />
                       </Button>
                     </Link>
                     <Button
@@ -211,7 +215,7 @@ export default function Subscriptions() {
         )}
 
         {/* CTA Section */}
-        <div className="mt-12 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg p-8 text-center">
+        <div className="mt-10 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg p-8 text-center">
           <h2 className="text-2xl font-bold mb-3">
             Explore Premium Advisors
           </h2>

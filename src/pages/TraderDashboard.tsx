@@ -260,7 +260,7 @@ export default function TraderDashboard() {
               <div className="tc-card-static p-8 md:p-12 text-center">
                 <Send className="mx-auto mb-3 h-8 w-8 md:h-10 md:w-10 text-muted-foreground" />
                 <p className="text-sm text-muted-foreground">No active subscriptions. Subscribe to an advisor to enable Telegram alerts.</p>
-                <Link to="/"><Button className="mt-4 tc-btn-click min-h-[44px]">Browse Advisors</Button></Link>
+                <Link to="/discover"><Button className="mt-4 tc-btn-click min-h-[44px]">Browse Advisors</Button></Link>
               </div>
             ) : (
               <div className="space-y-5">
@@ -412,6 +412,11 @@ export default function TraderDashboard() {
                           {sub.group.bio && (
                             <p className="text-[11px] text-muted-foreground leading-relaxed line-clamp-2">{sub.group.bio}</p>
                           )}
+                          {getExpiryStatus(sub.end_date).message && (
+                            <p className="text-[10px] text-[hsl(var(--warning))] font-medium">
+                              {getExpiryStatus(sub.end_date).message}
+                            </p>
+                          )}
                           <div className="flex items-center gap-1">
                             {telegramSettings[sub.group_id]?.is_active && telegramSettings[sub.group_id]?.bot_started ? (
                               <span className="text-[10px] text-primary flex items-center gap-1"><Bell className="h-3 w-3" /> Alerts ON</span>
@@ -439,7 +444,7 @@ export default function TraderDashboard() {
               ) : (
                 <div className="tc-card-static p-8 md:p-12 text-center">
                   <p className="text-sm text-muted-foreground">No active subscriptions. Subscribe to an advisor to see their feed.</p>
-                  <Link to="/"><Button className="mt-4 tc-btn-click min-h-[44px]">Browse Advisors</Button></Link>
+                  <Link to="/discover"><Button className="mt-4 tc-btn-click min-h-[44px]">Browse Advisors</Button></Link>
                 </div>
               )}
             </div>

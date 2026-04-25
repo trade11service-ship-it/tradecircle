@@ -19,7 +19,7 @@ export function BottomNavigation() {
   };
 
   const navItems = [
-    { icon: Home, label: 'Home', path: user ? '/home' : '/' },
+    { icon: Home, label: 'Home', path: user ? '/dashboard' : '/' },
     { icon: Users, label: 'Advisors', path: '/discover' },
     { icon: Rss, label: 'Public Feed', path: '/explore' },
     {
@@ -30,7 +30,13 @@ export function BottomNavigation() {
   ];
 
   const isActive = (path: string) => {
-    if (path === '/' || path === '/home') return location.pathname === '/' || location.pathname === '/home';
+    if (path === '/' || path === '/dashboard') {
+      return (
+        location.pathname === "/" ||
+        location.pathname === "/home" ||
+        location.pathname === "/dashboard"
+      );
+    }
     if (path === '__profile_menu__') return location.pathname === '/profile';
     return location.pathname === path;
   };

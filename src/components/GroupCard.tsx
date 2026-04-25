@@ -3,6 +3,7 @@ import { Shield, Users, BarChart2, ArrowRight, CheckCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button';
 
 interface GroupCardProps {
+  groupId: string;
   advisorId: string;
   advisorName: string;
   advisorPhoto: string | null;
@@ -21,7 +22,7 @@ interface GroupCardProps {
 const toTitleCase = (s: string) => s.replace(/\b\w/g, c => c.toUpperCase());
 
 export function GroupCard({
-  advisorId, advisorName, advisorPhoto, sebiRegNo,
+  groupId, advisorId, advisorName, advisorPhoto, sebiRegNo,
   groupName, description, monthlyPrice,
   subCount, signalCount, winCount, resolvedCount,
   strategyType, compact,
@@ -30,7 +31,7 @@ export function GroupCard({
   const hasHighAccuracy = accuracy !== null && accuracy >= 70 && signalCount >= 10;
 
   return (
-    <Link to={`/advisor/${advisorId}`}>
+    <Link to={`/group/${groupId}`}>
       <div className={`group overflow-hidden rounded-2xl border-[1.5px] border-l-4 border-l-green-500 bg-card shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all ${
         hasHighAccuracy ? 'border-green-500' : 'border-border'
       }`}>
@@ -98,7 +99,7 @@ export function GroupCard({
 
           {!compact && (
             <Button size="sm" className="w-full rounded-lg bg-primary font-semibold text-xs h-9">
-              Subscribe <ArrowRight className="ml-1 h-3 w-3" />
+              See Group & Subscribe <ArrowRight className="ml-1 h-3 w-3" />
             </Button>
           )}
         </div>

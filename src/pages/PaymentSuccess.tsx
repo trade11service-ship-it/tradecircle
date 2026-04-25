@@ -23,7 +23,25 @@ export default function PaymentSuccess() {
   }, [user, searchParams]);
 
   const createSubscription = async (groupId: string, paymentId: string) => {
-    // CRITICAL: Check for duplicate active subscription (unexpired)
+    if (!paymentId) {
+      setStatus('error');
+      return;
+    }
+
+    const { data: existingByPayment } = await supabase
+      .from('subscriptions')
+      .select('id, group_id, groups(name, advisors(full_name))')
+      .eq('razorpay_payment_id', paymentId)
+      .maybeSingle();
+
+    if (existingByPayment) {
+      const group = existingByPayment.groups as any;
+      setGroupName(group?.name || '');
+      setAdvisorName(group?.advisors?.full_name || '');
+      setStatus('success');
+      return;
+    }
+
     const now = new Date().toISOString();
     const { data: existing } = await supabase.from('subscriptions')
       .select('id')
@@ -101,7 +119,7 @@ export default function PaymentSuccess() {
       }).then(() => {});
     }
 
-    const { error } = await supabase.from('subscriptions').insert({
+    const { error } = await (supabase.from('subscriptions') as any).insert({
       user_id: user!.id,
       group_id: groupId,
       advisor_id: group.advisor_id,
@@ -112,6 +130,10 @@ export default function PaymentSuccess() {
       from_referral: fromReferral,
       referral_code: referralCode,
       platform_fee_percent: platformFee,
+      pan_number: panNumber || null,
+      consent_given: consentGiven,
+      consent_timestamp: consentTimestamp || new Date().toISOString(),
+      consent_ip: null,
     });
 
     if (error) { console.error('Subscription error:', error); setStatus('error'); }

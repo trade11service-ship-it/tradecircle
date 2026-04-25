@@ -1,5 +1,4 @@
 import { Navbar } from "@/components/Navbar";
-import { Footer } from "@/components/Footer";
 import { PublicMixedFeed } from "@/components/PublicMixedFeed";
 import { useEffect, useState } from "react";
 import { setMetaTags, SEO_CONFIG } from "@/lib/seo";
@@ -50,10 +49,16 @@ export default function Explore() {
 
       {/* Feed */}
       <main className="container mx-auto px-4 py-6 flex-1 max-w-2xl">
-        <PublicMixedFeed preview={false} maxItems={999} />
+        <div className="overflow-hidden rounded-2xl border border-border bg-card">
+          <div className="border-b border-border bg-muted/40 px-3 py-2">
+            <p className="text-sm font-semibold text-foreground">Recent Signals & Analysis</p>
+            <p className="text-[11px] text-muted-foreground">Fixed live window with latest public posts.</p>
+          </div>
+          <div className="h-[70vh] min-h-[500px] overflow-y-auto p-3">
+            <PublicMixedFeed preview={false} maxItems={999} />
+          </div>
+        </div>
       </main>
-
-      <Footer />
     </div>
   );
 }

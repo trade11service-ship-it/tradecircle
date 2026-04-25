@@ -402,7 +402,7 @@ export default function Profile() {
                 </p>
                 <Button
                   className="mt-4"
-                  onClick={() => navigate('/')}
+                  onClick={() => navigate('/discover')}
                   style={{ background: '#1B5E20', borderRadius: 8, padding: '10px 20px' }}
                 >
                   Browse Advisors

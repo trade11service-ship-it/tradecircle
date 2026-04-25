@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { GroupCard } from '@/components/GroupCard';
 import { Button } from '@/components/ui/button';
-import { Shield, ShieldCheck, ArrowRight, BarChart2, Bell, CreditCard, Search, Users, CheckCircle, Unlock, Rss } from 'lucide-react';
+import { Shield, ShieldCheck, ArrowRight, Bell, CreditCard, Search, Users, CheckCircle, TrendingUp, BookOpen, MessageSquare } from 'lucide-react';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { useAuth } from '@/lib/auth';
 import { PublicMixedFeed } from "@/components/PublicMixedFeed";
@@ -99,86 +99,76 @@ export default function Landing() {
     return text;
   };
 
-  const navigate = useNavigate();
-
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-
-      {/* HERO — Dark navy with enhanced gradient */}
-      <section className="relative overflow-hidden" style={{ background: 'linear-gradient(135deg, hsl(240,25%,14%) 0%, hsl(214,89%,20%) 100%)' }}>
-        <div className="absolute inset-0 opacity-30" style={{ background: 'radial-gradient(circle at 50% 50%, hsl(123,56%,28%) 0%, transparent 60%)' }} />
-        <div className="container relative mx-auto max-w-xl px-5 pt-12 pb-14 md:pt-20 md:pb-20 text-center">
-          <div className="inline-flex items-center gap-2 rounded-full border border-primary/40 px-4 py-1.5 text-[12px] font-semibold text-primary" style={{ background: 'hsla(123,56%,24%,0.15)' }}>
-            <Shield className="h-3.5 w-3.5" /> SEBI Verified Advisors Only
-          </div>
-          <h1 className="mt-5 text-[28px] md:text-[38px] font-extrabold leading-[1.15] tracking-tight text-white">
-            India's First<br />
-            <span className="text-primary">SEBI-Only Trading</span> Marketplace
-          </h1>
-          <p className="mx-auto mt-4 max-w-sm text-[15px] leading-relaxed text-white/60">
-            Every advisor is SEBI-registered and manually verified. Browse real track records, subscribe, and get signals instantly on Telegram.
-          </p>
-          <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:justify-center">
-            <Link to="/discover">
-              <Button className="w-full sm:w-auto h-14 px-10 rounded-full bg-primary text-[15px] font-bold shadow-[0_4px_16px_rgba(27,94,32,0.4)] hover:bg-primary/90 hover:scale-[1.02] transition-all duration-200 tc-btn-click">
-                Browse Advisors <ArrowRight className="ml-1.5 h-4 w-4" />
-              </Button>
-            </Link>
-            {!user && (
-              <Link to="/login">
-                <Button variant="outline" className="w-full sm:w-auto h-14 px-10 rounded-full border-2 border-white/20 text-white text-[15px] font-semibold hover:bg-white/10 hover:scale-[1.02] transition-all duration-200 bg-transparent">
-                  Sign In / Sign Up
+      <section className="border-b bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950">
+        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-2 md:py-14">
+          <div>
+            <div className="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+              <Shield className="h-3.5 w-3.5" /> SEBI Verified Advisors
+            </div>
+            <h1 className="mt-4 text-3xl font-extrabold leading-tight text-white md:text-4xl">
+              Trusted research with
+              <span className="text-primary"> real mentorship</span>, not random tips.
+            </h1>
+            <p className="mt-3 max-w-xl text-sm text-white/75 md:text-base">
+              Compare verified advisors, study transparent track records, and subscribe to signal groups
+              that also explain the why behind each trade.
+            </p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <Link to="/discover">
+                <Button className="h-11 rounded-full px-6 font-semibold">
+                  Find Advisors <ArrowRight className="ml-1 h-4 w-4" />
                 </Button>
               </Link>
-            )}
+              {!user && (
+                <Link to="/login">
+                  <Button variant="outline" className="h-11 rounded-full border-white/30 bg-white/5 px-6 text-white hover:bg-white/15">
+                    Sign In
+                  </Button>
+                </Link>
+              )}
+            </div>
+            <div className="mt-6 grid grid-cols-3 gap-3 text-center">
+              {[
+                { title: "100%", subtitle: "SEBI checked" },
+                { title: "₹0", subtitle: "Listing fees" },
+                { title: "Monthly", subtitle: "No lock-in" },
+              ].map((item) => (
+                <div key={item.subtitle} className="rounded-xl border border-white/15 bg-white/5 p-3">
+                  <p className="text-lg font-bold text-white">{item.title}</p>
+                  <p className="text-[11px] text-white/65">{item.subtitle}</p>
+                </div>
+              ))}
+            </div>
           </div>
-          {/* Stats with icons and green top borders */}
-          <div className="mt-10 grid grid-cols-3 gap-4 md:gap-6 max-w-md mx-auto">
-            <div className="rounded-xl border-t-4 border-t-green-500 bg-white/5 backdrop-blur-sm border border-white/10 p-4 text-center">
-              <div className="flex justify-center mb-2">
-                <ShieldCheck className="h-5 w-5 text-green-500" />
-              </div>
-              <p className="text-lg md:text-xl font-extrabold text-white">100%</p>
-              <p className="text-[11px] text-white/60 mt-1">SEBI Verified</p>
-            </div>
-            <div className="rounded-xl border-t-4 border-t-green-500 bg-white/5 backdrop-blur-sm border border-white/10 p-4 text-center">
-              <div className="flex justify-center mb-2">
-                <span className="text-lg font-bold text-green-500">₹</span>
-              </div>
-              <p className="text-lg md:text-xl font-extrabold text-white">₹0</p>
-              <p className="text-[11px] text-white/60 mt-1">Listing Fee</p>
-            </div>
-            <div className="rounded-xl border-t-4 border-t-green-500 bg-white/5 backdrop-blur-sm border border-white/10 p-4 text-center">
-              <div className="flex justify-center mb-2">
-                <span className="text-lg">🔓</span>
-              </div>
-              <p className="text-lg md:text-xl font-extrabold text-white">No Lock-in</p>
-              <p className="text-[11px] text-white/60 mt-1">Cancel Anytime</p>
+          <div className="rounded-2xl border border-white/15 bg-white/5 p-5 text-white">
+            <h2 className="text-lg font-bold">How it works</h2>
+            <div className="mt-4 space-y-3">
+              {[
+                { icon: Search, title: "Compare advisors", text: "Filter by style, track record and mentorship quality." },
+                { icon: CreditCard, title: "Subscribe monthly", text: "Clear pricing with compliance-first onboarding." },
+                { icon: Bell, title: "Learn + act faster", text: "Get signals and educational market notes in one feed." },
+              ].map((step) => (
+                <div key={step.title} className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/5 p-3">
+                  <step.icon className="mt-0.5 h-4 w-4 text-primary" />
+                  <div>
+                    <p className="text-sm font-semibold">{step.title}</p>
+                    <p className="text-xs text-white/70">{step.text}</p>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         </div>
       </section>
-
-      {/* Trust Bar */}
-      <section className="border-b bg-card overflow-hidden">
-        <div className="flex animate-marquee whitespace-nowrap py-3">
-          {['🛡️ SEBI Verified Only', '📊 Full Signal History', '🔔 Telegram Alerts', '₹ Cancel Anytime', '🛡️ SEBI Verified Only', '📊 Full Signal History', '🔔 Telegram Alerts', '₹ Cancel Anytime', '🛡️ SEBI Verified Only', '📊 Full Signal History', '🔔 Telegram Alerts', '₹ Cancel Anytime'].map((item, i) => (
-            <span key={i} className="mx-4 md:mx-6 text-[13px] font-medium text-muted-foreground">
-              {item}<span className="ml-4 text-border">·</span>
-            </span>
-          ))}
-        </div>
-      </section>
-
-      {/* TOP ADVISORS */}
-      <section className="bg-background px-5 py-12 md:py-16">
-        <div className="container mx-auto">
+      <section className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-6">
             <div>
-              <p className="text-[11px] font-bold text-primary uppercase tracking-[2px]">TOP ADVISORS</p>
-              <h2 className="mt-1 text-2xl font-extrabold text-foreground tracking-tight">Find Your SEBI Advisor</h2>
-              <p className="mt-1 text-sm text-muted-foreground">SEBI verified · Transparent track records · No login required</p>
+              <p className="text-[11px] font-bold text-primary uppercase tracking-[2px]">DISCOVER</p>
+              <h2 className="mt-1 text-2xl font-extrabold text-foreground tracking-tight">Popular advisor groups</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Transparent pricing, verified advisors, and clear win-rate context.</p>
             </div>
             <Link to="/discover">
               <Button variant="outline" className="mt-3 sm:mt-0 border-primary text-primary hover:bg-primary/5 rounded-lg">
@@ -207,7 +197,7 @@ export default function Landing() {
           ) : (
             <div className="grid gap-4 sm:grid-cols-2">
               {groups.map(g => (
-                <GroupCard key={g.id} advisorId={g.advisor_id} advisorName={g.advisor_name}
+                <GroupCard key={g.id} groupId={g.id} advisorId={g.advisor_id} advisorName={g.advisor_name}
                   advisorPhoto={g.advisor_photo} sebiRegNo={g.sebi_reg_no} groupName={g.name}
                   description={g.description} monthlyPrice={g.monthly_price} subCount={g.sub_count}
                   signalCount={g.signal_count} winCount={g.win_count} resolvedCount={g.resolved_count}
@@ -215,37 +205,9 @@ export default function Landing() {
               ))}
             </div>
           )}
-        </div>
       </section>
-
-      {/* HOW IT WORKS — Compact */}
-      <section className="bg-card px-5 py-8 border-y border-border">
-        <div className="container mx-auto max-w-2xl">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-[11px] font-bold text-secondary uppercase tracking-[2px]">HOW IT WORKS</p>
-              <h2 className="mt-0.5 text-lg font-extrabold text-foreground tracking-tight">3 Simple Steps</h2>
-            </div>
-          </div>
-          <div className="flex gap-3 overflow-x-auto pb-1">
-            {[
-              { num: '1', icon: Search, title: 'Browse', desc: 'Filter by strategy & SEBI credentials' },
-              { num: '2', icon: CreditCard, title: 'Subscribe', desc: 'Pay via Razorpay. Cancel anytime.' },
-              { num: '3', icon: Bell, title: 'Get Signals', desc: 'Real-time on Telegram. Tamper-proof.' },
-            ].map(step => (
-              <div key={step.num} className="min-w-[140px] flex-1 rounded-xl border border-primary/20 bg-primary/5 p-3 text-center shrink-0">
-                <div className="mx-auto flex h-8 w-8 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground mb-2">{step.num}</div>
-                <h3 className="text-[13px] font-bold text-foreground">{step.title}</h3>
-                <p className="mt-0.5 text-[11px] text-muted-foreground leading-tight">{step.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* PUBLIC FEED PREVIEW — compact horizontal scroll */}
-      <section className="bg-muted/40 px-5 py-8 md:py-10 border-y border-border">
-        <div className="container mx-auto">
+      <section className="border-y border-border bg-muted/40">
+        <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
           <div className="flex items-center justify-between mb-4">
             <div>
               <p className="text-[11px] font-bold text-primary uppercase tracking-[2px]">LIVE FEED</p>
@@ -260,19 +222,14 @@ export default function Landing() {
           <PublicMixedFeed preview maxItems={4} />
         </div>
       </section>
-
-      {/* ADVISOR FRAMES (after how it works) */}
-      <section className="bg-card px-5 py-12 md:py-16 border-y border-border">
-        <div className="container mx-auto">
-          <div className="mb-6 flex items-end justify-between">
+      <section className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6">
+        <div className="rounded-2xl border border-border bg-card p-5 md:p-6">
+          <div className="mb-8 flex items-end justify-between">
             <div>
-              <p className="text-[11px] font-bold text-primary uppercase tracking-[2px]">FEATURED ADVISORS</p>
-              <h2 className="mt-1 text-2xl font-extrabold text-foreground tracking-tight">Advisors on TradeCircle</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Tap any card to see full track record, signals, and subscription details.</p>
+              <p className="text-[11px] font-bold text-primary uppercase tracking-[2px]">MENTORSHIP FIRST</p>
+              <h2 className="mt-1 text-2xl font-extrabold text-foreground tracking-tight">Meet verified mentors</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Advisors who publish both trade calls and educational context.</p>
             </div>
-            <Link to="/featured-advisors">
-              <Button variant="outline" className="hidden sm:inline-flex">View all</Button>
-            </Link>
           </div>
 
           {featuredAdvisors.length === 0 ? (
@@ -280,54 +237,82 @@ export default function Landing() {
               <p className="text-sm text-muted-foreground">Featured advisors will appear here after admin publishes them.</p>
             </div>
           ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {featuredAdvisors.map((a) => (
-                <div key={a.id} onClick={() => navigate(`/advisor/${a.id}?tab=about`)} className="group cursor-pointer">
-                  <div className="h-full rounded-2xl border border-border bg-background p-4 shadow-sm transition-all hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md">
-                    <div className="mb-3 flex items-center gap-3">
-                      <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-primary to-secondary text-lg font-bold text-primary-foreground">
-                        {a.profile_photo_url ? (
-                          <img src={a.profile_photo_url} alt={a.full_name} className="h-full w-full object-cover" />
-                        ) : (
-                          a.full_name.charAt(0).toUpperCase()
+            <div className="space-y-6">
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {featuredAdvisors.slice(0, 3).map((a) => (
+                  <Link key={a.id} to={`/advisor/${a.id}`} className="group cursor-pointer h-full">
+                    <div className="h-full rounded-2xl border border-border bg-background p-6 shadow-md transition-all hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg">
+                      {/* Avatar + Verified Badge */}
+                      <div className="mb-4 flex items-start justify-between">
+                        <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-primary to-secondary text-2xl font-bold text-primary-foreground border-2 border-primary">
+                          {a.profile_photo_url ? (
+                            <img src={a.profile_photo_url} alt={a.full_name} className="h-full w-full object-cover" />
+                          ) : (
+                            a.full_name.charAt(0).toUpperCase()
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-1">
+                          <CheckCircle className="h-3 w-3 text-green-600" />
+                          <span className="text-[10px] font-bold text-green-700">Verified</span>
+                        </div>
+                      </div>
+
+                      {/* Name & Strategy */}
+                      <h3 className="text-lg font-bold text-foreground mb-1">{a.full_name}</h3>
+                      {a.strategy_type && <p className="text-xs font-semibold text-primary mb-3">{a.strategy_type}</p>}
+
+                      {/* Bio */}
+                      <p className="line-clamp-3 text-sm text-muted-foreground mb-4">
+                        {getValidBio(a.public_tagline, a.public_description)}
+                      </p>
+
+                      {/* Stats or Years */}
+                      <div className="flex gap-2 mb-4">
+                        {a.public_years_experience && (
+                          <span className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 border border-blue-100">
+                            <TrendingUp className="inline h-3 w-3 mr-1" />
+                            {a.public_years_experience}+ Years
+                          </span>
+                        )}
+                        {a.sebi_reg_no && (
+                          <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-700 border border-green-100">
+                            <Shield className="inline h-3 w-3 mr-1" />
+                            SEBI ✓
+                          </span>
                         )}
                       </div>
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-bold text-foreground">{a.full_name}</p>
-                        <p className="truncate text-[11px] text-primary">{a.strategy_type || 'Market Advisor'}</p>
+
+                      {/* CTA */}
+                      <div className="flex items-center justify-between pt-4 border-t border-border group-hover:text-primary transition-colors">
+                        <span className="text-xs text-muted-foreground font-medium">View full profile</span>
+                        <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                       </div>
                     </div>
-                    <p className="line-clamp-2 text-xs text-muted-foreground">
-                      {getValidBio(a.public_tagline, a.public_description)}
-                    </p>
-                    <div className="mt-3 flex items-center justify-between text-[11px]">
-                      <span className="rounded-full bg-primary/10 px-2 py-0.5 font-semibold text-primary">
-                        {a.public_years_experience ? `${a.public_years_experience}+ yrs` : 'Verified'}
-                      </span>
-                      <span className="font-semibold text-foreground group-hover:text-primary">Full profile →</span>
-                    </div>
+                  </Link>
+                ))}
+              </div>
 
-                  </div>
-                </div>
-              ))}
+              {/* CTA to View All Advisors */}
+              <div className="rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 p-8 text-center">
+                <h3 className="text-lg font-bold text-foreground mb-2">Need a better fit?</h3>
+                <p className="text-sm text-muted-foreground mb-4">Browse all published advisors and compare styles, pricing, and engagement.</p>
+                <Link to="/featured-advisors">
+                  <Button className="gap-2 bg-primary hover:bg-primary/90 text-white">
+                    View All {featuredAdvisors.length} Advisors <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </Link>
+              </div>
             </div>
           )}
         </div>
       </section>
-
-      {/* WHY TRADECIRCLE */}
-      <section className="bg-background px-5 py-12 md:py-16">
-        <div className="container mx-auto max-w-2xl">
-          <div className="text-center mb-8">
-            <p className="text-[11px] font-bold text-primary uppercase tracking-[2px]">WHY TRADECIRCLE</p>
-            <h2 className="mt-1 text-2xl font-extrabold text-foreground tracking-tight">Built Different. For Indian Traders.</h2>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
+      <section className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6">
+        <div className="grid gap-4 md:grid-cols-4">
             {[
-              { icon: Shield, title: 'SEBI Verified Only', desc: 'Every advisor manually checked.' },
-              { icon: BarChart2, title: 'Full Track Record', desc: 'WIN/LOSS history always public.' },
-              { icon: Bell, title: 'Telegram Alerts', desc: 'Real-time signals with blockchain timestamps. Tamper-proof forever.' },
-              { icon: CheckCircle, title: 'Cancel Anytime', desc: 'Monthly. No lock-in period.' },
+              { icon: ShieldCheck, title: 'Verified only', desc: 'Every listed advisor is manually checked.' },
+              { icon: TrendingUp, title: 'Track records', desc: 'History is visible before subscribing.' },
+              { icon: BookOpen, title: 'Learning context', desc: 'Educational notes and strategy rationale.' },
+              { icon: MessageSquare, title: 'Community-ready', desc: 'Follow groups and engage before buying.' },
             ].map((f, i) => (
               <div key={i} className="rounded-xl border border-border bg-card p-4">
                 <f.icon className="h-5 w-5 text-primary mb-2" />
@@ -336,58 +321,9 @@ export default function Landing() {
               </div>
             ))}
           </div>
-        </div>
       </section>
-
-      {/* WHY CHOOSE TRADECIRCLE STATS */}
-      <section className="bg-gray-50 dark:bg-gray-900/20 px-5 py-12 md:py-16 border-t border-border">
-        <div className="container mx-auto max-w-3xl">
-          <div className="text-center mb-8">
-            <p className="text-[11px] font-bold text-primary uppercase tracking-[2px]">WHY TRADERS CHOOSE TRADECIRCLE</p>
-            <h2 className="mt-1 text-2xl font-extrabold text-foreground tracking-tight">Built with Transparency in Mind</h2>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {[
-              {
-                icon: '₹',
-                iconBg: 'bg-green-50',
-                title: '₹0 Listing Fee',
-                desc: 'Advisors pay nothing to list. They only earn when traders subscribe.',
-              },
-              {
-                icon: '🛡️',
-                iconBg: 'bg-blue-50',
-                title: '100% SEBI Verified',
-                desc: 'Every advisor manually checked on sebi.gov.in before approval.',
-              },
-              {
-                icon: '⛓️',
-                iconBg: 'bg-purple-50',
-                title: 'Tamper-Proof Records',
-                desc: 'Blockchain-timestamped signals. Track records permanently immutable.',
-              },
-              {
-                icon: '✓',
-                iconBg: 'bg-teal-50',
-                title: 'Cancel Anytime',
-                desc: 'Monthly subscriptions. No lock-in. Full refund on cancellation.',
-              },
-            ].map((stat, idx) => (
-              <div key={idx} className="rounded-xl border border-gray-100 dark:border-gray-700 bg-card shadow-sm p-6 text-center hover:shadow-md hover:border-gray-200 transition-all">
-                <div className={`${stat.iconBg} dark:bg-gray-800 w-12 h-12 rounded-lg flex items-center justify-center mx-auto mb-3 text-lg font-bold`}>
-                  {stat.icon}
-                </div>
-                <h3 className="text-[15px] font-bold text-foreground">{stat.title}</h3>
-                <p className="text-[13px] text-muted-foreground mt-2">{stat.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section className="bg-card px-5 py-12 md:py-16 border-y border-border">
-        <div className="container mx-auto max-w-2xl">
+      <section className="border-y border-border bg-card">
+        <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6">
           <div className="text-center mb-6">
             <p className="text-[11px] font-bold text-primary uppercase tracking-[2px]">FAQ</p>
             <h2 className="mt-1 text-2xl font-extrabold text-foreground tracking-tight">Frequently Asked Questions</h2>
@@ -410,13 +346,11 @@ export default function Landing() {
           </div>
         </div>
       </section>
-
-      {/* CTA */}
-      <section className="px-5 py-12" style={{ background: 'linear-gradient(135deg, hsl(240,25%,14%) 0%, hsl(214,89%,20%) 100%)' }}>
-        <div className="container mx-auto max-w-md text-center">
-          <div className="rounded-2xl p-8 bg-transparent">
-            <p className="text-xl font-extrabold text-white">Stop Following Fake Telegram Tips.</p>
-            <p className="mt-2 text-sm text-white/70">Every advisor on TradeCircle is SEBI registered, manually verified, and has a public tamper-proof track record.</p>
+      <section className="border-t bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 px-4 py-10 sm:px-6">
+        <div className="mx-auto max-w-xl text-center">
+          <div className="rounded-2xl border border-white/15 bg-white/5 p-8">
+            <p className="text-xl font-extrabold text-white">Trade with verified advisors, learn with community context.</p>
+            <p className="mt-2 text-sm text-white/70">Start with public insights, then subscribe only when advisor quality matches your style.</p>
             <Link to="/discover">
               <Button className="mt-5 h-12 px-8 rounded-full bg-white text-primary font-bold hover:bg-white/90 hover:scale-[1.02] transition-all duration-200 tc-btn-click">
                 Browse Verified Advisors <ArrowRight className="ml-1 h-4 w-4" />
@@ -425,8 +359,6 @@ export default function Landing() {
           </div>
         </div>
       </section>
-
-      {/* SEBI Disclaimer box */}
       <div className="border-t bg-card px-5 py-6 text-center">
         <div className="container mx-auto max-w-2xl">
           <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/20 px-4 py-3">

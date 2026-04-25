@@ -5,8 +5,7 @@ import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Shield, Users, BarChart2, Search, ArrowRight, TrendingUp } from 'lucide-react';
-import { HeroSection } from '@/components/HeroSection';
+import { Shield, Search, ArrowRight, TrendingUp, Users, BadgeCheck } from 'lucide-react';
 import { GroupCard } from '@/components/GroupCard';
 import { setMetaTags, SEO_CONFIG } from '@/lib/seo';
 
@@ -132,21 +131,33 @@ export default function Groups() {
     <div className="min-h-screen flex flex-col bg-background">
       <Navbar />
 
-      {/* Hero Section */}
-      <HeroSection
-        title="Find SEBI Verified Trading Advisors"
-        subtitle="Browse manually verified advisors with public track records. Subscribe to get intraday signals, swing trades, and F&O analysis directly to Telegram."
-      />
-
       <div className="container mx-auto px-4 py-6 md:py-10 flex-1">
-        {/* Header */}
-        <div className="mb-6">
+        <div className="mb-6 rounded-2xl border border-border bg-card p-5">
+          <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-muted-foreground">
+            <span className="tc-badge-sebi"><BadgeCheck className="h-3.5 w-3.5" /> Manual verification</span>
+            <span className="rounded-full border border-border px-3 py-1">Transparent track records</span>
+            <span className="rounded-full border border-border px-3 py-1">Monthly plans</span>
+          </div>
           <h2 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-tight">
             Browse Verified Advisor Groups
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Filter by strategy type (Intraday, Swing, F&O), sort by subscribers or accuracy, and filter by signal type.
+            Choose by strategy fit, signal consistency, and mentorship style.
           </p>
+          <div className="mt-4 grid grid-cols-3 gap-3 text-center">
+            <div className="rounded-lg bg-muted p-2">
+              <p className="text-xs text-muted-foreground">Groups</p>
+              <p className="text-lg font-bold">{groups.length}</p>
+            </div>
+            <div className="rounded-lg bg-muted p-2">
+              <p className="text-xs text-muted-foreground">Avg price</p>
+              <p className="text-lg font-bold">₹{groups.length ? Math.round(groups.reduce((acc, g) => acc + g.monthly_price, 0) / groups.length) : 0}</p>
+            </div>
+            <div className="rounded-lg bg-muted p-2">
+              <p className="text-xs text-muted-foreground">Top filter</p>
+              <p className="text-lg font-bold">{filter}</p>
+            </div>
+          </div>
         </div>
 
         {/* Search */}
@@ -218,7 +229,7 @@ export default function Groups() {
               const accuracy = getAccuracy(g);
               const hasHighAccuracy = accuracy !== null && accuracy >= 70 && g.signal_count >= 10;
               return (
-                <Link to={`/advisor/${g.advisor_id}`} key={g.id}>
+                <Link to={`/group/${g.id}`} key={g.id}>
                   <div className={`group overflow-hidden rounded-2xl border-[1.5px] bg-card shadow-sm transition-all hover:shadow-md hover:-translate-y-0.5 ${
                     hasHighAccuracy ? 'border-l-4 border-l-primary border-r-border border-t-border border-b-border' : 'border-border'
                   }`}>
@@ -273,7 +284,7 @@ export default function Groups() {
 
                       {/* CTA */}
                       <Button className="w-full h-11 rounded-xl bg-primary font-bold hover:bg-primary/90 transition-all">
-                        View Profile & Subscribe <ArrowRight className="ml-1 h-4 w-4" />
+                        See Group <ArrowRight className="ml-1 h-4 w-4" />
                       </Button>
                     </div>
                   </div>

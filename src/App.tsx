@@ -33,6 +33,7 @@ import Subscriptions from "./pages/Subscriptions";
 import Explore from "./pages/Explore";
 import ListedAdvisors from "./pages/ListedAdvisors";
 import FeaturedAdvisors from "./pages/FeaturedAdvisors";
+import GroupDetails from "./pages/GroupDetails";
 import { useAuth } from "@/lib/auth";
 
 const queryClient = new QueryClient();
@@ -75,6 +76,7 @@ const App = () => (
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/advisor-register" element={<AdvisorRegister />} />
               <Route path="/advisor/:id" element={<AdvisorProfile />} />
+              <Route path="/group/:id" element={<GroupDetails />} />
               <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
               <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
               <Route path="/subscriptions" element={<ProtectedRoute><Subscriptions /></ProtectedRoute>} />
