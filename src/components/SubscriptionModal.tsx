@@ -160,7 +160,7 @@ export function SubscriptionModal({
 
         {/* SEBI Disclaimer */}
         <p className="text-[10px] text-muted-foreground text-center border-t border-border pt-3">
-          TradeCircle is a technology platform. All advisors are independently SEBI registered. Not responsible for trading losses.
+          StockCircle is a technology platform. All advisors are independently SEBI registered. Not responsible for trading losses.
         </p>
       </DialogContent>
     </Dialog>

@@ -31,7 +31,7 @@ interface TelegramSetting {
   telegram_chat_id: string | null;
 }
 
-const BOT_USERNAME = 'tradecircle_alerts_bot';
+const BOT_USERNAME = 'StockCircle_alerts_bot';
 
 export default function TraderDashboard() {
   const { user, profile } = useAuth();

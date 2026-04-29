@@ -65,7 +65,7 @@ export default function AdvisorRegister() {
           <CheckCircle className="mx-auto h-16 w-16 text-primary" />
           <h2 className="mt-4 text-xl font-bold">Already Registered</h2>
           <p className="mt-3 text-sm text-muted-foreground">
-            You are already registered as an advisor on TradeCircle. 
+            You are already registered as an advisor on StockCircle. 
             {existingAdvisor.status === 'pending' && ' Your application is currently under review.'}
             {existingAdvisor.status === 'approved' && ' Your account is active.'}
             {existingAdvisor.status === 'rejected' && ` Your application was rejected${existingAdvisor.rejection_reason ? ': ' + existingAdvisor.rejection_reason : '.'}`}

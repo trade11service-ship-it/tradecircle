@@ -5,83 +5,103 @@ export function Footer() {
   const currentYear = new Date().getFullYear();
 
   return (
-    <footer className="bg-slate-950 text-white">
-      <div className="h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" />
+    <footer className="relative bg-[hsl(224,32%,6%)] text-white overflow-hidden">
+      {/* Top gradient line */}
+      <div className="h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent" />
 
-      <div className="container mx-auto px-5 py-8">
-        {/* Grid: 4 columns on md, stacked on mobile */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
+      {/* Ambient glow */}
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[200px] bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+
+      <div className="container relative mx-auto px-5 py-10">
+        {/* Top section: Brand + Links */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-8 mb-8">
+          {/* Brand */}
+          <div className="md:col-span-2">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-black text-primary-foreground">
+                S
+              </div>
+              <span className="text-lg font-extrabold tracking-tight">
+                Stock<span className="text-primary">Circle</span>
+              </span>
+            </div>
+            <p className="text-sm text-white/50 leading-relaxed max-w-xs">
+              India's first SEBI-only advisory marketplace. Verified advisors. Tamper-proof records. Real trust.
+            </p>
+          </div>
+
           {/* Platform */}
           <div>
-            <h3 className="text-[11px] font-bold uppercase tracking-[1.5px] text-white/40 mb-2">Platform</h3>
-            <nav className="space-y-1.5">
+            <h3 className="text-[11px] font-bold uppercase tracking-[1.5px] text-white/30 mb-3">Platform</h3>
+            <nav className="space-y-2">
               {[
                 { to: '/discover', label: 'Browse Advisors' },
+                { to: '/explore', label: 'Public Feed' },
                 { to: '/advisor-register', label: 'Register as Advisor' },
                 { to: '/login', label: 'Sign In' },
               ].map(l => (
-                <Link key={l.to} to={l.to} className="block text-[13px] text-white/60 hover:text-primary transition-colors">{l.label}</Link>
+                <Link key={l.to} to={l.to} className="block text-[13px] text-white/50 hover:text-primary transition-colors">{l.label}</Link>
               ))}
             </nav>
           </div>
 
           {/* Legal */}
           <div>
-            <h3 className="text-[11px] font-bold uppercase tracking-[1.5px] text-white/40 mb-2">Legal</h3>
-            <nav className="space-y-1.5">
+            <h3 className="text-[11px] font-bold uppercase tracking-[1.5px] text-white/30 mb-3">Legal</h3>
+            <nav className="space-y-2">
               {[
-                { to: '/privacy', label: 'Privacy' },
-                { to: '/terms', label: 'Terms' },
-                { to: '/refund', label: 'Refund' },
+                { to: '/privacy', label: 'Privacy Policy' },
+                { to: '/terms', label: 'Terms of Service' },
+                { to: '/refund', label: 'Refund Policy' },
                 { to: '/disclaimer', label: 'Disclaimer' },
               ].map(l => (
-                <Link key={l.to} to={l.to} className="block text-[13px] text-white/60 hover:text-primary transition-colors">{l.label}</Link>
+                <Link key={l.to} to={l.to} className="block text-[13px] text-white/50 hover:text-primary transition-colors">{l.label}</Link>
               ))}
             </nav>
           </div>
 
           {/* Support */}
           <div>
-            <h3 className="text-[11px] font-bold uppercase tracking-[1.5px] text-white/40 mb-2">Support</h3>
-            <nav className="space-y-1.5">
-              <a href="mailto:support@tradecircle.in" className="block text-[13px] text-white/60 hover:text-primary transition-colors">Email Support</a>
-              <a href="https://scores.gov.in" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[13px] text-white/60 hover:text-primary transition-colors">
+            <h3 className="text-[11px] font-bold uppercase tracking-[1.5px] text-white/30 mb-3">Support</h3>
+            <nav className="space-y-2">
+              <a href="mailto:support@StockCircle.in" className="flex items-center gap-1.5 text-[13px] text-white/50 hover:text-primary transition-colors">
+                <Mail className="h-3.5 w-3.5" /> support@StockCircle.in
+              </a>
+              <a href="https://scores.gov.in" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-[13px] text-white/50 hover:text-primary transition-colors">
                 SEBI SCORES <ExternalLink className="h-3 w-3" />
               </a>
             </nav>
           </div>
-
-          {/* Contact */}
-          <div>
-            <h3 className="text-[11px] font-bold uppercase tracking-[1.5px] text-white/40 mb-2">Contact</h3>
-            <a href="mailto:support@tradecircle.in" className="inline-flex items-center gap-1.5 text-[13px] text-white/60 hover:text-primary transition-colors">
-              <Mail className="h-3.5 w-3.5" /> support@tradecircle.in
-            </a>
-          </div>
         </div>
 
-        {/* SEBI Compliance — compact */}
-        <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 mb-6">
-          <div className="flex gap-2">
-            <Shield className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-            <p className="text-[11px] leading-relaxed text-white/60">
-              TradeCircle is operated by <strong className="text-white/80">STREZONIC PRIVATE LIMITED</strong> (CIN: U62099MH2025PTC453360). We are <strong className="text-white/80">not a SEBI-registered investment advisor</strong>. All advisors listed are independently SEBI-registered. Investment in securities carries risk. Past performance ≠ future results.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-white/40 mt-2 ml-6">
-            <span>📧 <a href="mailto:grievance@tradecircle.in" className="text-primary hover:underline">grievance@tradecircle.in</a></span>
-            <span>📋 <a href="https://scores.gov.in" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">SEBI SCORES</a></span>
+        {/* SEBI Compliance */}
+        <div className="rounded-xl border border-primary/15 bg-primary/5 p-4 mb-6">
+          <div className="flex gap-3">
+            <Shield className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+            <div>
+              <p className="text-[12px] leading-relaxed text-white/50">
+                StockCircle is operated by <strong className="text-white/70">STREZONIC PRIVATE LIMITED</strong> (CIN: U62099MH2025PTC453360). 
+                We are <strong className="text-white/70">not a SEBI-registered investment advisor</strong>. All advisors listed are independently 
+                SEBI-registered Research Analysts (INH holders). Investment in securities carries market risk. Past performance ≠ future results.
+              </p>
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-white/35 mt-2">
+                <span>📧 <a href="mailto:grievance@StockCircle.in" className="text-primary hover:underline">grievance@StockCircle.in</a></span>
+                <span>📋 <a href="https://scores.gov.in" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">SEBI SCORES</a></span>
+              </div>
+            </div>
           </div>
         </div>
 
         {/* Bottom bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-t border-white/10 pt-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-t border-white/8 pt-5">
           <div className="flex items-center gap-2">
-            <span className="text-[13px] font-bold text-white">Trade<span className="text-primary">Circle</span></span>
-            <span className="text-white/30">·</span>
-            <span className="text-[11px] text-white/40">© {currentYear}</span>
+            <span className="text-[13px] font-bold text-white">
+              Stock<span className="text-primary">Circle</span>
+            </span>
+            <span className="text-white/20">·</span>
+            <span className="text-[11px] text-white/30">© {currentYear} STREZONIC PVT LTD</span>
           </div>
-          <span className="text-[11px] text-white/40">Made for Indian Traders 🇮🇳</span>
+          <span className="text-[11px] text-white/30">Built for Indian Traders 🇮🇳</span>
         </div>
       </div>
     </footer>

@@ -138,7 +138,7 @@ export default function Groups() {
             <span className="rounded-full border border-border px-3 py-1">Transparent track records</span>
             <span className="rounded-full border border-border px-3 py-1">Monthly plans</span>
           </div>
-          <h2 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-tight">
+          <h2 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>
             Browse Verified Advisor Groups
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -299,7 +299,7 @@ export default function Groups() {
       <div className="border-t bg-muted px-4 py-3 text-center">
         <p className="text-[11px] text-muted-foreground">
           <Shield className="inline h-3 w-3 text-primary mr-1" />
-          All advisors on TradeCircle are SEBI registered. SEBI does not endorse any advisor's performance.
+          All advisors on StockCircle are SEBI registered. SEBI does not endorse any advisor's performance.
         </p>
       </div>
 

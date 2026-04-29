@@ -66,69 +66,69 @@ function updateMeta(name: string, content: string) {
 
 export const SEO_CONFIG = {
   home: {
-    title: 'Home - TradeCircle | Find SEBI Verified Trading Advisors',
+    title: 'Home — StockCircle | SEBI-Verified Trading Advisors',
     description:
-      'Get live trading signals from SEBI verified advisors. Track records transparent. Cancel anytime. No lock-in.',
+      'Get verified trading signals from SEBI-registered advisors. Tamper-proof track records. Cancel anytime. No lock-in.',
     keywords:
-      'trading signals, SEBI verified advisor, stock advisory, F&O trading, intraday signals, swing trading',
+      'trading signals, SEBI verified advisor, stock advisory, F&O trading, intraday signals, swing trading, SEBI registered analyst',
   },
   landing: {
-    title: 'TradeCircle - India\'s Most Trusted Trading Advisory Platform',
+    title: 'StockCircle — India\'s Trusted SEBI-Verified Advisory Marketplace',
     description:
-      'Discover 500+ SEBI verified trading advisors with public track records. Subscribe to premium signals delivered to Telegram.',
+      'Find SEBI-verified trading advisors with tamper-proof track records. Subscribe to signal groups. Real accountability, real transparency.',
     keywords:
-      'SEBI registered advisor, trading signals India, verified stock advisor, F&O signals, intraday trading signals',
+      'SEBI registered advisor, trading signals India, verified stock advisor, F&O signals, intraday trading, research analyst INH',
   },
   discover: {
-    title: 'Browse SEBI Verified Trading Advisors | TradeCircle',
+    title: 'Browse SEBI Verified Trading Advisors | StockCircle',
     description:
-      'Browse 500+ SEBI verified advisors with public track records. Filter by strategy (Intraday, Swing, F&O) and accuracy.',
+      'Browse SEBI-verified advisors with transparent track records. Filter by strategy (Intraday, Swing, F&O) and accuracy.',
     keywords:
       'SEBI verified trading advisors, best intraday signals, swing trading advisors, F&O trading signals, stock market advisory',
   },
   explore: {
-    title: 'Free Trading Insights from SEBI Verified Advisors | TradeCircle',
+    title: 'Free Trading Insights from SEBI Verified Advisors | StockCircle',
     description:
       'Discover free analysis and public posts from SEBI verified trading advisors. Follow advisors to get free insights in your feed.',
     keywords:
       'free trading insights, SEBI advisor posts, free stock analysis, trading advisor insights, free trading signals',
   },
   about: {
-    title: 'About TradeCircle - How We Verify Trading Advisors',
+    title: 'About StockCircle — How We Verify Trading Advisors',
     description:
-      'Learn how TradeCircle verifies SEBI registered advisors. Our 5-step verification process ensures regulatory compliance and transparency.',
+      'Learn how StockCircle verifies SEBI registered advisors. Our verification process ensures regulatory compliance and transparency.',
     keywords:
       'SEBI verified advisors, trading advisor verification, how to find verified stock advisor, SEBI registered analyst',
   },
   subscriptions: {
-    title: 'My Subscriptions - Manage Your Trading Advisor Plans',
+    title: 'My Subscriptions — Manage Your Trading Advisor Plans',
     description:
       'Manage your active trading advisor subscriptions. Cancel anytime with no penalties. Real-time signal delivery to Telegram.',
     keywords:
       'subscription trading signals, cancel anytime advisory, premium trading signals, advisor subscription plans',
   },
   contact: {
-    title: 'Contact TradeCircle - Get Help & Support',
+    title: 'Contact StockCircle — Get Help & Support',
     description:
-      'Have questions? Contact TradeCircle support team. We\'re here to help with SEBI compliance and trading advisory queries.',
+      'Have questions? Contact StockCircle support team. We\'re here to help with SEBI compliance and trading advisory queries.',
     keywords: 'contact support, trading advisor support, SEBI compliance help, trading signals support',
   },
   disclaimer: {
-    title: 'Disclaimer - TradeCircle Trading Advisory Platform',
+    title: 'Disclaimer — StockCircle Trading Advisory Platform',
     description:
-      'Legal disclaimer for TradeCircle. All trading involves risk. Past performance does not guarantee future results.',
+      'Legal disclaimer for StockCircle. All trading involves risk. Past performance does not guarantee future results.',
     keywords: 'trading disclaimer, investment disclaimer, risk disclosure, trading risks',
   },
   privacy: {
-    title: 'Privacy Policy - TradeCircle',
+    title: 'Privacy Policy — StockCircle',
     description:
-      'TradeCircle privacy policy. We respect your data and comply with Indian privacy regulations.',
+      'StockCircle privacy policy. We respect your data and comply with Indian privacy regulations.',
     keywords: 'privacy policy, data protection, user data security',
   },
   terms: {
-    title: 'Terms of Service - TradeCircle',
+    title: 'Terms of Service — StockCircle',
     description:
-      'Terms and conditions for using TradeCircle trading advisory platform.',
+      'Terms and conditions for using StockCircle trading advisory platform.',
     keywords: 'terms of service, user agreement, trading platform terms',
   },
 };

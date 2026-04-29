@@ -5,10 +5,9 @@ import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { GroupCard } from '@/components/GroupCard';
 import { Button } from '@/components/ui/button';
-import { Shield, ShieldCheck, ArrowRight, Bell, CreditCard, Search, Users, CheckCircle, TrendingUp, BookOpen, MessageSquare } from 'lucide-react';
+import { Shield, ShieldCheck, ArrowRight, Bell, CreditCard, Search, Users, CheckCircle, TrendingUp, BookOpen, MessageSquare, Lock, Eye, Zap, BarChart3, AlertTriangle } from 'lucide-react';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { useAuth } from '@/lib/auth';
-import { PublicMixedFeed } from "@/components/PublicMixedFeed";
 import { setMetaTags, SEO_CONFIG } from '@/lib/seo';
 
 interface GroupData {
@@ -35,11 +34,7 @@ export default function Landing() {
   const [featuredAdvisors, setFeaturedAdvisors] = useState<FeaturedAdvisor[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Set meta tags
-  useEffect(() => {
-    setMetaTags(SEO_CONFIG.landing);
-  }, []);
-
+  useEffect(() => { setMetaTags(SEO_CONFIG.landing); }, []);
   useEffect(() => { fetchGroups(); fetchFeaturedAdvisors(); }, []);
 
   const fetchGroups = async () => {
@@ -74,104 +69,188 @@ export default function Landing() {
       .eq('status', 'approved')
       .eq('is_public_featured', true)
       .order('public_sort_order', { ascending: true })
-      .limit(8);
+      .limit(6);
     setFeaturedAdvisors((data || []) as FeaturedAdvisor[]);
   };
 
   const getValidBio = (tagline: string | null, description: string | null): string => {
     const text = tagline || description || '';
-    
-    // Check if bio is less than 50 characters
-    if (text.length < 50) {
-      return 'SEBI registered Research Analyst. Specialises in F&O and intraday strategies.';
-    }
-    
-    // Check for poor patterns
+    if (text.length < 50) return 'SEBI registered Research Analyst providing verified trading signals with transparent track records.';
     const lowerText = text.toLowerCase();
     const badPatterns = ['we r', 'r the', 'dvisor', 'experince', 'yars', 'registerd'];
-    const hasBadPattern = badPatterns.some(pattern => lowerText.includes(pattern));
-    const isAllLowercaseNoPunct = /^[a-z\s]+$/.test(text);
-    
-    if (hasBadPattern || isAllLowercaseNoPunct) {
-      return 'SEBI registered Research Analyst. Specialises in F&O and intraday strategies.';
+    if (badPatterns.some(p => lowerText.includes(p)) || /^[a-z\s]+$/.test(text)) {
+      return 'SEBI registered Research Analyst providing verified trading signals with transparent track records.';
     }
-    
     return text;
   };
 
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <section className="border-b bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950">
-        <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-2 md:py-14">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-              <Shield className="h-3.5 w-3.5" /> SEBI Verified Advisors
-            </div>
-            <h1 className="mt-4 text-3xl font-extrabold leading-tight text-white md:text-4xl">
-              Trusted research with
-              <span className="text-primary"> real mentorship</span>, not random tips.
-            </h1>
-            <p className="mt-3 max-w-xl text-sm text-white/75 md:text-base">
-              Compare verified advisors, study transparent track records, and subscribe to signal groups
-              that also explain the why behind each trade.
-            </p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link to="/discover">
-                <Button className="h-11 rounded-full px-6 font-semibold">
-                  Find Advisors <ArrowRight className="ml-1 h-4 w-4" />
-                </Button>
-              </Link>
-              {!user && (
-                <Link to="/login">
-                  <Button variant="outline" className="h-11 rounded-full border-white/30 bg-white/5 px-6 text-white hover:bg-white/15">
-                    Sign In
+
+      {/* ===== HERO SECTION ===== */}
+      <section className="relative overflow-hidden tc-gradient-hero">
+        {/* Ambient orbs */}
+        <div className="absolute top-20 left-[10%] w-[400px] h-[400px] rounded-full bg-primary/8 blur-[120px] pointer-events-none" />
+        <div className="absolute bottom-10 right-[10%] w-[350px] h-[350px] rounded-full bg-secondary/8 blur-[100px] pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-primary/4 blur-[150px] pointer-events-none" />
+
+        {/* Grid pattern overlay */}
+        <div className="absolute inset-0 opacity-[0.03]" style={{
+          backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
+          backgroundSize: '60px 60px'
+        }} />
+
+        <div className="relative z-10 mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-24 lg:py-28">
+          <div className="grid gap-10 md:grid-cols-2 md:items-center">
+            {/* Left: Copy */}
+            <div className="animate-slide-up">
+              {/* Trust badge */}
+              <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-bold text-primary mb-6 backdrop-blur-sm">
+                <div className="relative">
+                  <Shield className="h-3.5 w-3.5" />
+                  <div className="absolute inset-0 animate-pulse-ring rounded-full bg-primary/30" />
+                </div>
+                SEBI Verified Only
+              </div>
+
+              <h1 className="text-4xl font-extrabold leading-[1.1] text-white md:text-5xl lg:text-[3.5rem]" style={{ fontFamily: 'Outfit, sans-serif' }}>
+                Stop trusting
+                <span className="block tc-gradient-text mt-1">random Telegram tips.</span>
+              </h1>
+
+              <p className="mt-5 max-w-lg text-base text-white/60 leading-relaxed md:text-lg">
+                Subscribe to <strong className="text-white/90">SEBI-registered advisors</strong> with tamper-proof track records. 
+                Every signal timestamped. Every result visible. No hiding bad calls.
+              </p>
+
+              <div className="mt-8 flex flex-wrap gap-3">
+                <Link to="/discover">
+                  <Button className="h-12 rounded-full px-7 font-bold text-[15px] bg-primary hover:bg-primary/90 shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all duration-300 hover:scale-[1.02]">
+                    Find Verified Advisors <ArrowRight className="ml-2 h-4 w-4" />
                   </Button>
                 </Link>
-              )}
-            </div>
-            <div className="mt-6 grid grid-cols-3 gap-3 text-center">
-              {[
-                { title: "100%", subtitle: "SEBI checked" },
-                { title: "₹0", subtitle: "Listing fees" },
-                { title: "Monthly", subtitle: "No lock-in" },
-              ].map((item) => (
-                <div key={item.subtitle} className="rounded-xl border border-white/15 bg-white/5 p-3">
-                  <p className="text-lg font-bold text-white">{item.title}</p>
-                  <p className="text-[11px] text-white/65">{item.subtitle}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div className="rounded-2xl border border-white/15 bg-white/5 p-5 text-white">
-            <h2 className="text-lg font-bold">How it works</h2>
-            <div className="mt-4 space-y-3">
-              {[
-                { icon: Search, title: "Compare advisors", text: "Filter by style, track record and mentorship quality." },
-                { icon: CreditCard, title: "Subscribe monthly", text: "Clear pricing with compliance-first onboarding." },
-                { icon: Bell, title: "Learn + act faster", text: "Get signals and educational market notes in one feed." },
-              ].map((step) => (
-                <div key={step.title} className="flex items-start gap-3 rounded-lg border border-white/10 bg-white/5 p-3">
-                  <step.icon className="mt-0.5 h-4 w-4 text-primary" />
-                  <div>
-                    <p className="text-sm font-semibold">{step.title}</p>
-                    <p className="text-xs text-white/70">{step.text}</p>
+                {!user && (
+                  <Link to="/advisor-register">
+                    <Button variant="outline" className="h-12 rounded-full px-7 border-white/20 bg-white/5 text-white hover:bg-white/10 font-semibold backdrop-blur-sm">
+                      List as Advisor
+                    </Button>
+                  </Link>
+                )}
+              </div>
+
+              {/* Stats pills */}
+              <div className="mt-8 flex flex-wrap gap-3">
+                {[
+                  { label: "SEBI Checked", value: "100%" },
+                  { label: "Listing Fee", value: "₹0" },
+                  { label: "Lock-in", value: "None" },
+                ].map(s => (
+                  <div key={s.label} className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 backdrop-blur-sm">
+                    <span className="text-sm font-bold text-white">{s.value}</span>
+                    <span className="text-xs text-white/40">{s.label}</span>
                   </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Right: How it works card */}
+            <div className="animate-slide-up" style={{ animationDelay: '0.2s' }}>
+              <div className="rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl p-6 shadow-2xl">
+                <div className="flex items-center gap-2 mb-5">
+                  <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                  <span className="text-xs font-bold text-white/50 uppercase tracking-widest">How StockCircle Works</span>
                 </div>
-              ))}
+
+                <div className="space-y-4">
+                  {[
+                    { icon: Search, num: "01", title: "Compare Advisors", text: "Browse verified profiles. Check SEBI registration, strategy, and real track record." },
+                    { icon: CreditCard, num: "02", title: "Subscribe Monthly", text: "Clear pricing. PAN verification. Compliance-first onboarding. Cancel anytime." },
+                    { icon: Zap, num: "03", title: "Get Signals Instantly", text: "Real-time trading signals via Telegram with entry, target, and stop loss." },
+                  ].map((step, i) => (
+                    <div key={step.num} className="group flex items-start gap-4 rounded-xl border border-white/5 bg-white/[0.02] p-4 transition-all hover:border-primary/20 hover:bg-primary/5">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-secondary/20 text-primary font-bold text-sm border border-primary/10">
+                        {step.num}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-sm font-bold text-white mb-0.5">{step.title}</h3>
+                        <p className="text-xs text-white/45 leading-relaxed">{step.text}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>
       </section>
-      <section className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6">
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-6">
+
+      {/* ===== TRUST TICKER ===== */}
+      <div className="border-y border-border bg-card overflow-hidden">
+        <div className="flex animate-marquee whitespace-nowrap py-3">
+          {Array(3).fill(null).map((_, ri) => (
+            <div key={ri} className="flex items-center gap-8 mx-8">
+              {[
+                "🛡️ SEBI Verified Advisors Only",
+                "📊 Tamper-Proof Track Records",
+                "🔒 PAN + MITC Compliance",
+                "💳 Cancel Anytime — No Lock-in",
+                "⚡ Real-Time Telegram Signals",
+                "✅ Transparent Win/Loss History",
+              ].map((t, i) => (
+                <span key={`${ri}-${i}`} className="text-xs font-medium text-muted-foreground whitespace-nowrap">
+                  {t}
+                </span>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* ===== PROBLEM SECTION ===== */}
+      <section className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6">
+        <div className="grid gap-8 md:grid-cols-2 md:items-center">
+          <div>
+            <p className="text-[11px] font-bold text-destructive uppercase tracking-[2px] mb-2">THE PROBLEM</p>
+            <h2 className="text-3xl font-extrabold text-foreground tracking-tight leading-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>
+              ₹47,000 Crore lost every year to fake trading tips
+            </h2>
+            <p className="mt-4 text-muted-foreground leading-relaxed">
+              India has 17+ crore demat accounts. But when traders need guidance, they turn to unverified 
+              Telegram channels — no SEBI registration, no track record, no accountability. 
+              When losses hit, the channel disappears and the money is gone.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { icon: AlertTriangle, label: "Fake channels", value: "Lakhs+", color: "text-destructive bg-destructive/10" },
+              { icon: Users, label: "Demat accounts", value: "17Cr+", color: "text-primary bg-primary/10" },
+              { icon: Shield, label: "Using verified advisor", value: "~5L", color: "text-secondary bg-secondary/10" },
+              { icon: TrendingUp, label: "Market gap", value: "Massive", color: "text-primary bg-primary/10" },
+            ].map(s => (
+              <div key={s.label} className="rounded-xl border border-border bg-card p-4 text-center transition-all hover:shadow-md hover:-translate-y-0.5">
+                <div className={`mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-lg ${s.color}`}>
+                  <s.icon className="h-5 w-5" />
+                </div>
+                <p className="text-xl font-extrabold text-foreground">{s.value}</p>
+                <p className="text-[11px] text-muted-foreground mt-0.5">{s.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ===== POPULAR GROUPS ===== */}
+      <section className="border-y border-border bg-muted/30">
+        <div className="mx-auto w-full max-w-6xl px-4 py-14 sm:px-6">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-8">
             <div>
               <p className="text-[11px] font-bold text-primary uppercase tracking-[2px]">DISCOVER</p>
-              <h2 className="mt-1 text-2xl font-extrabold text-foreground tracking-tight">Popular advisor groups</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Transparent pricing, verified advisors, and clear win-rate context.</p>
+              <h2 className="mt-1 text-2xl font-extrabold text-foreground tracking-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>Popular Advisor Groups</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Transparent pricing, verified advisors, and real win-rate data.</p>
             </div>
             <Link to="/discover">
-              <Button variant="outline" className="mt-3 sm:mt-0 border-primary text-primary hover:bg-primary/5 rounded-lg">
+              <Button variant="outline" className="mt-3 sm:mt-0 border-primary text-primary hover:bg-primary/5 rounded-lg font-semibold">
                 View All <ArrowRight className="ml-1 h-3.5 w-3.5" />
               </Button>
             </Link>
@@ -192,7 +271,7 @@ export default function Landing() {
           ) : groups.length === 0 ? (
             <div className="rounded-xl border border-border bg-card py-12 text-center">
               <Users className="mx-auto h-10 w-10 text-muted-foreground/30 mb-3" />
-              <p className="text-muted-foreground">No groups available yet. Check back soon!</p>
+              <p className="text-muted-foreground">Advisors are being onboarded. Check back soon!</p>
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2">
@@ -205,166 +284,147 @@ export default function Landing() {
               ))}
             </div>
           )}
-      </section>
-      <section className="border-y border-border bg-muted/40">
-        <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:px-6">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-[11px] font-bold text-primary uppercase tracking-[2px]">LIVE FEED</p>
-              <h2 className="mt-0.5 text-lg font-extrabold text-foreground tracking-tight">Recent Signals & Analysis</h2>
-            </div>
-            <Link to="/explore">
-              <Button variant="outline" size="sm" className="border-primary text-primary hover:bg-primary/5 rounded-lg text-xs">
-                View All <ArrowRight className="ml-1 h-3 w-3" />
-              </Button>
-            </Link>
-          </div>
-          <PublicMixedFeed preview maxItems={4} />
         </div>
       </section>
-      <section className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6">
-        <div className="rounded-2xl border border-border bg-card p-5 md:p-6">
-          <div className="mb-8 flex items-end justify-between">
-            <div>
-              <p className="text-[11px] font-bold text-primary uppercase tracking-[2px]">MENTORSHIP FIRST</p>
-              <h2 className="mt-1 text-2xl font-extrabold text-foreground tracking-tight">Meet verified mentors</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Advisors who publish both trade calls and educational context.</p>
+
+      {/* ===== WHY STOCKCIRCLE ===== */}
+      <section className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6">
+        <div className="text-center mb-10">
+          <p className="text-[11px] font-bold text-primary uppercase tracking-[2px]">WHY STOCKCIRCLE</p>
+          <h2 className="mt-2 text-3xl font-extrabold text-foreground tracking-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>
+            Built for trust. Designed for traders.
+          </h2>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { icon: ShieldCheck, title: 'SEBI Verified Only', desc: 'Every advisor is manually checked against SEBI records. No exceptions.' },
+            { icon: Lock, title: 'Tamper-Proof Records', desc: 'Signals are permanently timestamped. Advisors cannot delete or edit bad calls.' },
+            { icon: Eye, title: 'Full Transparency', desc: 'See complete win/loss history before subscribing. No hidden track records.' },
+            { icon: BarChart3, title: 'Real Accountability', desc: 'File complaints via SEBI SCORES. Every advisor is legally accountable.' },
+          ].map((f, i) => (
+            <div key={i} className="group rounded-xl border border-border bg-card p-5 transition-all duration-300 hover:border-primary/30 hover:shadow-lg hover:-translate-y-1">
+              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10 text-primary mb-3 group-hover:bg-primary group-hover:text-white transition-colors duration-300">
+                <f.icon className="h-5 w-5" />
+              </div>
+              <h3 className="text-[15px] font-bold text-foreground mb-1">{f.title}</h3>
+              <p className="text-[13px] text-muted-foreground leading-relaxed">{f.desc}</p>
             </div>
-          </div>
+          ))}
+        </div>
+      </section>
 
-          {featuredAdvisors.length === 0 ? (
-            <div className="rounded-xl border border-border bg-background py-10 text-center">
-              <p className="text-sm text-muted-foreground">Featured advisors will appear here after admin publishes them.</p>
+      {/* ===== FEATURED ADVISORS ===== */}
+      {featuredAdvisors.length > 0 && (
+        <section className="border-y border-border bg-muted/30">
+          <div className="mx-auto w-full max-w-6xl px-4 py-14 sm:px-6">
+            <div className="mb-8">
+              <p className="text-[11px] font-bold text-primary uppercase tracking-[2px]">VERIFIED MENTORS</p>
+              <h2 className="mt-1 text-2xl font-extrabold text-foreground tracking-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>Meet Our SEBI-Registered Advisors</h2>
+              <p className="mt-1 text-sm text-muted-foreground">Every advisor below is manually verified and SEBI-registered.</p>
             </div>
-          ) : (
-            <div className="space-y-6">
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                {featuredAdvisors.slice(0, 3).map((a) => (
-                  <Link key={a.id} to={`/advisor/${a.id}`} className="group cursor-pointer h-full">
-                    <div className="h-full rounded-2xl border border-border bg-background p-6 shadow-md transition-all hover:-translate-y-1 hover:border-primary/40 hover:shadow-lg">
-                      {/* Avatar + Verified Badge */}
-                      <div className="mb-4 flex items-start justify-between">
-                        <div className="flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-primary to-secondary text-2xl font-bold text-primary-foreground border-2 border-primary">
-                          {a.profile_photo_url ? (
-                            <img src={a.profile_photo_url} alt={a.full_name} className="h-full w-full object-cover" />
-                          ) : (
-                            a.full_name.charAt(0).toUpperCase()
-                          )}
-                        </div>
-                        <div className="flex items-center gap-1 rounded-full bg-green-100 px-2.5 py-1">
-                          <CheckCircle className="h-3 w-3 text-green-600" />
-                          <span className="text-[10px] font-bold text-green-700">Verified</span>
-                        </div>
+
+            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              {featuredAdvisors.slice(0, 6).map((a) => (
+                <Link key={a.id} to={`/advisor/${a.id}`} className="group h-full">
+                  <div className="h-full rounded-2xl border border-border bg-card p-5 transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-xl">
+                    <div className="mb-4 flex items-start justify-between">
+                      <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-primary to-secondary text-xl font-bold text-primary-foreground ring-2 ring-primary/20">
+                        {a.profile_photo_url ? (
+                          <img src={a.profile_photo_url} alt={a.full_name} className="h-full w-full object-cover" />
+                        ) : a.full_name.charAt(0).toUpperCase()}
                       </div>
-
-                      {/* Name & Strategy */}
-                      <h3 className="text-lg font-bold text-foreground mb-1">{a.full_name}</h3>
-                      {a.strategy_type && <p className="text-xs font-semibold text-primary mb-3">{a.strategy_type}</p>}
-
-                      {/* Bio */}
-                      <p className="line-clamp-3 text-sm text-muted-foreground mb-4">
-                        {getValidBio(a.public_tagline, a.public_description)}
-                      </p>
-
-                      {/* Stats or Years */}
-                      <div className="flex gap-2 mb-4">
-                        {a.public_years_experience && (
-                          <span className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700 border border-blue-100">
-                            <TrendingUp className="inline h-3 w-3 mr-1" />
-                            {a.public_years_experience}+ Years
-                          </span>
-                        )}
-                        {a.sebi_reg_no && (
-                          <span className="rounded-full bg-green-50 px-3 py-1.5 text-xs font-semibold text-green-700 border border-green-100">
-                            <Shield className="inline h-3 w-3 mr-1" />
-                            SEBI ✓
-                          </span>
-                        )}
-                      </div>
-
-                      {/* CTA */}
-                      <div className="flex items-center justify-between pt-4 border-t border-border group-hover:text-primary transition-colors">
-                        <span className="text-xs text-muted-foreground font-medium">View full profile</span>
-                        <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                      <div className="flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1">
+                        <CheckCircle className="h-3 w-3 text-primary" />
+                        <span className="text-[10px] font-bold text-primary">SEBI ✓</span>
                       </div>
                     </div>
-                  </Link>
-                ))}
-              </div>
-
-              {/* CTA to View All Advisors */}
-              <div className="rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 p-8 text-center">
-                <h3 className="text-lg font-bold text-foreground mb-2">Need a better fit?</h3>
-                <p className="text-sm text-muted-foreground mb-4">Browse all published advisors and compare styles, pricing, and engagement.</p>
-                <Link to="/featured-advisors">
-                  <Button className="gap-2 bg-primary hover:bg-primary/90 text-white">
-                    View All {featuredAdvisors.length} Advisors <ArrowRight className="h-4 w-4" />
-                  </Button>
+                    <h3 className="text-base font-bold text-foreground mb-0.5">{a.full_name}</h3>
+                    {a.strategy_type && <p className="text-xs font-semibold text-primary mb-2">{a.strategy_type}</p>}
+                    <p className="line-clamp-2 text-[13px] text-muted-foreground mb-4 leading-relaxed">{getValidBio(a.public_tagline, a.public_description)}</p>
+                    <div className="flex gap-2 mb-4">
+                      {a.public_years_experience && (
+                        <span className="rounded-full bg-secondary/10 px-3 py-1 text-[11px] font-semibold text-secondary border border-secondary/10">
+                          {a.public_years_experience}+ Years
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex items-center justify-between pt-3 border-t border-border text-muted-foreground group-hover:text-primary transition-colors">
+                      <span className="text-xs font-medium">View profile</span>
+                      <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </div>
                 </Link>
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
-      <section className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-6">
-        <div className="grid gap-4 md:grid-cols-4">
-            {[
-              { icon: ShieldCheck, title: 'Verified only', desc: 'Every listed advisor is manually checked.' },
-              { icon: TrendingUp, title: 'Track records', desc: 'History is visible before subscribing.' },
-              { icon: BookOpen, title: 'Learning context', desc: 'Educational notes and strategy rationale.' },
-              { icon: MessageSquare, title: 'Community-ready', desc: 'Follow groups and engage before buying.' },
-            ].map((f, i) => (
-              <div key={i} className="rounded-xl border border-border bg-card p-4">
-                <f.icon className="h-5 w-5 text-primary mb-2" />
-                <h3 className="text-[13px] font-bold text-foreground">{f.title}</h3>
-                <p className="mt-1 text-[12px] text-muted-foreground">{f.desc}</p>
-              </div>
-            ))}
-          </div>
-      </section>
-      <section className="border-y border-border bg-card">
-        <div className="mx-auto w-full max-w-3xl px-4 py-10 sm:px-6">
-          <div className="text-center mb-6">
-            <p className="text-[11px] font-bold text-primary uppercase tracking-[2px]">FAQ</p>
-            <h2 className="mt-1 text-2xl font-extrabold text-foreground tracking-tight">Frequently Asked Questions</h2>
-          </div>
-          <div className="rounded-xl border border-border bg-background overflow-hidden">
-            <Accordion type="single" collapsible defaultValue="faq-0">
-              {[
-                { q: 'Is TradeCircle a SEBI registered advisor?', a: "No. TradeCircle is a technology marketplace by STREZONIC PRIVATE LIMITED. We verify SEBI-registered advisors but do not give investment advice ourselves." },
-                { q: 'How do you verify advisors?', a: "We manually check each advisor's SEBI registration number on sebi.gov.in before approval. Unverified advisors are never listed." },
-                { q: 'Can I cancel my subscription?', a: 'Yes. Cancel anytime from your profile. Monthly billing, no lock-in, no questions asked.' },
-                { q: 'How do I receive signals?', a: 'After subscribing, you will be added to the advisor\'s private Telegram group. All signals arrive instantly with entry, target, and stop loss.' },
-                { q: 'What if an advisor gives bad advice?', a: 'All advisors are SEBI-registered and individually accountable. You can file a complaint on SEBI SCORES at scores.gov.in anytime.' },
-              ].map((faq, i) => (
-                <AccordionItem key={i} value={`faq-${i}`} className="border-b border-border last:border-0 hover:bg-gray-50">
-                  <AccordionTrigger className="px-5 py-4 text-[14px] font-semibold text-foreground hover:text-primary transition-colors">{faq.q}</AccordionTrigger>
-                  <AccordionContent className="px-5 pb-4 text-[13px] text-muted-foreground leading-relaxed">{faq.a}</AccordionContent>
-                </AccordionItem>
               ))}
-            </Accordion>
+            </div>
+
+            <div className="mt-6 text-center">
+              <Link to="/featured-advisors">
+                <Button variant="outline" className="rounded-full px-6 border-primary text-primary hover:bg-primary/5 font-semibold">
+                  View All Advisors <ArrowRight className="ml-1 h-4 w-4" />
+                </Button>
+              </Link>
+            </div>
           </div>
+        </section>
+      )}
+
+      {/* ===== FAQ ===== */}
+      <section className="mx-auto w-full max-w-3xl px-4 py-16 sm:px-6">
+        <div className="text-center mb-8">
+          <p className="text-[11px] font-bold text-primary uppercase tracking-[2px]">FAQ</p>
+          <h2 className="mt-2 text-2xl font-extrabold text-foreground tracking-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>Frequently Asked Questions</h2>
+        </div>
+        <div className="rounded-xl border border-border bg-card overflow-hidden">
+          <Accordion type="single" collapsible defaultValue="faq-0">
+            {[
+              { q: 'Is StockCircle a SEBI registered advisor?', a: "No. StockCircle is a technology marketplace operated by STREZONIC PRIVATE LIMITED. We verify SEBI-registered advisors (INH holders) but do not give investment advice ourselves." },
+              { q: 'How do you verify advisors?', a: "We manually check each advisor's SEBI registration number (INH number) on sebi.gov.in before approval. Unverified advisors are never listed." },
+              { q: 'Can I cancel my subscription?', a: 'Yes. Cancel anytime from your profile. Monthly billing, no lock-in, no questions asked.' },
+              { q: 'How do I receive signals?', a: 'After subscribing, you will be added to the advisor\'s private Telegram group. All signals arrive instantly with entry, target, and stop loss.' },
+              { q: 'What makes this different from Telegram channels?', a: 'StockCircle only allows SEBI-registered advisors. Every signal is permanently timestamped — advisors cannot delete bad calls. You can see full win/loss history before subscribing.' },
+            ].map((faq, i) => (
+              <AccordionItem key={i} value={`faq-${i}`} className="border-b border-border last:border-0">
+                <AccordionTrigger className="px-5 py-4 text-[14px] font-semibold text-foreground hover:text-primary transition-colors">{faq.q}</AccordionTrigger>
+                <AccordionContent className="px-5 pb-4 text-[13px] text-muted-foreground leading-relaxed">{faq.a}</AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
         </div>
       </section>
-      <section className="border-t bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950 px-4 py-10 sm:px-6">
-        <div className="mx-auto max-w-xl text-center">
-          <div className="rounded-2xl border border-white/15 bg-white/5 p-8">
-            <p className="text-xl font-extrabold text-white">Trade with verified advisors, learn with community context.</p>
-            <p className="mt-2 text-sm text-white/70">Start with public insights, then subscribe only when advisor quality matches your style.</p>
+
+      {/* ===== FINAL CTA ===== */}
+      <section className="relative overflow-hidden tc-gradient-hero px-4 py-16 sm:px-6">
+        <div className="absolute inset-0 opacity-[0.03]" style={{
+          backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
+          backgroundSize: '40px 40px'
+        }} />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full bg-primary/10 blur-[120px] pointer-events-none" />
+
+        <div className="relative z-10 mx-auto max-w-xl text-center">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl p-8 md:p-10">
+            <h2 className="text-2xl font-extrabold text-white md:text-3xl" style={{ fontFamily: 'Outfit, sans-serif' }}>
+              Trade with verified advisors.<br />
+              <span className="tc-gradient-text">Not random Telegram tips.</span>
+            </h2>
+            <p className="mt-3 text-sm text-white/50">
+              Browse SEBI-registered advisors. Check track records. Subscribe only when you're ready.
+            </p>
             <Link to="/discover">
-              <Button className="mt-5 h-12 px-8 rounded-full bg-white text-primary font-bold hover:bg-white/90 hover:scale-[1.02] transition-all duration-200 tc-btn-click">
-                Browse Verified Advisors <ArrowRight className="ml-1 h-4 w-4" />
+              <Button className="mt-6 h-12 px-8 rounded-full bg-white text-foreground font-bold hover:bg-white/90 hover:scale-[1.02] transition-all duration-200 shadow-lg">
+                Browse Verified Advisors <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
           </div>
         </div>
       </section>
-      <div className="border-t bg-card px-5 py-6 text-center">
+
+      {/* ===== SEBI DISCLAIMER ===== */}
+      <div className="border-t bg-card px-5 py-5 text-center">
         <div className="container mx-auto max-w-2xl">
-          <div className="rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/20 px-4 py-3">
+          <div className="rounded-lg border border-border bg-muted/50 px-4 py-3">
             <p className="text-[11px] text-muted-foreground">
               <Shield className="inline h-3 w-3 text-primary mr-1" />
-              All advisors on TradeCircle are SEBI registered. SEBI does not endorse any advisor's performance.
+              All advisors on StockCircle are SEBI registered (INH holders). StockCircle is not a SEBI registered entity. Investment in securities involves market risk.
             </p>
           </div>
         </div>

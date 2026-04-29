@@ -53,12 +53,13 @@ export function BottomNavigation() {
           >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-secondary text-sm font-bold text-primary-foreground">
                   {(profile?.full_name || 'U').charAt(0).toUpperCase()}
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-foreground">{profile?.full_name || 'User'}</p>
                   <p className="text-xs text-muted-foreground">{profile?.email}</p>
+                  <p className="text-[10px] text-primary font-bold mt-0.5">Stock<span className="text-secondary">Circle</span></p>
                 </div>
               </div>
               <button onClick={() => setShowProfileMenu(false)} className="p-1 text-muted-foreground">

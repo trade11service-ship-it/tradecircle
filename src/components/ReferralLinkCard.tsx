@@ -74,9 +74,9 @@ export function ReferralLinkCard({ groupId, groupName, advisorId, advisorName }:
   };
 
   const handleShare = () => {
-    const text = `Join my trading signal group on TradeCircle!\nGet SEBI-verified signals directly to your Telegram. Check my track record here:\n${referralUrl}`;
+    const text = `Join my trading signal group on StockCircle!\nGet SEBI-verified signals directly to your Telegram. Check my track record here:\n${referralUrl}`;
     if (navigator.share) {
-      navigator.share({ title: `Join ${groupName} on TradeCircle`, text, url: referralUrl });
+      navigator.share({ title: `Join ${groupName} on StockCircle`, text, url: referralUrl });
     } else {
       navigator.clipboard.writeText(text);
       toast.success('Share message copied!');

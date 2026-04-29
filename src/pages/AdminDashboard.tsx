@@ -783,7 +783,7 @@ export default function AdminDashboard() {
                 <div className="bg-foreground rounded-2xl p-5 text-white">
                   <h3 className="text-[14px] font-bold text-white/80 mb-3.5">System Info</h3>
                   {[
-                    { label: 'Platform', value: 'TradeCircle v1.0' },
+                    { label: 'Platform', value: 'StockCircle v1.0' },
                     { label: 'Operator', value: 'STREZONIC PVT LTD' },
                     { label: 'CIN', value: 'U62099MH2025PTC453360' },
                   ].map((row, i) => (
