@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { GroupCard } from '@/components/GroupCard';
 import { Button } from '@/components/ui/button';
-import { Shield, ShieldCheck, ArrowRight, Bell, CreditCard, Search, Users, CheckCircle, TrendingUp, BookOpen, MessageSquare, Lock, Eye, Zap, BarChart3, AlertTriangle } from 'lucide-react';
+import { Shield, ShieldCheck, ArrowRight, Bell, CreditCard, Search, Users, CheckCircle, TrendingUp, BookOpen, MessageSquare, Lock, Eye, Zap, BarChart3, AlertTriangle, UserCircle } from 'lucide-react';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { useAuth } from '@/lib/auth';
 import { setMetaTags, SEO_CONFIG } from '@/lib/seo';
@@ -29,13 +29,29 @@ interface FeaturedAdvisor {
 }
 
 export default function Landing() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
+  const navigate = useNavigate();
   const [groups, setGroups] = useState<GroupData[]>([]);
   const [featuredAdvisors, setFeaturedAdvisors] = useState<FeaturedAdvisor[]>([]);
+  const [publicSignals, setPublicSignals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { setMetaTags(SEO_CONFIG.landing); }, []);
-  useEffect(() => { fetchGroups(); fetchFeaturedAdvisors(); }, []);
+  
+  // Redirect to app if already logged in
+  useEffect(() => {
+    if (user && !authLoading) {
+      navigate('/home', { replace: true });
+    }
+  }, [user, authLoading, navigate]);
+
+  useEffect(() => { 
+    if (!user && !authLoading) {
+      fetchGroups(); 
+      fetchFeaturedAdvisors();
+      fetchPublicSignals();
+    }
+  }, [user, authLoading]);
 
   const fetchGroups = async () => {
     const { data: grps } = await supabase
@@ -73,6 +89,16 @@ export default function Landing() {
     setFeaturedAdvisors((data || []) as FeaturedAdvisor[]);
   };
 
+  const fetchPublicSignals = async () => {
+    const { data } = await supabase
+      .from('signals')
+      .select('*, advisors!inner(full_name, profile_photo_url)')
+      .eq('is_public', true)
+      .order('created_at', { ascending: false })
+      .limit(8);
+    setPublicSignals(data || []);
+  };
+
   const getValidBio = (tagline: string | null, description: string | null): string => {
     const text = tagline || description || '';
     if (text.length < 50) return 'SEBI registered Research Analyst providing verified trading signals with transparent track records.';
@@ -88,157 +114,96 @@ export default function Landing() {
     <div className="min-h-screen bg-background">
       <Navbar />
 
-      {/* ===== HERO SECTION ===== */}
-      <section className="relative overflow-hidden tc-gradient-hero">
-        {/* Ambient orbs */}
-        <div className="absolute top-20 left-[10%] w-[400px] h-[400px] rounded-full bg-primary/8 blur-[120px] pointer-events-none" />
-        <div className="absolute bottom-10 right-[10%] w-[350px] h-[350px] rounded-full bg-secondary/8 blur-[100px] pointer-events-none" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-primary/4 blur-[150px] pointer-events-none" />
-
-        {/* Grid pattern overlay */}
-        <div className="absolute inset-0 opacity-[0.03]" style={{
-          backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
-          backgroundSize: '60px 60px'
-        }} />
-
-        <div className="relative z-10 mx-auto max-w-6xl px-4 py-16 sm:px-6 md:py-24 lg:py-28">
-          <div className="grid gap-10 md:grid-cols-2 md:items-center">
-            {/* Left: Copy */}
-            <div className="animate-slide-up">
-              {/* Trust badge */}
-              <div className="inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-bold text-primary mb-6 backdrop-blur-sm">
-                <div className="relative">
-                  <Shield className="h-3.5 w-3.5" />
-                  <div className="absolute inset-0 animate-pulse-ring rounded-full bg-primary/30" />
-                </div>
-                SEBI Verified Only
-              </div>
-
-              <h1 className="text-4xl font-extrabold leading-[1.1] text-white md:text-5xl lg:text-[3.5rem]" style={{ fontFamily: 'Outfit, sans-serif' }}>
-                Stop trusting
-                <span className="block tc-gradient-text mt-1">random Telegram tips.</span>
-              </h1>
-
-              <p className="mt-5 max-w-lg text-base text-white/60 leading-relaxed md:text-lg">
-                Subscribe to <strong className="text-white/90">SEBI-registered advisors</strong> with tamper-proof track records. 
-                Every signal timestamped. Every result visible. No hiding bad calls.
-              </p>
-
-              <div className="mt-8 flex flex-wrap gap-3">
-                <Link to="/discover">
-                  <Button className="h-12 rounded-full px-7 font-bold text-[15px] bg-primary hover:bg-primary/90 shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-all duration-300 hover:scale-[1.02]">
-                    Find Verified Advisors <ArrowRight className="ml-2 h-4 w-4" />
+      {/* ===== COMPACT URGENT HERO ===== */}
+      <section className="bg-background pt-10 pb-8 border-b border-border">
+        <div className="mx-auto w-full max-w-5xl px-4 sm:px-6">
+          <div className="text-center mb-10 animate-slide-up">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[11px] font-bold text-primary mb-4">
+              <Shield className="h-3.5 w-3.5" /> SEBI Verified Advisors Only
+            </div>
+            <h1 className="text-3xl md:text-5xl font-extrabold text-foreground tracking-tight leading-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>
+              Real Trading Signals.<br />
+              <span className="tc-gradient-text">Tamper-Proof Records.</span>
+            </h1>
+            <p className="mt-3 text-muted-foreground text-sm md:text-base max-w-2xl mx-auto">
+              Stop trusting random Telegram tips. Follow SEBI-registered experts with transparent, verifiable win-rates and live alerts.
+            </p>
+            <div className="mt-6 flex justify-center gap-3">
+              <Link to="/discover">
+                <Button className="h-11 rounded-full px-8 font-bold text-[14px] bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 hover:-translate-y-0.5 transition-all">
+                  Browse Advisors
+                </Button>
+              </Link>
+              {!user && (
+                <Link to="/advisor-register">
+                  <Button variant="outline" className="h-11 rounded-full px-6 font-semibold border-border hover:bg-muted">
+                    List as Advisor
                   </Button>
                 </Link>
-                {!user && (
-                  <Link to="/advisor-register">
-                    <Button variant="outline" className="h-12 rounded-full px-7 border-white/20 bg-white/5 text-white hover:bg-white/10 font-semibold backdrop-blur-sm">
-                      List as Advisor
-                    </Button>
-                  </Link>
-                )}
-              </div>
-
-              {/* Stats pills */}
-              <div className="mt-8 flex flex-wrap gap-3">
-                {[
-                  { label: "SEBI Checked", value: "100%" },
-                  { label: "Listing Fee", value: "₹0" },
-                  { label: "Lock-in", value: "None" },
-                ].map(s => (
-                  <div key={s.label} className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 backdrop-blur-sm">
-                    <span className="text-sm font-bold text-white">{s.value}</span>
-                    <span className="text-xs text-white/40">{s.label}</span>
-                  </div>
-                ))}
-              </div>
+              )}
             </div>
+          </div>
 
-            {/* Right: How it works card */}
-            <div className="animate-slide-up" style={{ animationDelay: '0.2s' }}>
-              <div className="rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl p-6 shadow-2xl">
-                <div className="flex items-center gap-2 mb-5">
-                  <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                  <span className="text-xs font-bold text-white/50 uppercase tracking-widest">How StockCircle Works</span>
-                </div>
-
-                <div className="space-y-4">
-                  {[
-                    { icon: Search, num: "01", title: "Compare Advisors", text: "Browse verified profiles. Check SEBI registration, strategy, and real track record." },
-                    { icon: CreditCard, num: "02", title: "Subscribe Monthly", text: "Clear pricing. PAN verification. Compliance-first onboarding. Cancel anytime." },
-                    { icon: Zap, num: "03", title: "Get Signals Instantly", text: "Real-time trading signals via Telegram with entry, target, and stop loss." },
-                  ].map((step, i) => (
-                    <div key={step.num} className="group flex items-start gap-4 rounded-xl border border-white/5 bg-white/[0.02] p-4 transition-all hover:border-primary/20 hover:bg-primary/5">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-primary/20 to-secondary/20 text-primary font-bold text-sm border border-primary/10">
-                        {step.num}
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-sm font-bold text-white mb-0.5">{step.title}</h3>
-                        <p className="text-xs text-white/45 leading-relaxed">{step.text}</p>
-                      </div>
+          {/* LIVE PUBLIC SIGNALS SLIDESHOW */}
+          {publicSignals.length > 0 && (
+            <div className="mt-8 animate-slide-up" style={{ animationDelay: '0.1s' }}>
+              <div className="flex items-center gap-2 mb-3 px-1">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+                </span>
+                <span className="text-[11px] font-bold text-primary uppercase tracking-wider">Live Public Signals</span>
+              </div>
+              
+              <div className="relative overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+                <div className="flex animate-marquee hover:[animation-play-state:paused]">
+                  {Array(2).fill(null).map((_, ri) => (
+                    <div key={ri} className="flex gap-4 p-4">
+                      {publicSignals.map((sig, i) => (
+                        <div key={`${ri}-${i}`} className="w-[280px] shrink-0 rounded-lg border border-border bg-muted/30 p-3">
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex items-center gap-2">
+                              <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden shrink-0">
+                                {sig.advisors?.profile_photo_url ? <img src={sig.advisors.profile_photo_url} className="h-full w-full object-cover" /> : <UserCircle className="h-4 w-4 text-primary" />}
+                              </div>
+                              <span className="text-[11px] font-bold text-foreground truncate max-w-[100px]">{sig.advisors?.full_name}</span>
+                            </div>
+                            <span className="text-[10px] text-muted-foreground">{new Date(sig.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${sig.signal_type === 'BUY' ? 'bg-light-green text-primary' : 'bg-destructive/10 text-destructive'}`}>
+                              {sig.signal_type}
+                            </span>
+                            <span className="text-[13px] font-extrabold text-foreground">{sig.instrument}</span>
+                          </div>
+                          {sig.entry_price > 0 && (
+                            <div className="mt-2 grid grid-cols-3 gap-1 text-[10px]">
+                              <div className="bg-card border border-border rounded p-1 text-center">
+                                <p className="text-muted-foreground">Entry</p>
+                                <p className="font-bold text-foreground">₹{sig.entry_price}</p>
+                              </div>
+                              <div className="bg-card border border-border rounded p-1 text-center">
+                                <p className="text-muted-foreground">Target</p>
+                                <p className="font-bold text-primary">₹{sig.target_price}</p>
+                              </div>
+                              <div className="bg-card border border-border rounded p-1 text-center">
+                                <p className="text-muted-foreground">SL</p>
+                                <p className="font-bold text-destructive">₹{sig.stop_loss}</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      ))}
                     </div>
                   ))}
                 </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
       </section>
 
-      {/* ===== TRUST TICKER ===== */}
-      <div className="border-y border-border bg-card overflow-hidden">
-        <div className="flex animate-marquee whitespace-nowrap py-3">
-          {Array(3).fill(null).map((_, ri) => (
-            <div key={ri} className="flex items-center gap-8 mx-8">
-              {[
-                "🛡️ SEBI Verified Advisors Only",
-                "📊 Tamper-Proof Track Records",
-                "🔒 PAN + MITC Compliance",
-                "💳 Cancel Anytime — No Lock-in",
-                "⚡ Real-Time Telegram Signals",
-                "✅ Transparent Win/Loss History",
-              ].map((t, i) => (
-                <span key={`${ri}-${i}`} className="text-xs font-medium text-muted-foreground whitespace-nowrap">
-                  {t}
-                </span>
-              ))}
-            </div>
-          ))}
-        </div>
-      </div>
 
-      {/* ===== PROBLEM SECTION ===== */}
-      <section className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6">
-        <div className="grid gap-8 md:grid-cols-2 md:items-center">
-          <div>
-            <p className="text-[11px] font-bold text-destructive uppercase tracking-[2px] mb-2">THE PROBLEM</p>
-            <h2 className="text-3xl font-extrabold text-foreground tracking-tight leading-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>
-              ₹47,000 Crore lost every year to fake trading tips
-            </h2>
-            <p className="mt-4 text-muted-foreground leading-relaxed">
-              India has 17+ crore demat accounts. But when traders need guidance, they turn to unverified 
-              Telegram channels — no SEBI registration, no track record, no accountability. 
-              When losses hit, the channel disappears and the money is gone.
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { icon: AlertTriangle, label: "Fake channels", value: "Lakhs+", color: "text-destructive bg-destructive/10" },
-              { icon: Users, label: "Demat accounts", value: "17Cr+", color: "text-primary bg-primary/10" },
-              { icon: Shield, label: "Using verified advisor", value: "~5L", color: "text-secondary bg-secondary/10" },
-              { icon: TrendingUp, label: "Market gap", value: "Massive", color: "text-primary bg-primary/10" },
-            ].map(s => (
-              <div key={s.label} className="rounded-xl border border-border bg-card p-4 text-center transition-all hover:shadow-md hover:-translate-y-0.5">
-                <div className={`mx-auto mb-2 flex h-10 w-10 items-center justify-center rounded-lg ${s.color}`}>
-                  <s.icon className="h-5 w-5" />
-                </div>
-                <p className="text-xl font-extrabold text-foreground">{s.value}</p>
-                <p className="text-[11px] text-muted-foreground mt-0.5">{s.label}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* ===== POPULAR GROUPS ===== */}
       <section className="border-y border-border bg-muted/30">

@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Shield, Search, ArrowRight, TrendingUp, Users, BadgeCheck } from 'lucide-react';
@@ -128,9 +126,8 @@ export default function Groups() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <Navbar />
-
+    <div className="min-h-full h-full flex flex-col bg-background">
+      
       <div className="container mx-auto px-4 py-6 md:py-10 flex-1">
         <div className="mb-6 rounded-2xl border border-border bg-card p-5">
           <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-muted-foreground">
@@ -303,7 +300,6 @@ export default function Groups() {
         </p>
       </div>
 
-      <Footer />
-    </div>
+          </div>
   );
 }

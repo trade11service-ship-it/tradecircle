@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { sanitizeName, sanitizePhone, sanitizeText, sanitizeTextarea } from '@/lib/sanitize';
 import { supabase } from '@/integrations/supabase/client';
-import { Navbar } from '@/components/Navbar';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
-import { User, Mail, Phone, Lock, Eye, EyeOff, Shield, Calendar, Settings, AlertTriangle, Trash2, Pencil, Users, Send, MapPin, CheckCircle } from 'lucide-react';
+import { User, Mail, Phone, Lock, Eye, EyeOff, Shield, Calendar, Settings, AlertTriangle, Trash2, Pencil, Users, Send, MapPin, CheckCircle, LogOut } from 'lucide-react';
+import { TelegramSettings } from '@/components/TelegramSettings';
 import {
   Dialog,
   DialogContent,
@@ -175,9 +175,8 @@ export default function Profile() {
   ];
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ background: '#F8F9FA' }}>
-      <Navbar />
-
+    <div className="min-h-full h-full flex flex-col" style={{ background: '#F8F9FA' }}>
+      
       {/* ===== PROFILE HERO ===== */}
       <div className="bg-card shadow-[0_4px_20px_rgba(0,0,0,0.07)]" style={{ borderRadius: '0 0 28px 28px', marginBottom: 16 }}>
         {/* Cover strip */}
@@ -214,16 +213,28 @@ export default function Profile() {
                 🎯 Active {profile?.role === 'advisor' ? 'Advisor' : 'Trader'}
               </span>
             </div>
-            <button
-              onClick={() => { setTab('details'); setEditing(true); }}
-              className="flex items-center gap-1.5 transition-colors hover:border-primary"
-              style={{
-                background: 'white', border: '1.5px solid #E5E7EB', borderRadius: 10,
-                padding: '8px 16px', fontSize: 13, fontWeight: 600, color: '#1A1A2E',
-              }}
-            >
-              <Pencil className="h-3.5 w-3.5" style={{ color: '#6B7280' }} /> Edit Profile
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => { setTab('details'); setEditing(true); }}
+                className="flex items-center gap-1.5 transition-colors hover:border-primary"
+                style={{
+                  background: 'white', border: '1.5px solid #E5E7EB', borderRadius: 10,
+                  padding: '8px 12px', fontSize: 13, fontWeight: 600, color: '#1A1A2E',
+                }}
+              >
+                <Pencil className="h-3.5 w-3.5" style={{ color: '#6B7280' }} /> <span className="hidden sm:inline">Edit</span>
+              </button>
+              <button
+                onClick={() => signOut()}
+                className="flex items-center gap-1.5 transition-colors hover:bg-destructive/10 hover:border-destructive hover:text-destructive"
+                style={{
+                  background: 'white', border: '1.5px solid #E5E7EB', borderRadius: 10,
+                  padding: '8px 12px', fontSize: 13, fontWeight: 600, color: '#1A1A2E',
+                }}
+              >
+                <LogOut className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Logout</span>
+              </button>
+            </div>
           </div>
 
           {/* Stats row */}
@@ -617,6 +628,9 @@ export default function Profile() {
         {/* SETTINGS TAB */}
         {tab === 'settings' && (
           <div className="space-y-4">
+            {/* Telegram Settings */}
+            <TelegramSettings />
+
             {/* Advisor-specific settings */}
             {advisor && (
               <div style={{ background: 'white', borderRadius: 16, border: '1.5px solid #E5E7EB', padding: 20 }}>

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Navbar } from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth';
 import { CheckCircle, XCircle } from 'lucide-react';
@@ -158,9 +157,8 @@ export default function PaymentSuccess() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-muted">
-      <Navbar />
-      <div className="flex-1 flex items-center justify-center px-4">
+    <div className="min-h-full h-full flex flex-col bg-muted">
+            <div className="flex-1 flex items-center justify-center px-4">
         <div className="rounded-2xl border border-border bg-card p-8 text-center max-w-md shadow-sm">
           {status === 'verifying' && (
             <>

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
+
+
 import { useAuth } from '@/lib/auth';
 import { Shield, CheckCircle, TrendingUp, Users, BarChart3, ArrowRight } from 'lucide-react';
 import { setMetaTags, SEO_CONFIG } from '@/lib/seo';
@@ -94,8 +94,8 @@ export default function FeaturedAdvisors() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
+    <div className="min-h-full h-full bg-background">
+      
       <main className="container mx-auto px-4 py-8 max-w-5xl">
         {/* Page Header */}
         <div className="mb-8 text-center">
@@ -235,7 +235,7 @@ export default function FeaturedAdvisors() {
           </div>
         )}
       </main>
-      <Footer />
+      
     </div>
   );
 }

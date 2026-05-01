@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Navbar } from '@/components/Navbar';
-import { Footer } from '@/components/Footer';
+
+
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
@@ -120,8 +120,8 @@ export default function ListedAdvisors() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white">
-      <Navbar />
+    <div className="min-h-full h-full bg-gradient-to-b from-slate-50 to-white">
+      
       <main className="container mx-auto px-4 py-12">
         {/* Header */}
         <div className="mb-12 text-center">
@@ -334,7 +334,7 @@ export default function ListedAdvisors() {
         )}
       </main>
 
-      <Footer />
+      
     </div>
   );
 }

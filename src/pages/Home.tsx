@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -38,6 +37,9 @@ export default function Home() {
   const [groupNames, setGroupNames] = useState<Record<string, string>>({});
   const [advisorNames, setAdvisorNames] = useState<Record<string, string>>({});
   const [advisorPhotos, setAdvisorPhotos] = useState<Record<string, string>>({});
+  const [publicSignals, setPublicSignals] = useState<any[]>([]);
+  const [featuredAdvisors, setFeaturedAdvisors] = useState<any[]>([]);
+  const [subscribedGroups, setSubscribedGroups] = useState<any[]>([]);
 
   // Set meta tags
   useEffect(() => {
@@ -69,6 +71,23 @@ export default function Home() {
     
     if (groupIds.length === 0) {
       setPosts([]);
+      // Fetch public signals instead
+      const { data: pubSigs } = await supabase
+        .from('signals')
+        .select('*, advisors!inner(full_name, profile_photo_url)')
+        .eq('is_public', true)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      setPublicSignals(pubSigs || []);
+      
+      const { data: advs } = await supabase
+        .from('advisors')
+        .select('id, full_name, profile_photo_url, strategy_type, public_tagline')
+        .eq('status', 'approved')
+        .eq('is_public_featured', true)
+        .limit(4);
+      setFeaturedAdvisors(advs || []);
+      
       setLoading(false);
       return;
     }
@@ -94,6 +113,15 @@ export default function Home() {
     setGroupNames(Object.fromEntries((groups || []).map((g) => [g.id, g.name])));
     setAdvisorNames(Object.fromEntries((advisors || []).map((a) => [a.id, a.full_name])));
     setAdvisorPhotos(Object.fromEntries((advisors || []).map((a) => [a.id, a.profile_photo_url || ""])));
+    setSubscribedGroups(groups || []);
+    
+    const { data: advs } = await supabase
+      .from('advisors')
+      .select('id, full_name, profile_photo_url, strategy_type, public_tagline')
+      .eq('status', 'approved')
+      .eq('is_public_featured', true)
+      .limit(4);
+    setFeaturedAdvisors(advs || []);
     setLoading(false);
   };
 
@@ -119,9 +147,8 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-muted">
-      <Navbar />
-      <main className="mx-auto w-full max-w-4xl px-4 py-5">
+    <div className="min-h-full bg-background p-4 md:p-6 lg:p-8">
+      <main className="mx-auto w-full max-w-5xl">
         <div className="mb-6 rounded-2xl border border-border bg-gradient-to-r from-primary/5 to-primary/10 p-4">
           <div className="flex items-center justify-between gap-3 mb-3">
             <div className="flex-1">
@@ -171,28 +198,90 @@ export default function Home() {
             </div>
           </div>
         ) : !hasSubscriptions ? (
-          <div className="rounded-2xl border-2 border-dashed border-primary/30 bg-card p-8">
-            <div className="text-center max-w-md mx-auto">
-              <div className="bg-primary/10 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
-                <Compass className="w-8 h-8 text-primary" />
-              </div>
-              <h2 className="text-xl font-bold text-foreground mb-2">
-                No Active Subscriptions
+          <div className="space-y-6">
+            {/* PUBLIC SIGNALS */}
+            <div>
+              <h2 className="text-lg font-bold text-foreground mb-3 flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+                </span>
+                Live Public Feed
               </h2>
-              <p className="text-muted-foreground mb-6">
-                See advisor groups, preview their feed, then subscribe if it fits your style.
-              </p>
-              <div className="flex flex-col gap-2">
+              <div className="rounded-2xl border border-border bg-card p-3 shadow-sm">
+                {publicSignals.length === 0 ? (
+                  <div className="py-8 text-center text-muted-foreground text-sm">No public signals available right now.</div>
+                ) : (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {publicSignals.map(sig => (
+                      <div key={sig.id} className="rounded-xl border border-border bg-muted/20 p-3 hover:bg-muted/40 transition-colors">
+                        <div className="flex justify-between items-start mb-2">
+                          <div className="flex items-center gap-2">
+                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden shrink-0 border border-primary/20">
+                              {sig.advisors?.profile_photo_url ? <img src={sig.advisors.profile_photo_url} className="h-full w-full object-cover" /> : <User className="h-4 w-4 text-primary" />}
+                            </div>
+                            <div>
+                              <span className="text-xs font-bold text-foreground block">{sig.advisors?.full_name}</span>
+                              <span className="text-[10px] text-muted-foreground">{new Date(sig.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                            </div>
+                          </div>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${sig.signal_type === 'BUY' ? 'bg-primary/15 text-primary' : 'bg-destructive/15 text-destructive'}`}>
+                            {sig.signal_type}
+                          </span>
+                        </div>
+                        <div className="mb-2">
+                          <span className="text-sm font-extrabold text-foreground">{sig.instrument}</span>
+                        </div>
+                        {sig.entry_price > 0 && (
+                          <div className="grid grid-cols-3 gap-2 text-center mt-2">
+                            <div className="bg-background rounded-lg border border-border p-1.5">
+                              <p className="text-[10px] text-muted-foreground font-semibold">Entry</p>
+                              <p className="text-xs font-bold text-foreground">₹{sig.entry_price}</p>
+                            </div>
+                            <div className="bg-background rounded-lg border border-border p-1.5">
+                              <p className="text-[10px] text-muted-foreground font-semibold">Target</p>
+                              <p className="text-xs font-bold text-primary">₹{sig.target_price}</p>
+                            </div>
+                            <div className="bg-background rounded-lg border border-border p-1.5">
+                              <p className="text-[10px] text-muted-foreground font-semibold">SL</p>
+                              <p className="text-xs font-bold text-destructive">₹{sig.stop_loss}</p>
+                            </div>
+                          </div>
+                        )}
+                        {sig.notes && <p className="text-[11px] text-muted-foreground mt-2 line-clamp-2 italic">{sig.notes}</p>}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* FEATURED ADVISORS */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-lg font-bold text-foreground">Featured Advisors</h2>
                 <Link to="/discover">
-                  <Button className="w-full gap-2 bg-primary hover:bg-primary/90 text-white">
-                    See Groups <ArrowRight className="w-4 h-4" />
-                  </Button>
+                  <Button variant="ghost" size="sm" className="text-primary gap-1">View All <ArrowRight className="h-4 w-4" /></Button>
                 </Link>
-                <Link to="/listed-advisors">
-                  <Button variant="outline" className="w-full gap-2">
-                    View Featured Advisors <ArrowRight className="w-4 h-4" />
-                  </Button>
-                </Link>
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                {featuredAdvisors.map(adv => (
+                  <Link key={adv.id} to={`/advisor/${adv.id}`}>
+                    <div className="rounded-xl border border-border bg-card p-4 hover:border-primary/30 transition-all hover:shadow-md flex items-center gap-3">
+                      <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center overflow-hidden shrink-0 text-white font-bold">
+                        {adv.profile_photo_url ? <img src={adv.profile_photo_url} className="h-full w-full object-cover" /> : adv.full_name.charAt(0)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <h3 className="text-sm font-bold text-foreground truncate">{adv.full_name}</h3>
+                          <Shield className="h-3 w-3 text-primary" />
+                        </div>
+                        <p className="text-xs text-primary font-semibold truncate">{adv.strategy_type || 'Options Specialist'}</p>
+                        <p className="text-[11px] text-muted-foreground truncate mt-0.5">{adv.public_tagline || 'SEBI Registered Research Analyst'}</p>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
               </div>
             </div>
           </div>
@@ -205,19 +294,18 @@ export default function Home() {
           </div>
         ) : (
           <div className="space-y-4">
-            {/* Subscriptions Summary */}
-            <div className="rounded-2xl border border-border bg-card p-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-sm font-bold text-foreground">Your Subscriptions</h2>
-                  <p className="text-xs text-muted-foreground mt-1">Active advisor feeds you're subscribed to</p>
-                </div>
-                <Link to="/subscriptions">
-                  <Button variant="outline" size="sm" className="gap-2">
-                    Manage <ArrowRight size={14} />
+            {/* Subscriptions Summary Buttons */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
+              {subscribedGroups.map(g => (
+                <Link key={g.id} to={`/group/${g.id}`}>
+                  <Button variant="outline" className="w-full h-12 justify-start px-3 bg-card hover:bg-muted border-border hover:border-primary/50 shadow-sm transition-all rounded-xl">
+                    <div className="flex flex-col items-start min-w-0">
+                      <span className="text-[13px] font-bold text-foreground truncate w-full text-left">{g.name}</span>
+                      <span className="text-[10px] text-muted-foreground">Open Group ↗</span>
+                    </div>
                   </Button>
                 </Link>
-              </div>
+              ))}
             </div>
 
             {/* Live Feed Section */}

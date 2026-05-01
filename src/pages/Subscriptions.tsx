@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Navbar } from "@/components/Navbar";
-import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
@@ -71,22 +69,19 @@ export default function Subscriptions() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
-        <Navbar />
-        <main className="max-w-4xl mx-auto px-4 py-12">
+      <div className="min-h-full h-full bg-background">
+                <main className="max-w-4xl mx-auto px-4 py-12">
           <div className="text-center py-12">
             <p className="text-muted-foreground">Loading subscriptions...</p>
           </div>
         </main>
-        <Footer />
-      </div>
+              </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <Navbar />
-
+    <div className="min-h-full h-full bg-background">
+      
       <main className="max-w-4xl mx-auto px-4 py-8">
         {/* Page Header */}
         <div className="mb-8">
@@ -230,7 +225,6 @@ export default function Subscriptions() {
         </div>
       </main>
 
-      <Footer />
-    </div>
+          </div>
   );
 }

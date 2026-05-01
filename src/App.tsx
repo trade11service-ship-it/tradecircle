@@ -12,6 +12,8 @@ import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import Profile from "./pages/Profile";
+import { AppLayout } from "@/components/AppLayout";
+import { Outlet } from "react-router-dom";
 import AdvisorProfile from "./pages/AdvisorProfile";
 import TraderDashboard from "./pages/TraderDashboard";
 import AdvisorRegister from "./pages/AdvisorRegister";
@@ -45,6 +47,14 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function AppShell() {
+  return (
+    <AppLayout>
+      <Outlet />
+    </AppLayout>
+  );
+}
+
 function ScrollToTop() {
   const { pathname } = useLocation();
   useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
@@ -59,15 +69,10 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <ScrollToTop />
-          <div className="pb-16 md:pb-0">
+          <div className="h-screen w-full">
             <Routes>
+              {/* Marketing / Public Routes (No App Shell) */}
               <Route path="/" element={<Landing />} />
-              <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-              <Route path="/discover" element={<Discover />} />
-              <Route path="/listed-advisors" element={<ListedAdvisors />} />
-              <Route path="/featured-advisors" element={<FeaturedAdvisors />} />
-              <Route path="/groups" element={<Discover />} />
-              <Route path="/explore" element={<Explore />} />
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/login" element={<Login />} />
@@ -75,32 +80,44 @@ const App = () => (
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/advisor-register" element={<AdvisorRegister />} />
-              <Route path="/advisor/:id" element={<AdvisorProfile />} />
-              <Route path="/group/:id" element={<GroupDetails />} />
-              <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
-              <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
-              <Route path="/subscriptions" element={<ProtectedRoute><Subscriptions /></ProtectedRoute>} />
-              <Route path="/dashboard" element={<ProtectedRoute><TraderDashboard /></ProtectedRoute>} />
-              <Route path="/advisor/dashboard" element={<ProtectedRoute><AdvisorDashboard /></ProtectedRoute>} />
-              <Route path="/advisor/dashboard/groups" element={<ProtectedRoute><AdvisorDashboard /></ProtectedRoute>} />
-              <Route path="/advisor/dashboard/post" element={<ProtectedRoute><AdvisorDashboard /></ProtectedRoute>} />
-              <Route path="/advisor/dashboard/signals" element={<ProtectedRoute><AdvisorDashboard /></ProtectedRoute>} />
-              <Route path="/advisor/dashboard/earnings" element={<ProtectedRoute><AdvisorDashboard /></ProtectedRoute>} />
-              <Route path="/advisor/dashboard/subscribers" element={<ProtectedRoute><AdvisorDashboard /></ProtectedRoute>} />
-              <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-              <Route path="/admin/approvals" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-              <Route path="/admin/revenue" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-              <Route path="/admin/complaints" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-              <Route path="/payment-success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
               <Route path="/disclaimer" element={<Disclaimer />} />
               <Route path="/terms" element={<Terms />} />
               <Route path="/privacy" element={<Privacy />} />
               <Route path="/refund" element={<Refund />} />
               <Route path="/join/:code" element={<ReferralLanding />} />
+
+              {/* App Shell Routes (With Sidebar/Bottom Nav) */}
+              <Route element={<AppShell />}>
+                <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+                <Route path="/discover" element={<Discover />} />
+                <Route path="/listed-advisors" element={<ListedAdvisors />} />
+                <Route path="/featured-advisors" element={<FeaturedAdvisors />} />
+                <Route path="/groups" element={<Discover />} />
+                <Route path="/explore" element={<Explore />} />
+                <Route path="/advisor/:id" element={<AdvisorProfile />} />
+                <Route path="/group/:id" element={<GroupDetails />} />
+                <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+                <Route path="/notifications" element={<ProtectedRoute><Notifications /></ProtectedRoute>} />
+                <Route path="/subscriptions" element={<ProtectedRoute><Subscriptions /></ProtectedRoute>} />
+
+                <Route path="/advisor/dashboard" element={<ProtectedRoute><AdvisorDashboard /></ProtectedRoute>} />
+                <Route path="/advisor/dashboard/groups" element={<ProtectedRoute><AdvisorDashboard /></ProtectedRoute>} />
+                <Route path="/advisor/dashboard/post" element={<ProtectedRoute><AdvisorDashboard /></ProtectedRoute>} />
+                <Route path="/advisor/dashboard/signals" element={<ProtectedRoute><AdvisorDashboard /></ProtectedRoute>} />
+                <Route path="/advisor/dashboard/earnings" element={<ProtectedRoute><AdvisorDashboard /></ProtectedRoute>} />
+                <Route path="/advisor/dashboard/subscribers" element={<ProtectedRoute><AdvisorDashboard /></ProtectedRoute>} />
+                <Route path="/payment-success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
+              </Route>
+
+              {/* Standalone Admin Shell (Has its own sidebar) */}
+              <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+              <Route path="/admin/approvals" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+              <Route path="/admin/revenue" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+              <Route path="/admin/complaints" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+
               <Route path="*" element={<NotFound />} />
             </Routes>
           </div>
-          <BottomNavigation />
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

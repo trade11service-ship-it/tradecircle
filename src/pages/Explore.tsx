@@ -1,4 +1,4 @@
-import { Navbar } from "@/components/Navbar";
+
 import { PublicMixedFeed } from "@/components/PublicMixedFeed";
 import { useEffect, useState } from "react";
 import { setMetaTags, SEO_CONFIG } from "@/lib/seo";
@@ -18,8 +18,8 @@ export default function Explore() {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col bg-[hsl(210,20%,96%)]">
-      <Navbar />
+    <div className="min-h-full h-full flex flex-col bg-[hsl(210,20%,96%)]">
+      
 
       {/* Hero Header — dark gradient */}
       <div className="bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] text-white py-8 md:py-12 px-4">

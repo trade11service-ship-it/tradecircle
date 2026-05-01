@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { Navbar } from '@/components/Navbar';
+
 
 import { GroupFeed } from '@/components/GroupFeed';
 import { ReferralLinkCard } from '@/components/ReferralLinkCard';
@@ -205,11 +205,11 @@ export default function AdvisorDashboard() {
     fetchData();
   };
 
-  if (loading) return <div className="min-h-screen bg-background"><Navbar /><div className="flex items-center justify-center py-20"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div></div>;
-  if (!advisor) return <div className="min-h-screen bg-background"><Navbar /><div className="py-20 text-center text-muted-foreground">No advisor profile found.</div></div>;
+  if (loading) return <div className="min-h-full h-full bg-background"><div className="flex items-center justify-center py-20"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div></div>;
+  if (!advisor) return <div className="min-h-full h-full bg-background"><div className="py-20 text-center text-muted-foreground">No advisor profile found.</div></div>;
 
   if (advisor.status === 'pending') return (
-    <div className="min-h-screen flex flex-col bg-background"><Navbar />
+    <div className="min-h-full h-full flex flex-col bg-background">
       <div className="flex-1 flex items-center justify-center px-4">
         <div className="tc-card-static p-8 text-center max-w-md">
           <span className="tc-badge-pending">Pending Review</span>
@@ -221,7 +221,7 @@ export default function AdvisorDashboard() {
   );
 
   if (advisor.status === 'rejected') return (
-    <div className="min-h-screen flex flex-col bg-background"><Navbar />
+    <div className="min-h-full h-full flex flex-col bg-background">
       <div className="flex-1 flex items-center justify-center px-4">
         <div className="tc-card-static p-8 text-center max-w-md">
           <span className="tc-badge-rejected">Rejected</span>
@@ -278,9 +278,9 @@ export default function AdvisorDashboard() {
   const greeting = new Date().getHours() < 12 ? 'Good morning' : new Date().getHours() < 17 ? 'Good afternoon' : 'Good evening';
 
   return (
-    <div className="min-h-screen flex flex-col bg-[hsl(220,14%,96%)]">
-      <Navbar />
-      <div className="mx-auto w-full max-w-[1200px] px-5 py-6 flex-1">
+    <div className="min-h-full h-full flex flex-col bg-background">
+      
+      <div className="w-full max-w-full px-4 sm:px-6 lg:px-8 py-6 flex-1">
 
         {/* Welcome Bar */}
         <div className="mb-5 flex items-center justify-between rounded-2xl border-[1.5px] border-border bg-card p-5 shadow-[0_2px_8px_rgba(0,0,0,0.06)]">

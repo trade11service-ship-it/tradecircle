@@ -243,7 +243,7 @@ export function GroupFeed({ groupId, advisorName, advisorPhoto, isSubscribed = t
   // Auto-scroll to bottom on initial load
   useEffect(() => {
     if (!loading && posts.length > 0) {
-      setTimeout(() => feedEndRef.current?.scrollIntoView({ behavior: 'auto' }), 100);
+      setTimeout(() => feedEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
     }
   }, [loading]);
 
@@ -318,7 +318,7 @@ export function GroupFeed({ groupId, advisorName, advisorPhoto, isSubscribed = t
 
   return (
     <div className="relative flex flex-col h-full">
-      <div ref={feedContainerRef} className="flex-1 overflow-y-auto px-2 py-3 space-y-3" style={{ background: 'hsl(var(--chat-bg))' }}>
+      <div ref={feedContainerRef} className="flex-1 overflow-y-auto px-2 md:px-4 py-4 space-y-4 bg-transparent z-10 relative scroll-smooth">
         {hasMore && (
           <div className="flex justify-center mb-2">
             <Button variant="ghost" size="sm" className="text-[12px] text-muted-foreground" onClick={() => setLimit(prev => prev + 50)}>

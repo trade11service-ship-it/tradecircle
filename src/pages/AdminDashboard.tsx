@@ -14,7 +14,7 @@ import type { Tables } from '@/integrations/supabase/types';
 import {
   LayoutDashboard, Clock, UserCheck, Users, CreditCard, Gift, FileText, Mail,
   ShieldAlert, IndianRupee, Search, Download, CheckCircle, UserPlus, BarChart3,
-  ChevronRight, Lock, Shield, Eye, ExternalLink, Trash2, Radio,
+  ChevronRight, Lock, Shield, Eye, ExternalLink, Trash2, Radio, Menu, X,
 } from 'lucide-react';
 
 type Advisor = Tables<'advisors'>;
@@ -83,6 +83,7 @@ export default function AdminDashboard() {
   const { user, profile, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<TabKey>('dashboard');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pendingAdvisors, setPendingAdvisors] = useState<Advisor[]>([]);
   const [allAdvisors, setAllAdvisors] = useState<Advisor[]>([]);
   const [users, setUsers] = useState<any[]>([]);
@@ -476,13 +477,13 @@ export default function AdminDashboard() {
 
   // Loading / Auth states
   if (authLoading || verifying) return (
-    <div className="flex min-h-screen items-center justify-center bg-muted">
+    <div className="flex min-h-full h-full items-center justify-center bg-muted">
       <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
     </div>
   );
 
   if (!isVerifiedAdmin) return (
-    <div className="min-h-screen flex items-center justify-center bg-muted px-4">
+    <div className="min-h-full h-full flex items-center justify-center bg-muted px-4">
       <div className="bg-card rounded-2xl border border-border p-8 text-center max-w-md shadow-lg">
         <ShieldAlert className="mx-auto h-16 w-16 text-destructive" />
         <h2 className="mt-4 text-xl font-bold text-destructive">Access Denied</h2>
@@ -542,15 +543,27 @@ export default function AdminDashboard() {
   };
 
   return (
-    <div className="flex min-h-screen" style={{ background: '#F0F2F5' }}>
+    <div className="flex min-h-full h-full relative" style={{ background: '#F0F2F5' }}>
+      {/* Mobile Overlay */}
+      {sidebarOpen && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 md:hidden" 
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* ===== SIDEBAR ===== */}
-      <aside className="w-[240px] min-w-[240px] bg-foreground sticky top-0 h-screen flex flex-col overflow-y-auto">
-        {/* Logo */}
-        <div className="px-5 py-6 border-b border-white/[0.08]">
-          <div className="text-[20px] font-extrabold text-white">
-            Trade<span style={{ color: '#69F0AE' }}>Circle</span>
+      <aside className={`w-[240px] min-w-[240px] bg-foreground fixed top-0 left-0 h-screen flex flex-col overflow-y-auto z-50 transition-transform duration-300 md:relative md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <div className="flex items-center justify-between px-5 py-6 border-b border-white/[0.08]">
+          <div>
+            <div className="text-[20px] font-extrabold text-white">
+              Trade<span style={{ color: '#69F0AE' }}>Circle</span>
+            </div>
+            <div className="text-[10px] text-white/40 tracking-[3px] uppercase mt-1">Admin Console</div>
           </div>
-          <div className="text-[10px] text-white/40 tracking-[3px] uppercase mt-1">Admin Console</div>
+          <button className="md:hidden text-white/60 hover:text-white" onClick={() => setSidebarOpen(false)}>
+            <X size={20} />
+          </button>
         </div>
 
         {/* Nav */}
@@ -565,7 +578,7 @@ export default function AdminDashboard() {
                 return (
                   <button
                     key={item.key}
-                    onClick={() => setTab(item.key)}
+                    onClick={() => { setTab(item.key); setSidebarOpen(false); }}
                     className={`w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] text-[13px] font-medium mb-0.5 transition-all duration-150 cursor-pointer ${
                       isActive
                         ? 'bg-white/10 text-white font-semibold border-l-[3px]'
@@ -587,14 +600,13 @@ export default function AdminDashboard() {
           ))}
         </nav>
 
-        {/* Go to Website */}
         <div className="px-3 pb-2">
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/home')}
             className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] text-[13px] font-medium text-white/60 hover:bg-white/[0.06] hover:text-white/90 transition-all duration-150 cursor-pointer"
           >
             <ExternalLink size={18} />
-            <span>Go to Website</span>
+            <span>Go to User App</span>
           </button>
         </div>
 
@@ -611,21 +623,35 @@ export default function AdminDashboard() {
       </aside>
 
       {/* ===== MAIN CONTENT ===== */}
-      <main className="flex-1 overflow-y-auto p-7">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-[24px] font-extrabold text-foreground">{PAGE_TITLES[tab]}</h1>
-            <p className="text-[13px] text-muted-foreground mt-0.5">{today}</p>
+      <main className="flex-1 overflow-y-auto flex flex-col min-h-screen relative w-full md:w-auto">
+        {/* Mobile Header */}
+        <div className="md:hidden flex items-center justify-between p-4 bg-card border-b border-border sticky top-0 z-30">
+          <div className="flex items-center gap-3">
+            <button onClick={() => setSidebarOpen(true)} className="text-foreground">
+              <Menu size={24} />
+            </button>
+            <div className="text-[18px] font-extrabold text-foreground">
+              Trade<span style={{ color: '#1B5E20' }}>Circle</span>
+            </div>
           </div>
-          <div className="flex items-center gap-1.5 bg-[hsl(var(--light-green))] border border-primary rounded-full px-4 py-1.5">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
-            </span>
-            <span className="text-[13px] text-primary font-semibold">Platform Live</span>
-          </div>
+          <AdminAvatar name={profile?.full_name || 'A'} size={32} />
         </div>
+
+        <div className="p-4 md:p-7 max-w-[100vw] overflow-x-hidden">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+            <div>
+              <h1 className="text-[20px] md:text-[24px] font-extrabold text-foreground">{PAGE_TITLES[tab]}</h1>
+              <p className="text-[13px] text-muted-foreground mt-0.5">{today}</p>
+            </div>
+            <div className="flex items-center gap-1.5 bg-[hsl(var(--light-green))] border border-primary rounded-full px-4 py-1.5 self-start sm:self-auto">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+              </span>
+              <span className="text-[13px] text-primary font-semibold">Platform Live</span>
+            </div>
+          </div>
 
         {loading && <div className="py-20 text-center text-muted-foreground">Loading data...</div>}
 
@@ -633,7 +659,7 @@ export default function AdminDashboard() {
         {tab === 'dashboard' && !loading && (
           <>
             {/* Stats Grid */}
-            <div className="grid grid-cols-4 gap-4 mb-6">
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
               {/* Pending */}
               <div className="bg-card rounded-2xl p-5 border border-border border-l-4 border-l-[hsl(var(--warning))] shadow-sm cursor-pointer" onClick={() => setTab('pending')}>
                 <div className="flex items-center justify-between">
@@ -679,7 +705,7 @@ export default function AdminDashboard() {
             </div>
 
             {/* Main content grid */}
-            <div className="grid grid-cols-[1fr_380px] gap-5">
+            <div className="grid lg:grid-cols-[1fr_380px] gap-5">
               {/* Left column */}
               <div className="space-y-5">
                 {/* Pending Approvals Card */}
@@ -867,12 +893,12 @@ export default function AdminDashboard() {
           <div className="space-y-4">
             <div className="flex justify-between items-center">
               <h3 className="text-[15px] font-bold text-foreground">All Advisors ({allAdvisors.length})</h3>
-              <Button onClick={openCreateAdvisorModal} className="gap-2 bg-primary hover:bg-primary/90 rounded-lg">
-                <UserPlus size={16} /> Create New Advisor
+              <Button onClick={openCreateAdvisorModal} className="gap-2 bg-primary hover:bg-primary/90 rounded-lg whitespace-nowrap">
+                <UserPlus size={16} /> <span className="hidden sm:inline">Create New Advisor</span><span className="sm:hidden">Add</span>
               </Button>
             </div>
-            <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
-              <table className="w-full text-sm">
+            <div className="bg-card rounded-2xl border border-border overflow-x-auto shadow-sm">
+              <table className="w-full text-sm min-w-[800px]">
               <thead>
                 <tr className="bg-muted border-b border-border text-left">
                   <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Name</th>
@@ -1182,8 +1208,8 @@ export default function AdminDashboard() {
 
         {/* ===== USERS TAB ===== */}
         {tab === 'users' && !loading && (
-          <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
-            <table className="w-full text-sm">
+          <div className="bg-card rounded-2xl border border-border overflow-x-auto shadow-sm">
+            <table className="w-full text-sm min-w-[600px]">
               <thead>
                 <tr className="bg-muted border-b border-border text-left">
                   <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Name</th>
@@ -1225,8 +1251,8 @@ export default function AdminDashboard() {
                 <Download size={14} /> Export CSV
               </Button>
             </div>
-            <div className="bg-card rounded-2xl border border-border overflow-hidden shadow-sm">
-              <table className="w-full text-sm">
+            <div className="bg-card rounded-2xl border border-border overflow-x-auto shadow-sm">
+              <table className="w-full text-sm min-w-[700px]">
                 <thead>
                   <tr className="bg-muted border-b border-border text-left">
                     <th className="p-4 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">User</th>
@@ -1387,6 +1413,7 @@ export default function AdminDashboard() {
         {tab === 'referrals' && !loading && (
           <AdminReferralTab />
         )}
+        </div>
       </main>
 
       {/* MODALS */}

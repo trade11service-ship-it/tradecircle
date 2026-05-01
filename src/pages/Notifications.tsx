@@ -1,10 +1,10 @@
-import { Navbar } from "@/components/Navbar";
+
 import { Bell } from "lucide-react";
 
 export default function Notifications() {
   return (
-    <div className="min-h-screen bg-muted">
-      <Navbar />
+    <div className="min-h-full h-full bg-muted">
+      
       <main className="mx-auto w-full max-w-3xl px-4 py-8">
         <div className="rounded-2xl border border-border bg-card p-8 text-center">
           <Bell className="mx-auto h-8 w-8 text-primary" />
