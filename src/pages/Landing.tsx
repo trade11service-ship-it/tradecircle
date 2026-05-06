@@ -134,13 +134,7 @@ export default function Landing() {
                   Browse Advisors
                 </Button>
               </Link>
-              {!user && (
-                <Link to="/advisor-register">
-                  <Button variant="outline" className="h-11 rounded-full px-6 font-semibold border-border hover:bg-muted">
-                    List as Advisor
-                  </Button>
-                </Link>
-              )}
+              {/* Secondary CTA removed — advisor onboarding lives in footer */}
             </div>
           </div>
 
