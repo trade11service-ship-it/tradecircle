@@ -342,9 +342,9 @@ export default function AdvisorDashboard() {
           <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-secondary to-[hsl(214,70%,40%)] p-5 text-secondary-foreground">
             <span className="pointer-events-none absolute -bottom-5 -right-2.5 text-[120px] font-black leading-none text-white/[0.06]">₹</span>
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20"><IndianRupee className="h-5 w-5" /></div>
-            <p className="mt-3 text-xs text-white/80">Your Earnings</p>
-            <p className="text-[32px] font-black tracking-tight">₹{Math.round(totalNetEarnings).toLocaleString('en-IN')}</p>
-            <p className="text-[11px] text-white/60">This month: ₹{Math.round(monthNet).toLocaleString('en-IN')}</p>
+            <p className="mt-3 text-xs text-white/80">Net · Last 30 Days</p>
+            <p className="text-[32px] font-black tracking-tight">₹{Math.round(rolling30Net).toLocaleString('en-IN')}</p>
+            <p className="text-[11px] text-white/60">Lifetime: ₹{Math.round(totalNetEarnings).toLocaleString('en-IN')}</p>
           </div>
         </div>
 
