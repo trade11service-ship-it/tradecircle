@@ -106,14 +106,14 @@ export function ReferralLinkCard({ groupId, groupName, advisorId, advisorName }:
 
   const convRate = stats.clicks > 0 ? Math.round((stats.conversions / stats.clicks) * 100) : 0;
 
+  // Auto-load the permanent referral link on mount
+  useEffect(() => { if (!fetched && !loading) getReferralLink(); /* eslint-disable-next-line */ }, []);
+
   if (!fetched) {
     return (
       <div className="mt-4 rounded-xl border-l-4 border-l-primary bg-card p-4">
         <p className="font-semibold text-sm flex items-center gap-2">📨 Share & Earn More</p>
-        <p className="text-xs text-muted-foreground mt-1">Share your group link. Subscribers who join through your link pay only 15% platform fee instead of 30%.</p>
-        <Button size="sm" className="mt-3 gap-2" onClick={getReferralLink} disabled={loading}>
-          {loading ? 'Generating...' : '🔗 Get Referral Link'}
-        </Button>
+        <p className="text-xs text-muted-foreground mt-1">Loading your permanent referral link…</p>
       </div>
     );
   }
@@ -123,6 +123,7 @@ export function ReferralLinkCard({ groupId, groupName, advisorId, advisorName }:
       <div>
         <p className="font-semibold text-sm flex items-center gap-2">📨 Share & Earn More</p>
         <p className="text-xs text-muted-foreground mt-1">Subscribers via this link → 15% platform fee instead of 30%</p>
+        <p className="text-[10px] text-muted-foreground mt-1 italic">🔒 Permanent code · only admin can change it</p>
       </div>
 
       {/* Link box */}
