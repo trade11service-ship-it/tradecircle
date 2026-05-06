@@ -709,7 +709,7 @@ export default function AdvisorDashboard() {
           <div>
             {groups.map(g => {
               const groupSubs = subscribers.filter(s => s.group_id === g.id);
-              const activeGroupSubs = groupSubs.filter(s => s.status === 'active');
+              const activeGroupSubs = groupSubs.filter(s => s.status === 'active' && s.end_date && new Date(s.end_date).getTime() > now);
               const groupRevenue = groupSubs.reduce((sum, s) => sum + (s.amount_paid || 0), 0);
               return (
                 <div key={g.id} className="mb-8">
