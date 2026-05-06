@@ -760,62 +760,66 @@ export default function AdvisorDashboard() {
 
         {/* REVENUE TAB */}
         {tab === 'revenue' && (
-          <div className="max-w-2xl space-y-4">
+          <div className="max-w-2xl space-y-4 animate-in fade-in duration-300">
+            {/* Rolling 30-day hero */}
+            <div className="rounded-2xl bg-gradient-to-br from-primary to-[hsl(160,84%,30%)] p-6 text-primary-foreground">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-wider text-white/70">Last 30 Days · Net Earnings</p>
+                  <p className="mt-1 text-4xl font-black">₹{Math.round(rolling30Net).toLocaleString('en-IN')}</p>
+                  <p className="mt-1 text-xs text-white/70">Collected ₹{Math.round(rolling30Gross).toLocaleString('en-IN')} · Platform fee ₹{Math.round(rolling30Fee).toLocaleString('en-IN')}</p>
+                </div>
+                <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-bold">
+                  <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" /> Live
+                </span>
+              </div>
+            </div>
+
             <div className="rounded-2xl border-[1.5px] border-border bg-card p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-              <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><IndianRupee className="h-5 w-5 text-primary" /> Revenue Breakdown</h2>
+              <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><IndianRupee className="h-5 w-5 text-primary" /> Lifetime Revenue Breakdown</h2>
               <div className="space-y-3">
                 <div className="flex justify-between items-center py-3 border-b border-border">
                   <span className="text-muted-foreground">Total Collections</span>
                   <span className="text-xl font-bold text-foreground">₹{Math.round(totalRevenue).toLocaleString('en-IN')}</span>
                 </div>
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-muted-foreground flex items-center gap-1"><AlertTriangle className="h-3.5 w-3.5" /> GST (18%)</span>
-                  <span className="text-muted-foreground font-semibold">- ₹{Math.round(totalGST).toLocaleString('en-IN')}</span>
-                </div>
                 <div className="flex justify-between items-center py-2 border-b border-border">
-                  <span className="text-muted-foreground">After GST</span>
-                  <span className="font-semibold text-foreground">₹{Math.round(totalRevenue - totalGST).toLocaleString('en-IN')}</span>
-                </div>
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-muted-foreground">StockCircle Fee</span>
+                  <span className="text-muted-foreground">StockCircle Platform Fee</span>
                   <span className="text-muted-foreground font-semibold">- ₹{Math.round(totalPlatformFee).toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex justify-between items-center py-3 rounded-xl bg-light-green px-4 -mx-1">
                   <span className="font-bold text-foreground text-lg">Your Earnings</span>
                   <span className="text-2xl font-black text-primary">₹{Math.round(totalNetEarnings).toLocaleString('en-IN')}</span>
                 </div>
+                <p className="text-[11px] text-muted-foreground italic">GST is collected separately for compliance and not deducted from your payout display.</p>
               </div>
             </div>
 
-            <div className="rounded-2xl border-[1.5px] border-border bg-card p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-              <h3 className="font-bold mb-3 text-foreground">This Month</h3>
-              <div className="grid grid-cols-3 gap-3 text-center">
-                <div className="rounded-xl bg-muted p-3">
-                  <p className="text-[10px] text-[hsl(var(--small-text))] uppercase font-bold tracking-wider">Collections</p>
-                  <p className="text-lg font-bold text-foreground mt-1">₹{Math.round(monthGross).toLocaleString('en-IN')}</p>
-                </div>
-                <div className="rounded-xl bg-muted p-3">
-                  <p className="text-[10px] text-[hsl(var(--small-text))] uppercase font-bold tracking-wider">Deductions</p>
-                  <p className="text-lg font-bold text-muted-foreground mt-1">₹{Math.round(monthGross - monthNet).toLocaleString('en-IN')}</p>
-                </div>
-                <div className="rounded-xl bg-light-green p-3">
-                  <p className="text-[10px] text-[hsl(var(--small-text))] uppercase font-bold tracking-wider">Your Earnings</p>
-                  <p className="text-lg font-bold text-primary mt-1">₹{Math.round(monthNet).toLocaleString('en-IN')}</p>
-                </div>
+            {/* Direct vs Referral split */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-2xl border-[1.5px] border-border bg-card p-5">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Direct Subs · 30%</p>
+                <p className="mt-1 text-2xl font-extrabold text-foreground">{directSubs.length}</p>
+                <p className="text-xs text-muted-foreground">Gross ₹{Math.round(directGross).toLocaleString('en-IN')}</p>
+                <p className="text-sm font-bold text-primary mt-1">Net ₹{Math.round(directNet).toLocaleString('en-IN')}</p>
+              </div>
+              <div className="rounded-2xl border-[1.5px] border-secondary/40 bg-secondary/5 p-5">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-secondary">Referral Subs · 15%</p>
+                <p className="mt-1 text-2xl font-extrabold text-foreground">{referralSubs.length}</p>
+                <p className="text-xs text-muted-foreground">Gross ₹{Math.round(referralGross).toLocaleString('en-IN')}</p>
+                <p className="text-sm font-bold text-secondary mt-1">Net ₹{Math.round(referralNet).toLocaleString('en-IN')}</p>
               </div>
             </div>
 
-            {/* Daily Earnings Breakdown */}
+            {/* Daily Earnings Breakdown — historical */}
             {dailyEarnings.length > 0 && (
               <div className="rounded-2xl border-[1.5px] border-border bg-card p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-                <h3 className="font-bold mb-3 text-foreground">Daily Earnings Log</h3>
+                <h3 className="font-bold mb-3 text-foreground">Daily Earnings Log (history)</h3>
                 <div className="overflow-hidden rounded-xl border border-border">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="bg-muted">
                         <th className="px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Date</th>
                         <th className="px-4 py-2.5 text-right text-[11px] font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Collected</th>
-                        <th className="px-4 py-2.5 text-right text-[11px] font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">GST</th>
                         <th className="px-4 py-2.5 text-right text-[11px] font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Fee</th>
                         <th className="px-4 py-2.5 text-right text-[11px] font-bold uppercase tracking-wider text-primary">Net</th>
                       </tr>
@@ -825,7 +829,6 @@ export default function AdvisorDashboard() {
                         <tr key={i} className="border-t border-muted">
                           <td className="px-4 py-2.5 font-medium text-foreground">{new Date(e.earning_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
                           <td className="px-4 py-2.5 text-right text-foreground">₹{Math.round(e.gross_revenue).toLocaleString('en-IN')}</td>
-                          <td className="px-4 py-2.5 text-right text-muted-foreground">-₹{Math.round(e.gst_amount).toLocaleString('en-IN')}</td>
                           <td className="px-4 py-2.5 text-right text-muted-foreground">-₹{Math.round(e.platform_fee).toLocaleString('en-IN')}</td>
                           <td className="px-4 py-2.5 text-right font-bold text-primary">₹{Math.round(e.net_earning).toLocaleString('en-IN')}</td>
                         </tr>
