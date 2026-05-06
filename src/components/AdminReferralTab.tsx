@@ -9,6 +9,22 @@ import { Eye, Users, IndianRupee, TrendingUp, Link2, Pencil } from 'lucide-react
 export function AdminReferralTab() {
   const [links, setLinks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState<any | null>(null);
+  const [newCode, setNewCode] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const saveCode = async () => {
+    if (!editing) return;
+    const code = newCode.trim().toUpperCase();
+    if (code.length < 4) { toast.error('Code must be at least 4 characters'); return; }
+    setSaving(true);
+    const { error } = await supabase.from('referral_links').update({ referral_code: code }).eq('id', editing.id);
+    setSaving(false);
+    if (error) { toast.error(error.message.includes('duplicate') ? 'Code already in use' : 'Update failed'); return; }
+    toast.success('Referral code updated');
+    setEditing(null);
+    fetchData();
+  };
 
   useEffect(() => { fetchData(); }, []);
 
