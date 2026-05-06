@@ -232,21 +232,43 @@ export default function AdvisorDashboard() {
     </div>
   );
 
-  const activeSubs = subscribers.filter(s => s.status === 'active');
+  const now = Date.now();
+  const activeSubs = subscribers.filter(s => s.status === 'active' && s.end_date && new Date(s.end_date).getTime() > now);
   const totalSubs = activeSubs.length;
 
-  // Use earningsSummary from DB (reliable, server-side calculated)
-  const totalRevenue = earningsSummary?.total_gross ?? subscribers.reduce((sum, s) => sum + (s.amount_paid || 0), 0);
-  const totalNetEarnings = earningsSummary?.total_net ?? 0;
-  const totalGST = earningsSummary?.total_gst ?? 0;
-  const totalPlatformFee = earningsSummary?.total_platform_fee ?? 0;
-  const monthGross = earningsSummary?.month_gross ?? 0;
-  const monthNet = earningsSummary?.month_net ?? 0;
+  // === Display math: NO GST cut. Referral-aware platform fee (15% / 30%). Live from subscribers rows. ===
+  const computeNet = (s: any) => {
+    const gross = Number(s.amount_paid || 0);
+    const pct = s.from_referral ? 15 : (Number(s.platform_fee_percent) || 30);
+    return { gross, pct, fee: gross * pct / 100, net: gross - (gross * pct / 100), isReferral: !!s.from_referral };
+  };
 
-  const afterGST = (amount: number) => amount * 0.82;
-  const afterFees = (amount: number) => afterGST(amount) * 0.70;
-  const gstAmount = (amount: number) => amount * 0.18;
-  const tcFee = (amount: number) => afterGST(amount) * 0.30;
+  const cutoff30 = now - 30 * 24 * 60 * 60 * 1000;
+  const last30Subs = subscribers.filter(s => s.created_at && new Date(s.created_at).getTime() >= cutoff30);
+
+  const sum = (arr: any[], key: 'gross' | 'fee' | 'net') => arr.reduce((acc, s) => acc + computeNet(s)[key], 0);
+  const lifetimeGross = sum(subscribers, 'gross');
+  const lifetimeFee = sum(subscribers, 'fee');
+  const lifetimeNet = sum(subscribers, 'net');
+  const rolling30Gross = sum(last30Subs, 'gross');
+  const rolling30Fee = sum(last30Subs, 'fee');
+  const rolling30Net = sum(last30Subs, 'net');
+
+  // Referral vs direct split
+  const referralSubs = subscribers.filter(s => s.from_referral);
+  const directSubs = subscribers.filter(s => !s.from_referral);
+  const referralGross = sum(referralSubs, 'gross');
+  const referralNet = sum(referralSubs, 'net');
+  const directGross = sum(directSubs, 'gross');
+  const directNet = sum(directSubs, 'net');
+
+  // Legacy aliases used elsewhere in JSX
+  const totalRevenue = lifetimeGross;
+  const totalNetEarnings = lifetimeNet;
+  const totalPlatformFee = lifetimeFee;
+  const monthGross = rolling30Gross;
+  const monthNet = rolling30Net;
+  const afterFees = (amount: number) => amount * 0.70; // legacy fallback for per-group display
 
   const resultIcon = (result: string | null) => {
     if (result === 'TARGET_HIT') return <CheckCircle2 className="h-4 w-4 text-primary" />;
