@@ -128,6 +128,12 @@ export default function AdvisorDashboard() {
     }
     const { data: newGroup, error } = await (supabase.from('groups') as any).insert({ advisor_id: advisor.id, name: sanitizeText(groupForm.name), description: sanitizeTextarea(groupForm.description), monthly_price: parseInt(groupForm.monthlyPrice) || 0, dp_url: dpUrl, strategy_category: groupForm.strategyCategory || 'All' }).select().single();
     if (error) { toast.error(error.message); return; }
+
+    // Generate ONE permanent referral link for this group (only admin can change later)
+    const namePrefix = (advisor.full_name || 'ADV').replace(/[^A-Za-z]/g, '').substring(0, 3).toUpperCase() || 'ADV';
+    const refCode = `TC-${namePrefix}-${newGroup.id.substring(0, 4).toUpperCase()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    await supabase.from('referral_links').insert({ advisor_id: advisor.id, group_id: newGroup.id, referral_code: refCode } as any);
+
     toast.info('Creating payment link...');
     const { data: session } = await supabase.auth.getSession();
     const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-payment-link`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.session?.access_token}` }, body: JSON.stringify({ group_id: newGroup.id, group_name: groupForm.name, amount: parseInt(groupForm.monthlyPrice) }) });
