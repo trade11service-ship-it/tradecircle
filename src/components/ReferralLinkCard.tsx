@@ -47,6 +47,7 @@ export function ReferralLinkCard({ groupId, groupName, advisorId, advisorName }:
         revenue: existing.total_revenue_generated || 0,
       });
     } else {
+      // Auto-create the single permanent code (one per group, locked after creation)
       const code = generateCode();
       const { error } = await supabase.from('referral_links').insert({
         advisor_id: advisorId,
@@ -54,7 +55,7 @@ export function ReferralLinkCard({ groupId, groupName, advisorId, advisorName }:
         referral_code: code,
       });
       if (error) {
-        toast.error('Failed to generate referral link');
+        toast.error('Failed to load referral link');
         setLoading(false);
         return;
       }
