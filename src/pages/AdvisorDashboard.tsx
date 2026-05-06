@@ -843,16 +843,19 @@ export default function AdvisorDashboard() {
               <h3 className="font-bold mb-3 text-foreground">Per Group Earnings</h3>
               <div className="space-y-2">
                 {groups.map(g => {
-                  const groupRev = subscribers.filter(s => s.group_id === g.id).reduce((sum, s) => sum + (s.amount_paid || 0), 0);
-                  const groupSubs = subscribers.filter(s => s.group_id === g.id && s.status === 'active').length;
+                  const subsForGroup = subscribers.filter(s => s.group_id === g.id);
+                  const groupRev = sum(subsForGroup, 'gross');
+                  const groupNet = sum(subsForGroup, 'net');
+                  const activeForGroup = subsForGroup.filter(s => s.status === 'active' && s.end_date && new Date(s.end_date).getTime() > now).length;
+                  const refCount = subsForGroup.filter(s => s.from_referral).length;
                   return (
                     <div key={g.id} className="flex items-center justify-between rounded-xl bg-muted p-3.5">
                       <div>
                         <p className="font-semibold text-foreground">{g.name}</p>
-                        <p className="text-xs text-muted-foreground">{groupSubs} active subs • ₹{groupRev.toLocaleString('en-IN')} collected</p>
+                        <p className="text-xs text-muted-foreground">{activeForGroup} active • {refCount} via referral • ₹{Math.round(groupRev).toLocaleString('en-IN')} collected</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-primary">₹{Math.round(afterFees(groupRev)).toLocaleString('en-IN')}</p>
+                        <p className="font-bold text-primary">₹{Math.round(groupNet).toLocaleString('en-IN')}</p>
                         <p className="text-[10px] text-[hsl(var(--small-text))]">your earnings</p>
                       </div>
                     </div>
