@@ -67,7 +67,11 @@ export default function AdvisorDashboard() {
 
   useEffect(() => {
     if (!advisor) return;
-    const channel = supabase.channel('advisor-subs-realtime').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'subscriptions', filter: `advisor_id=eq.${advisor.id}` }, () => { toast.info('New subscriber joined!'); fetchData(); }).subscribe();
+    const channel = supabase.channel('advisor-live')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'subscriptions', filter: `advisor_id=eq.${advisor.id}` }, () => { toast.info('New subscriber joined!'); fetchData(); })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'signals', filter: `advisor_id=eq.${advisor.id}` }, () => { fetchData(); })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'signals', filter: `advisor_id=eq.${advisor.id}` }, () => { fetchData(); })
+      .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [advisor]);
 
@@ -91,6 +95,23 @@ export default function AdvisorDashboard() {
       // Also fetch summary via RPC
       const { data: summary } = await supabase.rpc('get_advisor_earnings', { _advisor_id: adv.id });
       setEarningsSummary(summary);
+
+      // Backfill: ensure every group has a permanent referral link (one-shot)
+      const grps = grpsRes.data || [];
+      if (grps.length > 0) {
+        const { data: existingLinks } = await supabase.from('referral_links').select('group_id').eq('advisor_id', adv.id);
+        const linked = new Set((existingLinks || []).map((l: any) => l.group_id));
+        const missing = grps.filter((g: any) => !linked.has(g.id));
+        if (missing.length > 0) {
+          const namePrefix = (adv.full_name || 'ADV').replace(/[^A-Za-z]/g, '').substring(0, 3).toUpperCase() || 'ADV';
+          const rows = missing.map((g: any) => ({
+            advisor_id: adv.id,
+            group_id: g.id,
+            referral_code: `TC-${namePrefix}-${g.id.substring(0, 4).toUpperCase()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+          }));
+          await supabase.from('referral_links').insert(rows as any);
+        }
+      }
     }
     setLoading(false);
   };
@@ -107,6 +128,12 @@ export default function AdvisorDashboard() {
     }
     const { data: newGroup, error } = await (supabase.from('groups') as any).insert({ advisor_id: advisor.id, name: sanitizeText(groupForm.name), description: sanitizeTextarea(groupForm.description), monthly_price: parseInt(groupForm.monthlyPrice) || 0, dp_url: dpUrl, strategy_category: groupForm.strategyCategory || 'All' }).select().single();
     if (error) { toast.error(error.message); return; }
+
+    // Generate ONE permanent referral link for this group (only admin can change later)
+    const namePrefix = (advisor.full_name || 'ADV').replace(/[^A-Za-z]/g, '').substring(0, 3).toUpperCase() || 'ADV';
+    const refCode = `TC-${namePrefix}-${newGroup.id.substring(0, 4).toUpperCase()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    await supabase.from('referral_links').insert({ advisor_id: advisor.id, group_id: newGroup.id, referral_code: refCode } as any);
+
     toast.info('Creating payment link...');
     const { data: session } = await supabase.auth.getSession();
     const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-payment-link`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.session?.access_token}` }, body: JSON.stringify({ group_id: newGroup.id, group_name: groupForm.name, amount: parseInt(groupForm.monthlyPrice) }) });
@@ -232,21 +259,43 @@ export default function AdvisorDashboard() {
     </div>
   );
 
-  const activeSubs = subscribers.filter(s => s.status === 'active');
+  const now = Date.now();
+  const activeSubs = subscribers.filter(s => s.status === 'active' && s.end_date && new Date(s.end_date).getTime() > now);
   const totalSubs = activeSubs.length;
 
-  // Use earningsSummary from DB (reliable, server-side calculated)
-  const totalRevenue = earningsSummary?.total_gross ?? subscribers.reduce((sum, s) => sum + (s.amount_paid || 0), 0);
-  const totalNetEarnings = earningsSummary?.total_net ?? 0;
-  const totalGST = earningsSummary?.total_gst ?? 0;
-  const totalPlatformFee = earningsSummary?.total_platform_fee ?? 0;
-  const monthGross = earningsSummary?.month_gross ?? 0;
-  const monthNet = earningsSummary?.month_net ?? 0;
+  // === Display math: NO GST cut. Referral-aware platform fee (15% / 30%). Live from subscribers rows. ===
+  const computeNet = (s: any) => {
+    const gross = Number(s.amount_paid || 0);
+    const pct = s.from_referral ? 15 : (Number(s.platform_fee_percent) || 30);
+    return { gross, pct, fee: gross * pct / 100, net: gross - (gross * pct / 100), isReferral: !!s.from_referral };
+  };
 
-  const afterGST = (amount: number) => amount * 0.82;
-  const afterFees = (amount: number) => afterGST(amount) * 0.70;
-  const gstAmount = (amount: number) => amount * 0.18;
-  const tcFee = (amount: number) => afterGST(amount) * 0.30;
+  const cutoff30 = now - 30 * 24 * 60 * 60 * 1000;
+  const last30Subs = subscribers.filter(s => s.created_at && new Date(s.created_at).getTime() >= cutoff30);
+
+  const sum = (arr: any[], key: 'gross' | 'fee' | 'net') => arr.reduce((acc, s) => acc + computeNet(s)[key], 0);
+  const lifetimeGross = sum(subscribers, 'gross');
+  const lifetimeFee = sum(subscribers, 'fee');
+  const lifetimeNet = sum(subscribers, 'net');
+  const rolling30Gross = sum(last30Subs, 'gross');
+  const rolling30Fee = sum(last30Subs, 'fee');
+  const rolling30Net = sum(last30Subs, 'net');
+
+  // Referral vs direct split
+  const referralSubs = subscribers.filter(s => s.from_referral);
+  const directSubs = subscribers.filter(s => !s.from_referral);
+  const referralGross = sum(referralSubs, 'gross');
+  const referralNet = sum(referralSubs, 'net');
+  const directGross = sum(directSubs, 'gross');
+  const directNet = sum(directSubs, 'net');
+
+  // Legacy aliases used elsewhere in JSX
+  const totalRevenue = lifetimeGross;
+  const totalNetEarnings = lifetimeNet;
+  const totalPlatformFee = lifetimeFee;
+  const monthGross = rolling30Gross;
+  const monthNet = rolling30Net;
+  const afterFees = (amount: number) => amount * 0.70; // legacy fallback for per-group display
 
   const resultIcon = (result: string | null) => {
     if (result === 'TARGET_HIT') return <CheckCircle2 className="h-4 w-4 text-primary" />;
@@ -320,9 +369,9 @@ export default function AdvisorDashboard() {
           <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-secondary to-[hsl(214,70%,40%)] p-5 text-secondary-foreground">
             <span className="pointer-events-none absolute -bottom-5 -right-2.5 text-[120px] font-black leading-none text-white/[0.06]">₹</span>
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20"><IndianRupee className="h-5 w-5" /></div>
-            <p className="mt-3 text-xs text-white/80">Your Earnings</p>
-            <p className="text-[32px] font-black tracking-tight">₹{Math.round(totalNetEarnings).toLocaleString('en-IN')}</p>
-            <p className="text-[11px] text-white/60">This month: ₹{Math.round(monthNet).toLocaleString('en-IN')}</p>
+            <p className="mt-3 text-xs text-white/80">Net · Last 30 Days</p>
+            <p className="text-[32px] font-black tracking-tight">₹{Math.round(rolling30Net).toLocaleString('en-IN')}</p>
+            <p className="text-[11px] text-white/60">Lifetime: ₹{Math.round(totalNetEarnings).toLocaleString('en-IN')}</p>
           </div>
         </div>
 
@@ -381,7 +430,7 @@ export default function AdvisorDashboard() {
             )}
             <div className="grid gap-3 sm:grid-cols-2">
               {groups.map(g => {
-                const subCount = subscribers.filter(s => s.group_id === g.id && s.status === 'active').length;
+                const subCount = subscribers.filter(s => s.group_id === g.id && s.status === 'active' && s.end_date && new Date(s.end_date).getTime() > now).length;
                 const revenue = subscribers.filter(s => s.group_id === g.id).reduce((sum, s) => sum + (s.amount_paid || 0), 0);
                 const sigCount = signals.filter(s => s.group_id === g.id).length;
                 return (
@@ -687,7 +736,7 @@ export default function AdvisorDashboard() {
           <div>
             {groups.map(g => {
               const groupSubs = subscribers.filter(s => s.group_id === g.id);
-              const activeGroupSubs = groupSubs.filter(s => s.status === 'active');
+              const activeGroupSubs = groupSubs.filter(s => s.status === 'active' && s.end_date && new Date(s.end_date).getTime() > now);
               const groupRevenue = groupSubs.reduce((sum, s) => sum + (s.amount_paid || 0), 0);
               return (
                 <div key={g.id} className="mb-8">
@@ -738,62 +787,66 @@ export default function AdvisorDashboard() {
 
         {/* REVENUE TAB */}
         {tab === 'revenue' && (
-          <div className="max-w-2xl space-y-4">
+          <div className="max-w-2xl space-y-4 animate-in fade-in duration-300">
+            {/* Rolling 30-day hero */}
+            <div className="rounded-2xl bg-gradient-to-br from-primary to-[hsl(160,84%,30%)] p-6 text-primary-foreground">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs uppercase tracking-wider text-white/70">Last 30 Days · Net Earnings</p>
+                  <p className="mt-1 text-4xl font-black">₹{Math.round(rolling30Net).toLocaleString('en-IN')}</p>
+                  <p className="mt-1 text-xs text-white/70">Collected ₹{Math.round(rolling30Gross).toLocaleString('en-IN')} · Platform fee ₹{Math.round(rolling30Fee).toLocaleString('en-IN')}</p>
+                </div>
+                <span className="inline-flex items-center gap-1 rounded-full bg-white/20 px-2.5 py-1 text-[11px] font-bold">
+                  <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" /> Live
+                </span>
+              </div>
+            </div>
+
             <div className="rounded-2xl border-[1.5px] border-border bg-card p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-              <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><IndianRupee className="h-5 w-5 text-primary" /> Revenue Breakdown</h2>
+              <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><IndianRupee className="h-5 w-5 text-primary" /> Lifetime Revenue Breakdown</h2>
               <div className="space-y-3">
                 <div className="flex justify-between items-center py-3 border-b border-border">
                   <span className="text-muted-foreground">Total Collections</span>
                   <span className="text-xl font-bold text-foreground">₹{Math.round(totalRevenue).toLocaleString('en-IN')}</span>
                 </div>
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-muted-foreground flex items-center gap-1"><AlertTriangle className="h-3.5 w-3.5" /> GST (18%)</span>
-                  <span className="text-muted-foreground font-semibold">- ₹{Math.round(totalGST).toLocaleString('en-IN')}</span>
-                </div>
                 <div className="flex justify-between items-center py-2 border-b border-border">
-                  <span className="text-muted-foreground">After GST</span>
-                  <span className="font-semibold text-foreground">₹{Math.round(totalRevenue - totalGST).toLocaleString('en-IN')}</span>
-                </div>
-                <div className="flex justify-between items-center py-2">
-                  <span className="text-muted-foreground">StockCircle Fee</span>
+                  <span className="text-muted-foreground">StockCircle Platform Fee</span>
                   <span className="text-muted-foreground font-semibold">- ₹{Math.round(totalPlatformFee).toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex justify-between items-center py-3 rounded-xl bg-light-green px-4 -mx-1">
                   <span className="font-bold text-foreground text-lg">Your Earnings</span>
                   <span className="text-2xl font-black text-primary">₹{Math.round(totalNetEarnings).toLocaleString('en-IN')}</span>
                 </div>
+                <p className="text-[11px] text-muted-foreground italic">GST is collected separately for compliance and not deducted from your payout display.</p>
               </div>
             </div>
 
-            <div className="rounded-2xl border-[1.5px] border-border bg-card p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-              <h3 className="font-bold mb-3 text-foreground">This Month</h3>
-              <div className="grid grid-cols-3 gap-3 text-center">
-                <div className="rounded-xl bg-muted p-3">
-                  <p className="text-[10px] text-[hsl(var(--small-text))] uppercase font-bold tracking-wider">Collections</p>
-                  <p className="text-lg font-bold text-foreground mt-1">₹{Math.round(monthGross).toLocaleString('en-IN')}</p>
-                </div>
-                <div className="rounded-xl bg-muted p-3">
-                  <p className="text-[10px] text-[hsl(var(--small-text))] uppercase font-bold tracking-wider">Deductions</p>
-                  <p className="text-lg font-bold text-muted-foreground mt-1">₹{Math.round(monthGross - monthNet).toLocaleString('en-IN')}</p>
-                </div>
-                <div className="rounded-xl bg-light-green p-3">
-                  <p className="text-[10px] text-[hsl(var(--small-text))] uppercase font-bold tracking-wider">Your Earnings</p>
-                  <p className="text-lg font-bold text-primary mt-1">₹{Math.round(monthNet).toLocaleString('en-IN')}</p>
-                </div>
+            {/* Direct vs Referral split */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="rounded-2xl border-[1.5px] border-border bg-card p-5">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">Direct Subs · 30%</p>
+                <p className="mt-1 text-2xl font-extrabold text-foreground">{directSubs.length}</p>
+                <p className="text-xs text-muted-foreground">Gross ₹{Math.round(directGross).toLocaleString('en-IN')}</p>
+                <p className="text-sm font-bold text-primary mt-1">Net ₹{Math.round(directNet).toLocaleString('en-IN')}</p>
+              </div>
+              <div className="rounded-2xl border-[1.5px] border-secondary/40 bg-secondary/5 p-5">
+                <p className="text-[11px] font-bold uppercase tracking-wider text-secondary">Referral Subs · 15%</p>
+                <p className="mt-1 text-2xl font-extrabold text-foreground">{referralSubs.length}</p>
+                <p className="text-xs text-muted-foreground">Gross ₹{Math.round(referralGross).toLocaleString('en-IN')}</p>
+                <p className="text-sm font-bold text-secondary mt-1">Net ₹{Math.round(referralNet).toLocaleString('en-IN')}</p>
               </div>
             </div>
 
-            {/* Daily Earnings Breakdown */}
+            {/* Daily Earnings Breakdown — historical */}
             {dailyEarnings.length > 0 && (
               <div className="rounded-2xl border-[1.5px] border-border bg-card p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-                <h3 className="font-bold mb-3 text-foreground">Daily Earnings Log</h3>
+                <h3 className="font-bold mb-3 text-foreground">Daily Earnings Log (history)</h3>
                 <div className="overflow-hidden rounded-xl border border-border">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="bg-muted">
                         <th className="px-4 py-2.5 text-left text-[11px] font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Date</th>
                         <th className="px-4 py-2.5 text-right text-[11px] font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Collected</th>
-                        <th className="px-4 py-2.5 text-right text-[11px] font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">GST</th>
                         <th className="px-4 py-2.5 text-right text-[11px] font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Fee</th>
                         <th className="px-4 py-2.5 text-right text-[11px] font-bold uppercase tracking-wider text-primary">Net</th>
                       </tr>
@@ -803,7 +856,6 @@ export default function AdvisorDashboard() {
                         <tr key={i} className="border-t border-muted">
                           <td className="px-4 py-2.5 font-medium text-foreground">{new Date(e.earning_date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })}</td>
                           <td className="px-4 py-2.5 text-right text-foreground">₹{Math.round(e.gross_revenue).toLocaleString('en-IN')}</td>
-                          <td className="px-4 py-2.5 text-right text-muted-foreground">-₹{Math.round(e.gst_amount).toLocaleString('en-IN')}</td>
                           <td className="px-4 py-2.5 text-right text-muted-foreground">-₹{Math.round(e.platform_fee).toLocaleString('en-IN')}</td>
                           <td className="px-4 py-2.5 text-right font-bold text-primary">₹{Math.round(e.net_earning).toLocaleString('en-IN')}</td>
                         </tr>
@@ -818,16 +870,19 @@ export default function AdvisorDashboard() {
               <h3 className="font-bold mb-3 text-foreground">Per Group Earnings</h3>
               <div className="space-y-2">
                 {groups.map(g => {
-                  const groupRev = subscribers.filter(s => s.group_id === g.id).reduce((sum, s) => sum + (s.amount_paid || 0), 0);
-                  const groupSubs = subscribers.filter(s => s.group_id === g.id && s.status === 'active').length;
+                  const subsForGroup = subscribers.filter(s => s.group_id === g.id);
+                  const groupRev = sum(subsForGroup, 'gross');
+                  const groupNet = sum(subsForGroup, 'net');
+                  const activeForGroup = subsForGroup.filter(s => s.status === 'active' && s.end_date && new Date(s.end_date).getTime() > now).length;
+                  const refCount = subsForGroup.filter(s => s.from_referral).length;
                   return (
                     <div key={g.id} className="flex items-center justify-between rounded-xl bg-muted p-3.5">
                       <div>
                         <p className="font-semibold text-foreground">{g.name}</p>
-                        <p className="text-xs text-muted-foreground">{groupSubs} active subs • ₹{groupRev.toLocaleString('en-IN')} collected</p>
+                        <p className="text-xs text-muted-foreground">{activeForGroup} active • {refCount} via referral • ₹{Math.round(groupRev).toLocaleString('en-IN')} collected</p>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold text-primary">₹{Math.round(afterFees(groupRev)).toLocaleString('en-IN')}</p>
+                        <p className="font-bold text-primary">₹{Math.round(groupNet).toLocaleString('en-IN')}</p>
                         <p className="text-[10px] text-[hsl(var(--small-text))]">your earnings</p>
                       </div>
                     </div>

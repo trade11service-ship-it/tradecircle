@@ -15,7 +15,7 @@ import Profile from "./pages/Profile";
 import { AppLayout } from "@/components/AppLayout";
 import { Outlet } from "react-router-dom";
 import AdvisorProfile from "./pages/AdvisorProfile";
-import TraderDashboard from "./pages/TraderDashboard";
+
 import AdvisorRegister from "./pages/AdvisorRegister";
 import AdvisorDashboard from "./pages/AdvisorDashboard";
 import AdminDashboard from "./pages/AdminDashboard";

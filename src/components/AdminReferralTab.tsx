@@ -1,12 +1,30 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { toast } from 'sonner';
-import { Eye, Users, IndianRupee, TrendingUp, Link2 } from 'lucide-react';
+import { Eye, Users, IndianRupee, TrendingUp, Link2, Pencil } from 'lucide-react';
 
 export function AdminReferralTab() {
   const [links, setLinks] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editing, setEditing] = useState<any | null>(null);
+  const [newCode, setNewCode] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const saveCode = async () => {
+    if (!editing) return;
+    const code = newCode.trim().toUpperCase();
+    if (code.length < 4) { toast.error('Code must be at least 4 characters'); return; }
+    setSaving(true);
+    const { error } = await supabase.from('referral_links').update({ referral_code: code }).eq('id', editing.id);
+    setSaving(false);
+    if (error) { toast.error(error.message.includes('duplicate') ? 'Code already in use' : 'Update failed'); return; }
+    toast.success('Referral code updated');
+    setEditing(null);
+    fetchData();
+  };
 
   useEffect(() => { fetchData(); }, []);
 
@@ -75,7 +93,10 @@ export function AdminReferralTab() {
                 <td className="p-3">{l.total_conversions}</td>
                 <td className="p-3 tc-amount">₹{(l.total_revenue_generated || 0).toLocaleString('en-IN')}</td>
                 <td className="p-3"><span className={l.is_active ? 'tc-badge-active' : 'tc-badge-rejected'}>{l.is_active ? 'Active' : 'Inactive'}</span></td>
-                <td className="p-3">
+                <td className="p-3 flex gap-2">
+                  <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => { setEditing(l); setNewCode(l.referral_code); }}>
+                    <Pencil className="h-3 w-3" /> Edit
+                  </Button>
                   <Button variant="outline" size="sm" className="text-xs" onClick={() => toggleLink(l.id, l.is_active)}>
                     {l.is_active ? 'Deactivate' : 'Activate'}
                   </Button>
@@ -85,6 +106,19 @@ export function AdminReferralTab() {
           </tbody>
         </table>
       </div>
+
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Referral Code</DialogTitle></DialogHeader>
+          <p className="text-xs text-muted-foreground">Advisor: <b>{editing?.advisors?.full_name}</b> · Group: <b>{editing?.groups?.name}</b></p>
+          <Input value={newCode} onChange={e => setNewCode(e.target.value.toUpperCase())} className="font-mono mt-2" />
+          <p className="text-[11px] text-muted-foreground">Codes must be unique across the platform.</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditing(null)}>Cancel</Button>
+            <Button onClick={saveCode} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
