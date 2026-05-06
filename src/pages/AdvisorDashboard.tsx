@@ -403,7 +403,7 @@ export default function AdvisorDashboard() {
             )}
             <div className="grid gap-3 sm:grid-cols-2">
               {groups.map(g => {
-                const subCount = subscribers.filter(s => s.group_id === g.id && s.status === 'active').length;
+                const subCount = subscribers.filter(s => s.group_id === g.id && s.status === 'active' && s.end_date && new Date(s.end_date).getTime() > now).length;
                 const revenue = subscribers.filter(s => s.group_id === g.id).reduce((sum, s) => sum + (s.amount_paid || 0), 0);
                 const sigCount = signals.filter(s => s.group_id === g.id).length;
                 return (
