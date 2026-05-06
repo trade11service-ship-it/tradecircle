@@ -67,7 +67,11 @@ export default function AdvisorDashboard() {
 
   useEffect(() => {
     if (!advisor) return;
-    const channel = supabase.channel('advisor-subs-realtime').on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'subscriptions', filter: `advisor_id=eq.${advisor.id}` }, () => { toast.info('New subscriber joined!'); fetchData(); }).subscribe();
+    const channel = supabase.channel('advisor-live')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'subscriptions', filter: `advisor_id=eq.${advisor.id}` }, () => { toast.info('New subscriber joined!'); fetchData(); })
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'signals', filter: `advisor_id=eq.${advisor.id}` }, () => { fetchData(); })
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'signals', filter: `advisor_id=eq.${advisor.id}` }, () => { fetchData(); })
+      .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [advisor]);
 
