@@ -93,7 +93,10 @@ export function AdminReferralTab() {
                 <td className="p-3">{l.total_conversions}</td>
                 <td className="p-3 tc-amount">₹{(l.total_revenue_generated || 0).toLocaleString('en-IN')}</td>
                 <td className="p-3"><span className={l.is_active ? 'tc-badge-active' : 'tc-badge-rejected'}>{l.is_active ? 'Active' : 'Inactive'}</span></td>
-                <td className="p-3">
+                <td className="p-3 flex gap-2">
+                  <Button variant="outline" size="sm" className="text-xs gap-1" onClick={() => { setEditing(l); setNewCode(l.referral_code); }}>
+                    <Pencil className="h-3 w-3" /> Edit
+                  </Button>
                   <Button variant="outline" size="sm" className="text-xs" onClick={() => toggleLink(l.id, l.is_active)}>
                     {l.is_active ? 'Deactivate' : 'Activate'}
                   </Button>
