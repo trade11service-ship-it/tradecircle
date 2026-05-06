@@ -106,6 +106,19 @@ export function AdminReferralTab() {
           </tbody>
         </table>
       </div>
+
+      <Dialog open={!!editing} onOpenChange={(o) => !o && setEditing(null)}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Edit Referral Code</DialogTitle></DialogHeader>
+          <p className="text-xs text-muted-foreground">Advisor: <b>{editing?.advisors?.full_name}</b> · Group: <b>{editing?.groups?.name}</b></p>
+          <Input value={newCode} onChange={e => setNewCode(e.target.value.toUpperCase())} className="font-mono mt-2" />
+          <p className="text-[11px] text-muted-foreground">Codes must be unique across the platform.</p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditing(null)}>Cancel</Button>
+            <Button onClick={saveCode} disabled={saving}>{saving ? 'Saving…' : 'Save'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
