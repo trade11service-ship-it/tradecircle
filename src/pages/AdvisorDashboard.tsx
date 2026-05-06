@@ -95,6 +95,23 @@ export default function AdvisorDashboard() {
       // Also fetch summary via RPC
       const { data: summary } = await supabase.rpc('get_advisor_earnings', { _advisor_id: adv.id });
       setEarningsSummary(summary);
+
+      // Backfill: ensure every group has a permanent referral link (one-shot)
+      const grps = grpsRes.data || [];
+      if (grps.length > 0) {
+        const { data: existingLinks } = await supabase.from('referral_links').select('group_id').eq('advisor_id', adv.id);
+        const linked = new Set((existingLinks || []).map((l: any) => l.group_id));
+        const missing = grps.filter((g: any) => !linked.has(g.id));
+        if (missing.length > 0) {
+          const namePrefix = (adv.full_name || 'ADV').replace(/[^A-Za-z]/g, '').substring(0, 3).toUpperCase() || 'ADV';
+          const rows = missing.map((g: any) => ({
+            advisor_id: adv.id,
+            group_id: g.id,
+            referral_code: `TC-${namePrefix}-${g.id.substring(0, 4).toUpperCase()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
+          }));
+          await supabase.from('referral_links').insert(rows as any);
+        }
+      }
     }
     setLoading(false);
   };
