@@ -260,7 +260,7 @@ export default function GroupDetails() {
         </div>
 
         {/* Right Area - Chat Interface */}
-        <div className="flex-1 flex flex-col relative bg-slate-100 dark:bg-[#0B141A]">
+        <div className="flex-1 flex flex-col relative bg-[#E7EBF0] dark:bg-[#0B141A]">
           {/* Subtle Chat Background Pattern */}
           <div className="absolute inset-0 opacity-[0.25] dark:opacity-[0.05] pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M54.627 0l.83.83v58.34h-58.34l-.83-.83L0 54.628l54.627-54.627zM58.34 0v58.34L0 0h58.34zM0 58.34h58.34v.83l-58.34-.83v-.83zM0 0v.83L.83 0H0z' fill='%23000000' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E")` }}></div>
 
