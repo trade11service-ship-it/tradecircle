@@ -1,297 +1,436 @@
-import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/auth';
-import { Mail, Phone, CheckCircle2, ShieldCheck, Activity, Users, TrendingUp, ArrowRight, Zap, Star } from 'lucide-react';
+import {
+  Mail, Phone, CheckCircle2, ShieldCheck, Activity, Users, TrendingUp, ArrowRight,
+  ArrowLeft, Star, Clock, Target, Flame, BarChart3, AlertTriangle, Calendar, Lock
+} from 'lucide-react';
 import type { Tables } from '@/integrations/supabase/types';
 
 type Advisor = Tables<'advisors'>;
+type Signal = Tables<'signals'>;
 
 const toTitleCase = (s: string) => s.replace(/\b\w/g, c => c.toUpperCase());
 
+interface ExtendedStats {
+  total: number;
+  wins: number;
+  losses: number;
+  pending: number;
+  winRate: number | null;
+  avgRR: number | null;
+  signalsPerWeek: number | null;
+  bestMonthRate: number | null;
+  bestMonthLabel: string | null;
+  currentStreak: { type: 'WIN' | 'LOSS' | null; count: number };
+  maxLossStreak: number;
+  activeHours: string | null;
+  recent: Signal[];
+}
+
+function computeStats(signals: Signal[], created_at: string | null): ExtendedStats {
+  const tradeSignals = signals.filter(s => s.post_type === 'signal');
+  const total = tradeSignals.length;
+  const wins = tradeSignals.filter(s => s.result === 'WIN').length;
+  const losses = tradeSignals.filter(s => s.result === 'LOSS').length;
+  const pending = total - wins - losses;
+  const resolved = wins + losses;
+  const winRate = resolved > 0 ? Math.round((wins / resolved) * 100) : null;
+
+  // Avg R:R
+  const rrValues = tradeSignals
+    .map(s => {
+      const e = Number(s.entry_price), t = Number(s.target_price), sl = Number(s.stop_loss);
+      if (!e || !t || !sl || e === sl) return null;
+      const reward = Math.abs(t - e);
+      const risk = Math.abs(e - sl);
+      if (risk === 0) return null;
+      return reward / risk;
+    })
+    .filter((v): v is number => v !== null && isFinite(v) && v > 0 && v < 20);
+  const avgRR = rrValues.length > 0 ? rrValues.reduce((a, b) => a + b, 0) / rrValues.length : null;
+
+  // Signals per week
+  let signalsPerWeek: number | null = null;
+  if (created_at && total > 0) {
+    const weeks = Math.max(1, (Date.now() - new Date(created_at).getTime()) / (1000 * 60 * 60 * 24 * 7));
+    signalsPerWeek = total / weeks;
+  }
+
+  // Best month win rate
+  const byMonth = new Map<string, { w: number; r: number }>();
+  tradeSignals.forEach(s => {
+    if (!s.signal_date || !(s.result === 'WIN' || s.result === 'LOSS')) return;
+    const key = s.signal_date.slice(0, 7);
+    const cur = byMonth.get(key) || { w: 0, r: 0 };
+    cur.r += 1;
+    if (s.result === 'WIN') cur.w += 1;
+    byMonth.set(key, cur);
+  });
+  let bestMonthRate: number | null = null;
+  let bestMonthLabel: string | null = null;
+  byMonth.forEach((v, k) => {
+    if (v.r < 3) return;
+    const rate = (v.w / v.r) * 100;
+    if (bestMonthRate === null || rate > bestMonthRate) {
+      bestMonthRate = Math.round(rate);
+      bestMonthLabel = new Date(k + '-01').toLocaleDateString('en-IN', { month: 'short', year: '2-digit' });
+    }
+  });
+
+  // Streak (latest first)
+  const ordered = [...tradeSignals]
+    .filter(s => s.result === 'WIN' || s.result === 'LOSS')
+    .sort((a, b) => (b.signal_date || '').localeCompare(a.signal_date || ''));
+  let streakType: 'WIN' | 'LOSS' | null = null;
+  let streakCount = 0;
+  for (const s of ordered) {
+    if (streakType === null) { streakType = s.result as 'WIN' | 'LOSS'; streakCount = 1; }
+    else if (s.result === streakType) streakCount += 1;
+    else break;
+  }
+
+  // Max losing streak
+  let maxLossStreak = 0, cur = 0;
+  for (const s of ordered.slice().reverse()) {
+    if (s.result === 'LOSS') { cur += 1; maxLossStreak = Math.max(maxLossStreak, cur); }
+    else cur = 0;
+  }
+
+  // Active hours: most common hour bucket
+  const hourBuckets = new Map<number, number>();
+  tradeSignals.forEach(s => {
+    if (!s.created_at) return;
+    const h = new Date(s.created_at).getHours();
+    hourBuckets.set(h, (hourBuckets.get(h) || 0) + 1);
+  });
+  let activeHours: string | null = null;
+  if (hourBuckets.size > 0) {
+    const sorted = [...hourBuckets.entries()].sort((a, b) => b[1] - a[1]);
+    const topHour = sorted[0][0];
+    const range = `${String(topHour).padStart(2, '0')}:00 – ${String((topHour + 1) % 24).padStart(2, '0')}:00 IST`;
+    activeHours = range;
+  }
+
+  const recent = [...tradeSignals]
+    .sort((a, b) => (b.signal_date || '').localeCompare(a.signal_date || ''))
+    .slice(0, 5);
+
+  return {
+    total, wins, losses, pending, winRate, avgRR, signalsPerWeek,
+    bestMonthRate, bestMonthLabel, currentStreak: { type: streakType, count: streakCount },
+    maxLossStreak, activeHours, recent,
+  };
+}
+
+function riskLevel(avgRR: number | null, perWeek: number | null): { label: string; tone: string } {
+  if (avgRR === null) return { label: 'Calibrating', tone: 'text-muted-foreground bg-muted' };
+  if (avgRR >= 2 && (perWeek === null || perWeek <= 5)) return { label: 'Conservative', tone: 'text-primary bg-primary/10' };
+  if (avgRR >= 1.2) return { label: 'Moderate', tone: 'text-[hsl(35,100%,40%)] bg-[hsl(45,100%,94%)]' };
+  return { label: 'Aggressive', tone: 'text-destructive bg-destructive/10' };
+}
+
 export default function AdvisorProfile() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
   const [advisor, setAdvisor] = useState<Advisor | null>(null);
   const [groups, setGroups] = useState<any[]>([]);
+  const [signals, setSignals] = useState<Signal[]>([]);
+  const [subscriberCount, setSubscriberCount] = useState(0);
+  const [followerCount, setFollowerCount] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({ total_signals: 0, win_count: 0, resolved_count: 0, subscriber_count: 0 });
 
-  useEffect(() => {
-    if (id) fetchData();
-  }, [id]);
+  const goBack = () => {
+    const hasHistory = (location.key && location.key !== 'default') || window.history.length > 1;
+    if (hasHistory) navigate(-1);
+    else navigate(user ? '/home' : '/');
+  };
+
+  useEffect(() => { if (id) fetchData(); /* eslint-disable-next-line */ }, [id]);
 
   const fetchData = async () => {
-    const { data: adv } = await supabase.from('advisors').select('*').eq('id', id!).single();
-    if (adv) setAdvisor(adv);
-
-    const { data: grps } = await supabase.from('groups').select('*').eq('advisor_id', id!).eq('is_active', true);
-    setGroups(grps || []);
-
-    const [{ data: statsData }, { data: subCount }] = await Promise.all([
-      supabase.rpc('get_advisor_signal_stats', { _advisor_id: id! }),
+    setLoading(true);
+    const [{ data: adv }, { data: grps }, { data: sigs }, { data: subCount }, { count: fCount }] = await Promise.all([
+      supabase.from('advisors').select('*').eq('id', id!).single(),
+      supabase.from('groups').select('*').eq('advisor_id', id!).eq('is_active', true),
+      supabase.from('signals').select('*').eq('advisor_id', id!).order('signal_date', { ascending: false }).limit(500),
       supabase.rpc('get_advisor_subscriber_count', { _advisor_id: id! }),
+      supabase.from('group_follows').select('id', { count: 'exact', head: true })
+        .in('group_id', (await supabase.from('groups').select('id').eq('advisor_id', id!)).data?.map((g: any) => g.id) || []),
     ]);
-
-    setStats({
-      total_signals: (statsData as any)?.total_signals || 0,
-      win_count: (statsData as any)?.win_count || 0,
-      resolved_count: (statsData as any)?.resolved_count || 0,
-      subscriber_count: (subCount as number) || 0,
-    });
-
+    if (adv) setAdvisor(adv);
+    setGroups(grps || []);
+    setSignals((sigs as Signal[]) || []);
+    setSubscriberCount((subCount as number) || 0);
+    setFollowerCount(fCount || 0);
     setLoading(false);
   };
 
-  const accuracy = stats.resolved_count > 0 ? Math.round((stats.win_count / stats.resolved_count) * 100) : null;
+  const stats = useMemo(() => computeStats(signals, advisor?.created_at || null), [signals, advisor]);
+  const risk = useMemo(() => riskLevel(stats.avgRR, stats.signalsPerWeek), [stats]);
 
-  const getContactDisplay = (value: string | null) => {
-    if (!value) return 'N/A';
-    if (value.includes('@')) {
-      const parts = value.split('@');
-      return `${parts[0].slice(0, 3)}***@${parts[1]}`;
-    }
-    return `${value.slice(0, 3)}***${value.slice(-2)}`;
-  };
+  const specializations = useMemo(() => {
+    const set = new Set<string>();
+    if (advisor?.strategy_type) advisor.strategy_type.split(/[,/]+/).forEach(s => s.trim() && set.add(s.trim()));
+    groups.forEach(g => g.strategy_category && g.strategy_category !== 'All' && set.add(g.strategy_category));
+    return Array.from(set).slice(0, 6);
+  }, [advisor, groups]);
+
+  const memberSince = advisor?.created_at
+    ? new Date(advisor.created_at).toLocaleDateString('en-IN', { month: 'short', year: 'numeric' })
+    : null;
 
   if (loading) {
     return (
-      <div className="min-h-full h-full bg-background">
-                <div className="flex items-center justify-center py-32">
-          <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent shadow-lg" />
-        </div>
+      <div className="min-h-full h-full bg-background flex items-center justify-center py-32">
+        <div className="h-10 w-10 animate-spin rounded-full border-4 border-primary border-t-transparent shadow-lg" />
       </div>
     );
   }
 
   if (!advisor) {
     return (
-      <div className="min-h-full h-full bg-background">
-                <div className="container mx-auto px-4 py-20 text-center">
-          <h2 className="text-2xl font-bold text-foreground mb-2">Advisor not found</h2>
-          <p className="text-muted-foreground mb-6">This advisor profile may have been removed or is no longer active.</p>
-          <Link to="/discover">
-            <Button size="lg" className="rounded-full">Browse Verified Advisors</Button>
-          </Link>
-        </div>
+      <div className="min-h-full h-full bg-background container mx-auto px-4 py-20 text-center">
+        <h2 className="text-2xl font-bold text-foreground mb-2">Advisor not found</h2>
+        <p className="text-muted-foreground mb-6">This advisor profile may have been removed.</p>
+        <Link to="/discover"><Button size="lg" className="rounded-full">Browse Verified Advisors</Button></Link>
       </div>
     );
   }
 
+  const getContactDisplay = (value: string | null) => {
+    if (!value) return 'Hidden';
+    if (value.includes('@')) {
+      const [u, d] = value.split('@');
+      return `${u.slice(0, 3)}***@${d}`;
+    }
+    return `${value.slice(0, 3)}***${value.slice(-2)}`;
+  };
+
+  const recentBio = advisor.public_description || advisor.bio || 'SEBI registered Research Analyst providing verified trading signals and market analysis.';
+
   return (
-    <div className="min-h-full h-full bg-background">
-      
+    <div className="min-h-full h-full bg-background overflow-x-hidden">
+      {/* Sticky back button (mobile) */}
+      <button
+        onClick={goBack}
+        aria-label="Back"
+        className="fixed top-3 left-3 z-30 md:hidden h-10 w-10 rounded-full bg-card/90 backdrop-blur border border-border shadow-md flex items-center justify-center text-foreground hover:bg-card transition"
+      >
+        <ArrowLeft className="h-5 w-5" />
+      </button>
+
       <main className="pb-20">
-        {/* Massive Hero Section */}
-        <section className="relative overflow-hidden bg-card border-b border-border pt-16 pb-12">
-          {/* Subtle grid background */}
-          <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(0,0,0,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.8) 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/20 blur-[120px] rounded-full pointer-events-none"></div>
+        {/* HERO — dark premium */}
+        <section className="relative overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900 to-slate-900 text-white pt-12 md:pt-20 pb-10">
+          <div className="absolute inset-0 opacity-[0.06] pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.8) 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-primary/30 blur-[120px] rounded-full pointer-events-none"></div>
+
+          <button onClick={goBack} className="hidden md:inline-flex absolute top-6 left-6 items-center gap-1.5 text-xs font-semibold text-white/70 hover:text-white transition">
+            <ArrowLeft className="h-4 w-4" /> Back
+          </button>
 
           <div className="container mx-auto max-w-5xl px-4 relative z-10">
-            <div className="flex flex-col md:flex-row items-center gap-8 md:gap-12">
-              
-              {/* Advisor Avatar */}
+            <div className="flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-8">
               <div className="relative shrink-0">
-                <div className="h-40 w-40 md:h-48 md:w-48 rounded-full border-[6px] border-background shadow-2xl overflow-hidden bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-6xl font-extrabold relative z-10">
-                  {advisor.profile_photo_url ? (
-                    <img src={advisor.profile_photo_url} alt={advisor.full_name} className="h-full w-full object-cover" />
-                  ) : (
-                    toTitleCase(advisor.full_name).charAt(0)
-                  )}
+                <div className="h-28 w-28 md:h-36 md:w-36 rounded-full border-[5px] border-white/10 ring-2 ring-primary/40 shadow-2xl overflow-hidden bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-5xl font-extrabold">
+                  {advisor.profile_photo_url
+                    ? <img src={advisor.profile_photo_url} alt={advisor.full_name} className="h-full w-full object-cover" />
+                    : toTitleCase(advisor.full_name).charAt(0)}
                 </div>
-                <div className="absolute bottom-2 right-2 bg-primary rounded-full p-2 border-4 border-background shadow-lg z-20">
-                  <CheckCircle2 className="h-8 w-8 text-white" />
+                <div className="absolute bottom-1 right-1 bg-primary rounded-full p-1.5 border-4 border-slate-900 shadow-lg">
+                  <CheckCircle2 className="h-5 w-5 text-white" />
                 </div>
               </div>
 
-              {/* Advisor Details */}
-              <div className="text-center md:text-left flex-1">
-                <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-4 py-1.5 text-xs font-bold text-primary border border-primary/20 mb-4 shadow-sm">
-                  <ShieldCheck className="h-4 w-4" /> SEBI Registered • {advisor.sebi_reg_no}
+              <div className="text-center md:text-left flex-1 min-w-0">
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-primary/15 px-3 py-1 text-[11px] font-bold text-primary border border-primary/30 mb-3">
+                  <ShieldCheck className="h-3.5 w-3.5" /> SEBI • {advisor.sebi_reg_no}
                 </div>
-                
-                <h1 className="text-4xl md:text-5xl font-extrabold text-foreground tracking-tight mb-2" style={{ fontFamily: 'Outfit, sans-serif' }}>
+                <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight mb-1.5 break-words" style={{ fontFamily: 'Outfit, sans-serif' }}>
                   {toTitleCase(advisor.full_name)}
                 </h1>
-                
-                <p className="text-lg md:text-xl text-muted-foreground mb-6 font-medium">
+                <p className="text-sm md:text-base text-white/70 mb-3 max-w-xl">
                   {advisor.public_tagline || 'SEBI Registered Trading Advisor'}
                 </p>
 
-                {/* Desktop Quick Stats */}
-                <div className="hidden md:flex items-center gap-6">
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-                      <Users className="h-5 w-5 text-foreground" />
-                    </div>
-                    <div>
-                      <p className="text-lg font-bold text-foreground leading-none">{stats.subscriber_count}</p>
-                      <p className="text-xs text-muted-foreground font-semibold">MEMBERS</p>
-                    </div>
+                {specializations.length > 0 && (
+                  <div className="flex flex-wrap justify-center md:justify-start gap-1.5 mb-3">
+                    {specializations.map(tag => (
+                      <span key={tag} className="rounded-full bg-white/10 border border-white/20 px-2.5 py-0.5 text-[11px] font-semibold text-white">
+                        {tag}
+                      </span>
+                    ))}
                   </div>
-                  <div className="w-px h-10 bg-border"></div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted">
-                      <Activity className="h-5 w-5 text-foreground" />
-                    </div>
-                    <div>
-                      <p className="text-lg font-bold text-foreground leading-none">{stats.total_signals}</p>
-                      <p className="text-xs text-muted-foreground font-semibold">SIGNALS</p>
-                    </div>
-                  </div>
-                  <div className="w-px h-10 bg-border"></div>
-                  <div className="flex items-center gap-2">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                      <TrendingUp className="h-5 w-5 text-primary" />
-                    </div>
-                    <div>
-                      <p className="text-lg font-bold text-primary leading-none">{accuracy ? `${accuracy}%` : '—'}</p>
-                      <p className="text-xs text-primary font-semibold">ACCURACY</p>
-                    </div>
-                  </div>
+                )}
+
+                <div className="flex flex-wrap justify-center md:justify-start items-center gap-3 text-[12px] text-white/70">
+                  {(advisor as any).public_years_experience && (
+                    <span className="inline-flex items-center gap-1"><Star className="h-3.5 w-3.5 text-yellow-400" /> {(advisor as any).public_years_experience}+ yrs</span>
+                  )}
+                  {memberSince && <span className="inline-flex items-center gap-1"><Calendar className="h-3.5 w-3.5" /> Active since {memberSince}</span>}
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-bold ${risk.tone}`}>
+                    <Target className="h-3 w-3" /> {risk.label}
+                  </span>
                 </div>
-              </div>
-
-            </div>
-
-            {/* Mobile Quick Stats */}
-            <div className="md:hidden mt-8 grid grid-cols-3 gap-2 bg-muted/30 p-2 rounded-2xl border border-border">
-              <div className="text-center p-3">
-                <p className="text-xl font-bold text-foreground">{stats.subscriber_count}</p>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase">Members</p>
-              </div>
-              <div className="text-center p-3 border-l border-border">
-                <p className="text-xl font-bold text-foreground">{stats.total_signals}</p>
-                <p className="text-[10px] font-bold text-muted-foreground uppercase">Signals</p>
-              </div>
-              <div className="text-center p-3 border-l border-border">
-                <p className="text-xl font-bold text-primary">{accuracy ? `${accuracy}%` : '—'}</p>
-                <p className="text-[10px] font-bold text-primary uppercase">Accuracy</p>
               </div>
             </div>
           </div>
         </section>
 
-        <div className="container mx-auto max-w-5xl px-4 py-12">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
-            {/* Left Column: Bio & Info */}
-            <div className="lg:col-span-1 space-y-6">
-              <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-                <h3 className="text-lg font-bold text-foreground mb-4 flex items-center gap-2">
-                  <Star className="h-5 w-5 text-yellow-500 fill-yellow-500" /> About Advisor
-                </h3>
-                <div className="space-y-4">
-                  <div>
-                    <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Strategy Focus</p>
-                    <p className="text-sm font-medium text-foreground">{advisor.strategy_type || 'Diversified / All Strategies'}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Experience</p>
-                    <p className="text-sm font-medium text-foreground">{(advisor as any).public_years_experience ? `${(advisor as any).public_years_experience}+ Years in Markets` : 'SEBI Verified Professional'}</p>
-                  </div>
-                  <div>
-                    <p className="text-xs font-bold text-muted-foreground uppercase mb-1">Bio</p>
-                    <p className="text-sm text-foreground/80 leading-relaxed">{(advisor as any).public_description || advisor.bio || 'SEBI registered Research Analyst providing verified trading signals and comprehensive market analysis.'}</p>
-                  </div>
-                </div>
-              </div>
+        {/* HEADLINE STATS */}
+        <section className="container mx-auto max-w-5xl px-4 -mt-6 relative z-10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <StatCard icon={Activity} label="Total Signals" value={stats.total.toString()} sub="all time" />
+            <StatCard icon={CheckCircle2} label="Win Rate" value={stats.winRate !== null ? `${stats.winRate}%` : '—'} sub={`${stats.wins}W · ${stats.losses}L · ${stats.pending}P`} accent />
+            <StatCard icon={Users} label="Active Members" value={subscriberCount.toString()} sub="paid subscribers" />
+            <StatCard icon={TrendingUp} label="Followers" value={followerCount.toString()} sub="free updates" />
+          </div>
+        </section>
 
-              <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-                <h3 className="text-sm font-bold text-foreground mb-4 uppercase tracking-wider text-muted-foreground">Contact Info</h3>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0">
-                      <Mail className="h-4 w-4 text-foreground" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-muted-foreground font-bold uppercase">Email</p>
-                      <p className="text-sm font-medium text-foreground">{getContactDisplay(advisor.email)}</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0">
-                      <Phone className="h-4 w-4 text-foreground" />
-                    </div>
-                    <div>
-                      <p className="text-[10px] text-muted-foreground font-bold uppercase">Phone</p>
-                      <p className="text-sm font-medium text-foreground">{getContactDisplay(advisor.phone)}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+        {/* PERFORMANCE DEEP-DIVE — differentiator */}
+        <section className="container mx-auto max-w-5xl px-4 mt-8">
+          <div className="flex items-center gap-2 mb-3">
+            <BarChart3 className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-bold uppercase tracking-widest text-foreground">Performance Deep-Dive</h2>
+            <span className="text-[10px] text-muted-foreground">— transparency competitors hide</span>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <DeepStat icon={Target} label="Avg Risk:Reward" value={stats.avgRR !== null ? `1 : ${stats.avgRR.toFixed(2)}` : '—'} hint="reward per ₹1 risked" />
+            <DeepStat icon={Activity} label="Signals / Week" value={stats.signalsPerWeek !== null ? stats.signalsPerWeek.toFixed(1) : '—'} hint="posting frequency" />
+            <DeepStat icon={Star} label="Best Month" value={stats.bestMonthRate !== null ? `${stats.bestMonthRate}%` : '—'} hint={stats.bestMonthLabel || 'win-rate peak'} />
+            <DeepStat
+              icon={Flame}
+              label={stats.currentStreak.type === 'LOSS' ? 'Loss Streak' : 'Win Streak'}
+              value={stats.currentStreak.count > 0 ? `${stats.currentStreak.count}` : '—'}
+              hint={`current ${stats.currentStreak.type?.toLowerCase() || 'streak'}`}
+              tone={stats.currentStreak.type === 'LOSS' ? 'destructive' : 'primary'}
+            />
+            <DeepStat icon={AlertTriangle} label="Max Loss Streak" value={stats.maxLossStreak > 0 ? `${stats.maxLossStreak}` : '—'} hint="worst losing run" tone="destructive" />
+            <DeepStat icon={Clock} label="Active Hours" value={stats.activeHours || '—'} hint="when signals drop" />
+            <DeepStat icon={ShieldCheck} label="Risk Level" value={risk.label} hint="auto-derived" />
+            <DeepStat icon={Lock} label="Audit Trail" value="Immutable" hint="entry/target/SL locked" />
+          </div>
+        </section>
+
+        {/* RECENT SIGNALS STRIP */}
+        {stats.recent.length > 0 && (
+          <section className="container mx-auto max-w-5xl px-4 mt-8">
+            <div className="flex items-center gap-2 mb-3">
+              <Activity className="h-4 w-4 text-primary" />
+              <h2 className="text-sm font-bold uppercase tracking-widest text-foreground">Last 5 Signals</h2>
             </div>
+            <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
+              {stats.recent.map(s => {
+                const r = s.result;
+                const ico = r === 'WIN' ? '✅' : r === 'LOSS' ? '❌' : '⏳';
+                const tone = r === 'WIN' ? 'border-primary/40 bg-primary/5' : r === 'LOSS' ? 'border-destructive/40 bg-destructive/5' : 'border-border bg-muted/40';
+                return (
+                  <div key={s.id} className={`shrink-0 rounded-xl border-[1.5px] ${tone} px-3 py-2 min-w-[140px]`}>
+                    <p className="text-[11px] text-muted-foreground">{s.signal_date}</p>
+                    <p className="text-sm font-bold text-foreground truncate">{s.instrument || '—'}</p>
+                    <p className="text-[11px] font-semibold mt-0.5">
+                      <span className={s.signal_type === 'BUY' ? 'text-primary' : 'text-destructive'}>{s.signal_type}</span> · {ico}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
-            {/* Right Column: Pricing & Channels */}
-            <div className="lg:col-span-2">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center border border-primary/20">
-                  <Zap className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <h2 className="text-2xl font-extrabold text-foreground" style={{ fontFamily: 'Outfit, sans-serif' }}>Trading Channels</h2>
-                  <p className="text-sm text-muted-foreground">Subscribe to access real-time signals via our platform.</p>
-                </div>
+        {/* BIO + CONTACT */}
+        <section className="container mx-auto max-w-5xl px-4 mt-8 grid md:grid-cols-3 gap-4">
+          <div className="md:col-span-2 rounded-2xl border border-border bg-card p-5">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-foreground mb-2">About</h3>
+            <p className="text-sm text-foreground/80 leading-relaxed">{recentBio}</p>
+          </div>
+          <div className="rounded-2xl border border-border bg-card p-5">
+            <h3 className="text-sm font-bold uppercase tracking-widest text-foreground mb-3">Contact</h3>
+            <div className="space-y-2.5">
+              <div className="flex items-center gap-2 min-w-0">
+                <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+                <span className="text-sm font-medium text-foreground truncate">{getContactDisplay(advisor.email)}</span>
               </div>
-
-              {groups.length === 0 ? (
-                <div className="rounded-2xl border border-dashed border-border bg-card/50 p-12 text-center">
-                  <Activity className="h-12 w-12 text-muted-foreground/30 mx-auto mb-3" />
-                  <h3 className="text-lg font-bold text-foreground mb-1">No Active Channels</h3>
-                  <p className="text-sm text-muted-foreground">This advisor hasn't created any subscription channels yet.</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {groups.map((group, idx) => (
-                    <div key={group.id} className="relative rounded-2xl border-2 border-border bg-card overflow-hidden hover:border-primary/50 transition-all shadow-sm hover:shadow-md group/card">
-                      {idx === 0 && (
-                        <div className="absolute top-0 right-0 bg-gradient-to-r from-primary to-secondary text-white text-[10px] font-bold px-3 py-1 rounded-bl-lg z-10 uppercase tracking-widest shadow-sm">
-                          Most Popular
-                        </div>
-                      )}
-                      
-                      <div className="p-6 md:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                        <div className="flex-1 min-w-0">
-                          <h3 className="text-xl md:text-2xl font-bold text-foreground mb-2 group-hover/card:text-primary transition-colors">{group.name}</h3>
-                          <p className="text-sm text-muted-foreground mb-4 line-clamp-2 leading-relaxed">
-                            {group.description || 'Gain access to premium trading signals, market analysis, and real-time updates directly from the advisor.'}
-                          </p>
-                          <ul className="flex flex-wrap gap-x-4 gap-y-2">
-                            <li className="flex items-center gap-1.5 text-xs font-semibold text-foreground/80">
-                              <CheckCircle2 className="h-3.5 w-3.5 text-primary" /> Real-time alerts
-                            </li>
-                            <li className="flex items-center gap-1.5 text-xs font-semibold text-foreground/80">
-                              <CheckCircle2 className="h-3.5 w-3.5 text-primary" /> Track record included
-                            </li>
-                            <li className="flex items-center gap-1.5 text-xs font-semibold text-foreground/80">
-                              <CheckCircle2 className="h-3.5 w-3.5 text-primary" /> Cancel anytime
-                            </li>
-                          </ul>
-                        </div>
-                        
-                        <div className="w-full md:w-auto flex flex-col items-center md:items-end shrink-0 md:pl-6 md:border-l border-border/50">
-                          <div className="text-center md:text-right mb-4">
-                            <p className="text-3xl md:text-4xl font-extrabold text-foreground tracking-tighter">₹{group.monthly_price}</p>
-                            <p className="text-xs font-semibold text-muted-foreground uppercase mt-1">Per Month</p>
-                          </div>
-                          <Link to={`/group/${group.id}`} className="w-full md:w-auto">
-                            <Button size="lg" className="w-full md:w-auto rounded-xl px-8 shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all font-bold group">
-                              View Channel <ArrowRight className="ml-2 h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                            </Button>
-                          </Link>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+              <div className="flex items-center gap-2 min-w-0">
+                <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
+                <span className="text-sm font-medium text-foreground truncate">{getContactDisplay(advisor.phone)}</span>
+              </div>
             </div>
           </div>
-        </div>
+        </section>
+
+        {/* TRADING CHANNELS */}
+        <section className="container mx-auto max-w-5xl px-4 mt-8">
+          <div className="flex items-center gap-2 mb-3">
+            <ShieldCheck className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-bold uppercase tracking-widest text-foreground">Trading Channels</h2>
+          </div>
+
+          {groups.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-border bg-card/50 p-10 text-center">
+              <Activity className="h-10 w-10 text-muted-foreground/30 mx-auto mb-2" />
+              <p className="text-sm font-semibold text-foreground">No active channels yet</p>
+            </div>
+          ) : (
+            <div className="grid gap-3 md:grid-cols-2">
+              {groups.map((group, idx) => (
+                <div key={group.id} className="relative rounded-2xl border-[1.5px] border-border bg-card p-5 hover:border-primary/40 transition group/card overflow-hidden">
+                  {idx === 0 && (
+                    <div className="absolute top-0 right-0 bg-primary text-white text-[10px] font-bold px-2.5 py-0.5 rounded-bl-lg uppercase tracking-widest">Popular</div>
+                  )}
+                  <h3 className="text-base font-bold text-foreground mb-1 truncate group-hover/card:text-primary transition-colors">{group.name}</h3>
+                  <p className="text-xs text-muted-foreground line-clamp-2 mb-3">{group.description || 'Premium signals & market analysis.'}</p>
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-2xl font-extrabold text-foreground tracking-tight">₹{group.monthly_price}</p>
+                      <p className="text-[10px] text-muted-foreground uppercase font-bold">per month</p>
+                    </div>
+                    <Link to={`/group/${group.id}`}>
+                      <Button size="sm" className="rounded-xl shadow-md font-bold">
+                        View Channel <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                      </Button>
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
       </main>
+    </div>
+  );
+}
 
-          </div>
+function StatCard({ icon: Icon, label, value, sub, accent }: { icon: any; label: string; value: string; sub?: string; accent?: boolean }) {
+  return (
+    <div className={`rounded-2xl border border-border bg-card p-4 shadow-sm ${accent ? 'ring-1 ring-primary/20' : ''}`}>
+      <div className="flex items-center gap-1.5 mb-1.5">
+        <Icon className={`h-3.5 w-3.5 ${accent ? 'text-primary' : 'text-muted-foreground'}`} />
+        <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground">{label}</p>
+      </div>
+      <p className={`text-2xl md:text-3xl font-extrabold tracking-tight ${accent ? 'text-primary' : 'text-foreground'}`}>{value}</p>
+      {sub && <p className="text-[10px] text-muted-foreground font-medium mt-0.5">{sub}</p>}
+    </div>
+  );
+}
+
+function DeepStat({ icon: Icon, label, value, hint, tone }: { icon: any; label: string; value: string; hint?: string; tone?: 'primary' | 'destructive' }) {
+  const valueClass =
+    tone === 'destructive' ? 'text-destructive' :
+    tone === 'primary' ? 'text-primary' : 'text-foreground';
+  return (
+    <div className="rounded-xl border border-border bg-card p-3.5 hover:border-primary/30 transition">
+      <div className="flex items-center gap-1.5 mb-1">
+        <Icon className="h-3.5 w-3.5 text-muted-foreground" />
+        <p className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground truncate">{label}</p>
+      </div>
+      <p className={`text-lg font-extrabold tracking-tight truncate ${valueClass}`}>{value}</p>
+      {hint && <p className="text-[10px] text-muted-foreground mt-0.5 truncate">{hint}</p>}
+    </div>
   );
 }
