@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { GroupFeed } from "@/components/GroupFeed";
 import { SubscriptionModal } from "@/components/SubscriptionModal";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
-import { ShieldCheck, Users, Activity, ArrowLeft, CheckCircle2, TrendingUp, BellRing, Lock, AlertCircle } from "lucide-react";
+import { ShieldCheck, Users, Activity, ArrowLeft, CheckCircle2, TrendingUp, BellRing, Lock, AlertCircle, User as UserIcon } from "lucide-react";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Group = Tables<"groups">;
