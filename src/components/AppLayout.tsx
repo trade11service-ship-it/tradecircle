@@ -117,33 +117,35 @@ export function AppLayout({ children }: AppLayoutProps) {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col min-w-0 h-[100dvh] relative z-10 bg-muted/30">
-        {/* Mobile Header (Only visible on small screens) */}
-        <header className="md:hidden h-14 flex items-center justify-between px-4 bg-card border-b border-border shrink-0 z-20">
-          <div className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground font-bold text-sm">
-              S
+      <main className="flex-1 flex flex-col min-w-0 h-[100dvh] relative z-10 bg-background">
+        {/* Mobile Header (hidden on group page — group has its own header) */}
+        {!isGroupPage && (
+          <header className="md:hidden h-14 flex items-center justify-between px-4 bg-card border-b border-border shrink-0 z-20">
+            <div className="flex items-center gap-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground font-bold text-sm">
+                S
+              </div>
+              <span className="text-lg font-extrabold tracking-tight text-foreground" style={{ fontFamily: 'Outfit, sans-serif' }}>
+                Stock<span className="text-primary">Circle</span>
+              </span>
             </div>
-            <span className="text-lg font-extrabold tracking-tight text-foreground" style={{ fontFamily: 'Outfit, sans-serif' }}>
-              Stock<span className="text-primary">Circle</span>
-            </span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Link to="/profile" className="p-2 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted">
-              <User className="h-5 w-5" />
-            </Link>
-          </div>
-        </header>
+            <div className="flex items-center gap-2">
+              <Link to="/profile" className="p-2 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted">
+                <User className="h-5 w-5" />
+              </Link>
+            </div>
+          </header>
+        )}
 
         {/* Scrollable Content (Strictly bound to flex-1) */}
         <div className="flex-1 overflow-y-auto overflow-x-hidden relative w-full scroll-smooth">
-          <div className="min-h-full flex flex-col">
+          <div className={isGroupPage ? "h-full" : "min-h-full flex flex-col"}>
             {children}
           </div>
         </div>
         
-        {/* Mobile Bottom Navigation Placeholder to push content above actual fixed nav */}
-        {user && <div className="md:hidden h-[60px] shrink-0 w-full bg-transparent"></div>}
+        {/* Mobile Bottom Navigation Placeholder — skip on group page (chat owns full height) */}
+        {user && !isGroupPage && <div className="md:hidden h-[60px] shrink-0 w-full bg-background"></div>}
       </main>
 
       {/* Mobile Bottom Navigation (Fixed Absolute to bottom) */}
