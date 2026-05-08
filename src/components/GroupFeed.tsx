@@ -122,8 +122,8 @@ function MessageBubble({ post, advisorName, advisorPhoto, freeBadge }: { post: F
 function SignalBubble({ post, advisorName, advisorPhoto, blurred, freeBadge }: { post: FeedPost; advisorName: string; advisorPhoto?: string; blurred?: boolean; freeBadge?: string | null }) {
   const [expanded, setExpanded] = useState(false);
   const isBuy = post.signal_type === 'BUY';
-  const bgClass = isBuy ? 'bg-[hsl(120,60%,97%)]' : 'bg-[hsl(0,70%,97%)]';
-  const borderClass = isBuy ? 'border-l-[3px] border-l-primary' : 'border-l-[3px] border-l-destructive';
+  const bgClass = isBuy ? 'bg-[hsl(140,55%,93%)]' : 'bg-[hsl(0,75%,95%)]';
+  const borderClass = isBuy ? 'border-l-[4px] border-l-primary' : 'border-l-[4px] border-l-destructive';
 
   const resultBadge = post.result === 'TARGET_HIT' || post.result === 'WIN'
     ? { cls: 'bg-primary/10 text-primary', label: '✅ Target Hit' }
@@ -137,7 +137,7 @@ function SignalBubble({ post, advisorName, advisorPhoto, blurred, freeBadge }: {
         {advisorPhoto ? <img src={advisorPhoto} alt="" className="h-full w-full object-cover" /> : <User className="h-3.5 w-3.5" />}
       </div>
       <div className="min-w-0 flex-1">
-        <div className={`rounded-2xl rounded-tl-sm ${bgClass} ${borderClass} border border-border p-3 shadow-sm`}>
+        <div className={`rounded-2xl rounded-tl-sm ${bgClass} ${borderClass} border border-border/80 p-3 shadow-[0_2px_6px_rgba(0,0,0,0.08)]`}>
           {/* Header */}
           <div className="flex items-center justify-between mb-2">
             <span className="text-[12px] font-bold text-primary">{advisorName}</span>
@@ -318,7 +318,7 @@ export function GroupFeed({ groupId, advisorName, advisorPhoto, isSubscribed = t
 
   return (
     <div className="relative flex flex-col h-full">
-      <div ref={feedContainerRef} className="flex-1 overflow-y-auto px-2 md:px-4 py-4 space-y-4 bg-transparent z-10 relative scroll-smooth">
+      <div ref={feedContainerRef} className="flex-1 overflow-y-auto px-2 md:px-4 py-4 pb-[80px] md:pb-4 space-y-4 bg-transparent z-10 relative scroll-smooth">
         {hasMore && (
           <div className="flex justify-center mb-2">
             <Button variant="ghost" size="sm" className="text-[12px] text-muted-foreground" onClick={() => setLimit(prev => prev + 50)}>

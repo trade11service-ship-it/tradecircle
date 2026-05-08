@@ -94,9 +94,9 @@ export default function FeaturedAdvisors() {
   };
 
   return (
-    <div className="min-h-full h-full bg-background">
+    <div className="min-h-full h-full bg-background overflow-x-hidden">
       
-      <main className="container mx-auto px-4 py-8 max-w-5xl">
+      <main className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 max-w-5xl w-full">
         {/* Page Header */}
         <div className="mb-8 text-center">
           <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 border border-primary/20 px-4 py-1.5 mb-3">
@@ -179,22 +179,22 @@ export default function FeaturedAdvisors() {
                       </p>
 
                       {/* Stats Row */}
-                      <div className="grid grid-cols-4 gap-2 mb-4 py-3 rounded-xl bg-muted/50">
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4 py-3 rounded-xl bg-muted/50">
                         <div className="text-center">
                           <p className="text-base font-bold text-foreground">{advisor.signalStats.total_signals}</p>
                           <p className="text-[10px] text-muted-foreground font-medium">Signals</p>
                         </div>
-                        <div className="text-center border-l border-border">
+                        <div className="text-center sm:border-l border-border">
                           <p className="text-base font-bold text-foreground">{advisor.subscriberCount}</p>
                           <p className="text-[10px] text-muted-foreground font-medium">Members</p>
                         </div>
-                        <div className="text-center border-l border-border">
+                        <div className="text-center border-t sm:border-t-0 sm:border-l border-border pt-2 sm:pt-0">
                           <p className={`text-base font-bold ${accuracy !== null ? 'text-primary' : 'text-muted-foreground'}`}>
                             {accuracy !== null ? `${accuracy}%` : '—'}
                           </p>
                           <p className="text-[10px] text-muted-foreground font-medium">Accuracy</p>
                         </div>
-                        <div className="text-center border-l border-border">
+                        <div className="text-center border-t sm:border-t-0 sm:border-l border-border pt-2 sm:pt-0">
                           <p className="text-base font-bold text-foreground">{advisor.groupCount}</p>
                           <p className="text-[10px] text-muted-foreground font-medium">Groups</p>
                         </div>
