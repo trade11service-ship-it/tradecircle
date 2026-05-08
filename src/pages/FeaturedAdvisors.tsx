@@ -94,9 +94,9 @@ export default function FeaturedAdvisors() {
   };
 
   return (
-    <div className="min-h-full h-full bg-background">
+    <div className="min-h-full h-full bg-background overflow-x-hidden">
       
-      <main className="container mx-auto px-4 py-8 max-w-5xl">
+      <main className="container mx-auto px-3 sm:px-4 py-6 sm:py-8 max-w-5xl w-full">
         {/* Page Header */}
         <div className="mb-8 text-center">
           <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 border border-primary/20 px-4 py-1.5 mb-3">
