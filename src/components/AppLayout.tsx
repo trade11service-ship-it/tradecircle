@@ -29,6 +29,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   const isAdvisor = profile?.role === "advisor";
   const isAdmin = profile?.role === "admin";
+  const isGroupPage = location.pathname.startsWith("/group/");
 
   const navItems = [
     {
