@@ -14,7 +14,19 @@ type Advisor = Tables<"advisors">;
 export default function GroupDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
   const { user } = useAuth();
+
+  const goBack = () => {
+    // If we have history (came from another in-app page), pop. Otherwise route Home.
+    const hasHistory = (location.key && location.key !== "default") || window.history.length > 1;
+    if (hasHistory) {
+      navigate(-1);
+    } else {
+      navigate(user ? "/home" : "/");
+    }
+  };
+
   const [group, setGroup] = useState<(Group & { advisor?: Advisor }) | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSubscribed, setIsSubscribed] = useState(false);
