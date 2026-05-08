@@ -137,7 +137,7 @@ function SignalBubble({ post, advisorName, advisorPhoto, blurred, freeBadge }: {
         {advisorPhoto ? <img src={advisorPhoto} alt="" className="h-full w-full object-cover" /> : <User className="h-3.5 w-3.5" />}
       </div>
       <div className="min-w-0 flex-1">
-        <div className={`rounded-2xl rounded-tl-sm ${bgClass} ${borderClass} border border-border p-3 shadow-sm`}>
+        <div className={`rounded-2xl rounded-tl-sm ${bgClass} ${borderClass} border border-border/80 p-3 shadow-[0_2px_6px_rgba(0,0,0,0.08)]`}>
           {/* Header */}
           <div className="flex items-center justify-between mb-2">
             <span className="text-[12px] font-bold text-primary">{advisorName}</span>
