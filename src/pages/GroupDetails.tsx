@@ -265,49 +265,60 @@ export default function GroupDetails() {
           <div className="absolute inset-0 opacity-[0.25] dark:opacity-[0.05] pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M54.627 0l.83.83v58.34h-58.34l-.83-.83L0 54.628l54.627-54.627zM58.34 0v58.34L0 0h58.34zM0 58.34h58.34v.83l-58.34-.83v-.83zM0 0v.83L.83 0H0z' fill='%23000000' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E")` }}></div>
 
           {/* Chat Header (Sticky top for stability) */}
-          <div className="flex items-center justify-between px-3 py-2.5 bg-card border-b border-border shadow-[0_2px_10px_rgba(0,0,0,0.05)] z-20 shrink-0 sticky top-0">
-            <div className="flex items-center gap-2 min-w-0 flex-1">
-              <button
-                onClick={() => navigate("/home")}
-                aria-label="Back to Home"
-                className="md:hidden p-1.5 -ml-1 text-muted-foreground hover:bg-muted rounded-full transition-colors shrink-0"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </button>
+          <div className="flex items-center gap-2 px-3 py-2 bg-card border-b border-border shadow-[0_2px_10px_rgba(0,0,0,0.05)] z-20 shrink-0 sticky top-0">
+            <button
+              onClick={goBack}
+              aria-label="Back"
+              className="p-1.5 -ml-1 text-muted-foreground hover:bg-muted rounded-full transition-colors shrink-0"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
 
+            <Link
+              to={`/advisor/${group.advisor_id}`}
+              aria-label="View advisor profile"
+              className="h-10 w-10 rounded-full border border-border overflow-hidden bg-primary/10 flex shrink-0 items-center justify-center text-primary font-bold shadow-sm hover:ring-2 hover:ring-primary/40 transition"
+            >
+              {group.advisor?.profile_photo_url ? (
+                <img src={group.advisor.profile_photo_url} alt={advisorName} className="h-full w-full object-cover" />
+              ) : (
+                advisorName.charAt(0)
+              )}
+            </Link>
+
+            <Link to={`/advisor/${group.advisor_id}`} className="min-w-0 flex-1 hover:opacity-80 transition">
+              <div className="flex items-center gap-1">
+                <h2 className="text-[14px] sm:text-[15px] font-bold text-foreground truncate leading-tight">{group.name}</h2>
+                <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
+              </div>
+              <div className="flex items-center gap-2 mt-0.5 text-[11px] text-muted-foreground font-medium">
+                <span className="truncate">{advisorName}</span>
+                <span className="hidden xs:inline">•</span>
+                <span className="hidden xs:inline whitespace-nowrap">📊 {stats.signalCount}</span>
+                <span className="hidden xs:inline whitespace-nowrap">✅ {stats.winRate !== null ? `${stats.winRate}%` : '—'}</span>
+              </div>
+            </Link>
+
+            {/* Profile button + Subscribe */}
+            <div className="flex items-center gap-1.5 shrink-0">
               <Link
                 to={`/advisor/${group.advisor_id}`}
-                aria-label="View advisor profile"
-                className="h-10 w-10 rounded-full border border-border overflow-hidden bg-primary/10 flex shrink-0 items-center justify-center text-primary font-bold shadow-sm hover:ring-2 hover:ring-primary/40 transition"
+                aria-label="Open advisor profile"
+                className="hidden sm:inline-flex items-center gap-1 rounded-full border border-border bg-background px-2.5 h-8 text-[11px] font-bold text-foreground hover:bg-muted transition"
               >
-                {group.advisor?.profile_photo_url ? (
-                  <img src={group.advisor.profile_photo_url} alt={advisorName} className="h-full w-full object-cover" />
-                ) : (
-                  advisorName.charAt(0)
-                )}
+                <UserIcon className="h-3.5 w-3.5" /> Profile
               </Link>
-
-              <Link to={`/advisor/${group.advisor_id}`} className="min-w-0 flex-1 hover:opacity-80 transition">
-                <div className="flex items-center gap-1">
-                  <h2 className="text-[15px] font-bold text-foreground truncate leading-tight">{group.name}</h2>
-                  <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
-                </div>
-                <p className="text-[12px] text-muted-foreground truncate font-medium">{stats.subscriberCount} members • Tap for profile</p>
-              </Link>
-            </div>
-
-            {/* Header Subscribe Button */}
-            <div className="flex items-center gap-2">
               {!isSubscribed && (
-                <Button size="sm" className="rounded-full px-4 h-8 text-xs font-bold shadow-md hover:shadow-lg transition-all" onClick={() => setModalOpen(true)}>
+                <Button size="sm" className="rounded-full px-3 h-8 text-xs font-bold shadow-md" onClick={() => setModalOpen(true)}>
                   Subscribe
                 </Button>
               )}
               {isSubscribed && (
-                <div className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-primary bg-primary/10 px-3 py-1.5 rounded-full">
-                  <CheckCircle2 className="h-3.5 w-3.5" /> Subscribed
+                <div className="flex items-center gap-1 text-[11px] font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full">
+                  <CheckCircle2 className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Subscribed</span>
                 </div>
               )}
+            </div>
             </div>
           </div>
 
