@@ -122,8 +122,8 @@ function MessageBubble({ post, advisorName, advisorPhoto, freeBadge }: { post: F
 function SignalBubble({ post, advisorName, advisorPhoto, blurred, freeBadge }: { post: FeedPost; advisorName: string; advisorPhoto?: string; blurred?: boolean; freeBadge?: string | null }) {
   const [expanded, setExpanded] = useState(false);
   const isBuy = post.signal_type === 'BUY';
-  const bgClass = isBuy ? 'bg-[hsl(120,60%,97%)]' : 'bg-[hsl(0,70%,97%)]';
-  const borderClass = isBuy ? 'border-l-[3px] border-l-primary' : 'border-l-[3px] border-l-destructive';
+  const bgClass = isBuy ? 'bg-[hsl(140,55%,93%)]' : 'bg-[hsl(0,75%,95%)]';
+  const borderClass = isBuy ? 'border-l-[4px] border-l-primary' : 'border-l-[4px] border-l-destructive';
 
   const resultBadge = post.result === 'TARGET_HIT' || post.result === 'WIN'
     ? { cls: 'bg-primary/10 text-primary', label: '✅ Target Hit' }
