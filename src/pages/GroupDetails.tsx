@@ -319,7 +319,6 @@ export default function GroupDetails() {
                 </div>
               )}
             </div>
-            </div>
           </div>
 
           {/* The Actual Feed */}
