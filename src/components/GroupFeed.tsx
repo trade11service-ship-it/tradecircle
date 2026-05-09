@@ -122,7 +122,7 @@ function MessageBubble({ post, advisorName, advisorPhoto, freeBadge }: { post: F
   );
 }
 
-function SignalBubble({ post, advisorName, advisorPhoto, blurred, freeBadge }: { post: FeedPost; advisorName: string; advisorPhoto?: string; blurred?: boolean; freeBadge?: string | null }) {
+function SignalBubble({ post, advisorName, advisorPhoto, blurred, freeBadge, isOwner, onMark }: { post: FeedPost; advisorName: string; advisorPhoto?: string; blurred?: boolean; freeBadge?: string | null; isOwner?: boolean; onMark?: (id: string, result: string) => void }) {
   const [expanded, setExpanded] = useState(false);
   const isBuy = post.signal_type === 'BUY';
   const bgClass = isBuy ? 'bg-[hsl(140,55%,93%)]' : 'bg-[hsl(0,75%,95%)]';
