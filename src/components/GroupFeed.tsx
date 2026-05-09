@@ -198,6 +198,15 @@ function SignalBubble({ post, advisorName, advisorPhoto, blurred, freeBadge, isO
             <span className="text-[10px] text-muted-foreground">{formatTime(post.created_at)}</span>
             <span className="text-[10px] text-primary">✓✓</span>
           </div>
+
+          {isOwner && onMark && (post.result === null || post.result === 'PENDING') && (
+            <div className="mt-2 pt-2 border-t border-border/60 grid grid-cols-2 gap-1.5">
+              <button onClick={() => onMark(post.id, 'TGT_HIT')} className="rounded-md bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-bold py-1.5">✅ TGT Hit</button>
+              <button onClick={() => onMark(post.id, 'TGT1_HIT')} className="rounded-md bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-bold py-1.5">TGT1</button>
+              <button onClick={() => onMark(post.id, 'TGT2_HIT')} className="rounded-md bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-bold py-1.5">TGT2</button>
+              <button onClick={() => onMark(post.id, 'SL_HIT')} className="rounded-md bg-destructive/10 hover:bg-destructive/20 text-destructive text-[11px] font-bold py-1.5">❌ SL Hit</button>
+            </div>
+          )}
         </div>
       </div>
     </div>
