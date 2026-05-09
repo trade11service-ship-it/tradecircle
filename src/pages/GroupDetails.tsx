@@ -330,9 +330,11 @@ export default function GroupDetails() {
           <div className="flex-1 overflow-hidden relative">
             <GroupFeed
               groupId={group.id}
+              advisorId={group.advisor_id}
               advisorName={advisorName}
               advisorPhoto={group.advisor?.profile_photo_url || undefined}
               isSubscribed={isSubscribed}
+              isOwner={!!user && group.advisor?.user_id === user.id}
               onSubscribe={() => setModalOpen(true)}
               subscribePrice={group.monthly_price}
             />
