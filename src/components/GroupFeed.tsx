@@ -226,7 +226,12 @@ function SkeletonBubble() {
   );
 }
 
-export function GroupFeed({ groupId, advisorName, advisorPhoto, isSubscribed = true, isOwner = false, onSubscribe, subscribePrice }: FeedProps) {
+export function GroupFeed({ groupId, advisorId, advisorName, advisorPhoto, isSubscribed = true, isOwner = false, onSubscribe, subscribePrice }: FeedProps) {
+  const handleMarkResult = async (signalId: string, result: string) => {
+    const { error } = await supabase.from('signals').update({ result } as any).eq('id', signalId);
+    if (error) toast.error('Update failed: ' + error.message);
+    else toast.success(result === 'SL_HIT' ? 'Marked SL Hit' : 'Marked ' + result.replace('_', ' '));
+  };
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [limit, setLimit] = useState(50);
