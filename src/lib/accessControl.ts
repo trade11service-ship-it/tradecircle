@@ -119,27 +119,15 @@ export function getPostVisibility(
   if (freeCheck.isFree) {
     const badge = freeCheck.reason === 'fno_expired' ? 'F&O Signal — 24hr delay'
       : freeCheck.reason === 'public_delayed' ? 'Free — Signal expired'
-      : null; // analysis posts don't need badge
+      : null;
     return { showFully: true, blurNumbers: false, hideCompletely: false, showLockOverlay: false, freeBadge: badge };
   }
 
-  // First 3 posts visible (free tier)
-  const FREE_VISIBLE = 3;
-
-  if (globalIndex < FREE_VISIBLE) {
-    // Show analysis fully, signal with blurred numbers
-    if (post.post_type === 'signal') {
-      return { showFully: false, blurNumbers: true, hideCompletely: false, showLockOverlay: false, freeBadge: null };
-    }
-    return { showFully: true, blurNumbers: false, hideCompletely: false, showLockOverlay: false, freeBadge: null };
+  // All premium signals: visible but blurred. Analysis posts: visible.
+  if (post.post_type === 'signal') {
+    return { showFully: false, blurNumbers: true, hideCompletely: false, showLockOverlay: false, freeBadge: null };
   }
-
-  // After 3rd post: show lock overlay on the 3rd boundary, hide rest
-  if (globalIndex === FREE_VISIBLE) {
-    return { showFully: false, blurNumbers: true, hideCompletely: false, showLockOverlay: true, freeBadge: null };
-  }
-
-  return { showFully: false, blurNumbers: false, hideCompletely: true, showLockOverlay: false, freeBadge: null };
+  return { showFully: true, blurNumbers: false, hideCompletely: false, showLockOverlay: false, freeBadge: null };
 }
 
 /**
