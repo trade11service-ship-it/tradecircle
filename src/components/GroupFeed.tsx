@@ -28,6 +28,7 @@ interface FeedPost {
 
 interface FeedProps {
   groupId: string;
+  advisorId?: string;
   advisorName: string;
   advisorPhoto?: string;
   isSubscribed?: boolean;
