@@ -141,12 +141,14 @@ export type Database = {
           pan_no: string | null
           pan_photo_url: string | null
           phone: string | null
+          preferred_trading_hours: string | null
           profile_photo_url: string | null
           public_description: string | null
           public_sort_order: number | null
           public_tagline: string | null
           public_years_experience: number | null
           rejection_reason: string | null
+          risk_level: string | null
           sebi_reg_no: string
           status: string | null
           strategy_type: string | null
@@ -166,12 +168,14 @@ export type Database = {
           pan_no?: string | null
           pan_photo_url?: string | null
           phone?: string | null
+          preferred_trading_hours?: string | null
           profile_photo_url?: string | null
           public_description?: string | null
           public_sort_order?: number | null
           public_tagline?: string | null
           public_years_experience?: number | null
           rejection_reason?: string | null
+          risk_level?: string | null
           sebi_reg_no: string
           status?: string | null
           strategy_type?: string | null
@@ -191,12 +195,14 @@ export type Database = {
           pan_no?: string | null
           pan_photo_url?: string | null
           phone?: string | null
+          preferred_trading_hours?: string | null
           profile_photo_url?: string | null
           public_description?: string | null
           public_sort_order?: number | null
           public_tagline?: string | null
           public_years_experience?: number | null
           rejection_reason?: string | null
+          risk_level?: string | null
           sebi_reg_no?: string
           status?: string | null
           strategy_type?: string | null
@@ -904,6 +910,7 @@ export type Database = {
         Args: { _advisor_id: string; _month?: string }
         Returns: Json
       }
+      get_advisor_live_stats: { Args: { _advisor_id: string }; Returns: Json }
       get_advisor_signal_stats: { Args: { _advisor_id: string }; Returns: Json }
       get_advisor_subscriber_count: {
         Args: { _advisor_id: string }
