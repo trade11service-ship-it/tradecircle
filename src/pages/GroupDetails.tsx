@@ -73,16 +73,21 @@ export default function GroupDetails() {
     });
 
     if (user) {
-      const now = new Date().toISOString();
-      const { data: sub } = await supabase
-        .from("subscriptions")
-        .select("id")
-        .eq("user_id", user.id)
-        .eq("group_id", id)
-        .eq("status", "active")
-        .gte("end_date", now)
-        .maybeSingle();
-      setIsSubscribed(!!sub);
+      // Owner advisor always has full access to their own group
+      if (advisor && advisor.user_id === user.id) {
+        setIsSubscribed(true);
+      } else {
+        const now = new Date().toISOString();
+        const { data: sub } = await supabase
+          .from("subscriptions")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("group_id", id)
+          .eq("status", "active")
+          .gte("end_date", now)
+          .maybeSingle();
+        setIsSubscribed(!!sub);
+      }
     } else {
       setIsSubscribed(false);
     }
