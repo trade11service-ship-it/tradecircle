@@ -31,32 +31,17 @@ export function AppLayout({ children }: AppLayoutProps) {
   const isAdmin = profile?.role === "admin";
   const isGroupPage = location.pathname.startsWith("/group/");
 
-  const navItems = [
-    {
-      name: "Home",
-      path: isAdvisor ? "/advisor/dashboard" : isAdmin ? "/admin" : "/home",
-      icon: Home,
-      show: true,
-    },
-    {
-      name: "Dashboard",
-      path: "/advisor/dashboard",
-      icon: LayoutDashboard,
-      show: isAdvisor,
-    },
-    {
-      name: "Discover",
-      path: "/discover",
-      icon: Compass,
-      show: !isAdvisor && !isAdmin,
-    },
-    {
-      name: "Profile",
-      path: "/profile",
-      icon: User,
-      show: true,
-    },
-  ];
+  const navItems = isAdvisor
+    ? [
+        { name: "Dashboard", path: "/advisor/dashboard", icon: LayoutDashboard, show: true },
+        { name: "Discover", path: "/discover", icon: Compass, show: true },
+        { name: "Profile", path: "/profile", icon: User, show: true },
+      ]
+    : [
+        { name: "Home", path: isAdmin ? "/admin" : "/home", icon: Home, show: true },
+        { name: "Discover", path: "/discover", icon: Compass, show: !isAdmin },
+        { name: "Profile", path: "/profile", icon: User, show: true },
+      ];
 
   return (
     <div className="flex h-[100dvh] w-[100vw] bg-background overflow-hidden relative">

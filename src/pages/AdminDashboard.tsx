@@ -601,20 +601,15 @@ export default function AdminDashboard() {
         </nav>
 
         <div className="px-3 pb-2 space-y-1">
-          <button
-            onClick={() => navigate('/')}
-            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] text-[13px] font-medium text-white/60 hover:bg-white/[0.06] hover:text-white/90 transition-all duration-150 cursor-pointer active:scale-95"
+          <a
+            href="/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-[10px] text-[13px] font-medium text-white/70 hover:bg-white/[0.08] hover:text-white transition-all duration-150 cursor-pointer active:scale-95"
           >
             <ExternalLink size={18} />
             <span>Go to Website</span>
-          </button>
-          <button
-            onClick={() => window.open('/', '_blank')}
-            className="w-full flex items-center gap-2.5 px-3 py-2 rounded-[10px] text-[12px] font-medium text-white/40 hover:bg-white/[0.06] hover:text-white/70 transition-all duration-150 cursor-pointer"
-          >
-            <ExternalLink size={14} />
-            <span>Open in new tab</span>
-          </button>
+          </a>
         </div>
 
         {/* Admin profile */}

@@ -1,8 +1,10 @@
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { User, ChevronDown, Lock } from 'lucide-react';
+import { User, ChevronDown, Lock, Send, Image as ImageIcon, X, CheckCircle2, XCircle } from 'lucide-react';
 import { getPostVisibility } from '@/lib/accessControl';
+import { sanitizeText, sanitizeTextarea, sanitizeNumeric } from '@/lib/sanitize';
+import { toast } from 'sonner';
 
 interface FeedPost {
   id: string;
@@ -26,6 +28,7 @@ interface FeedPost {
 
 interface FeedProps {
   groupId: string;
+  advisorId?: string;
   advisorName: string;
   advisorPhoto?: string;
   isSubscribed?: boolean;
@@ -119,7 +122,7 @@ function MessageBubble({ post, advisorName, advisorPhoto, freeBadge }: { post: F
   );
 }
 
-function SignalBubble({ post, advisorName, advisorPhoto, blurred, freeBadge }: { post: FeedPost; advisorName: string; advisorPhoto?: string; blurred?: boolean; freeBadge?: string | null }) {
+function SignalBubble({ post, advisorName, advisorPhoto, blurred, freeBadge, isOwner, onMark }: { post: FeedPost; advisorName: string; advisorPhoto?: string; blurred?: boolean; freeBadge?: string | null; isOwner?: boolean; onMark?: (id: string, result: string) => void }) {
   const [expanded, setExpanded] = useState(false);
   const isBuy = post.signal_type === 'BUY';
   const bgClass = isBuy ? 'bg-[hsl(140,55%,93%)]' : 'bg-[hsl(0,75%,95%)]';
@@ -195,6 +198,15 @@ function SignalBubble({ post, advisorName, advisorPhoto, blurred, freeBadge }: {
             <span className="text-[10px] text-muted-foreground">{formatTime(post.created_at)}</span>
             <span className="text-[10px] text-primary">✓✓</span>
           </div>
+
+          {isOwner && onMark && (post.result === null || post.result === 'PENDING') && (
+            <div className="mt-2 pt-2 border-t border-border/60 grid grid-cols-2 gap-1.5">
+              <button onClick={() => onMark(post.id, 'TGT_HIT')} className="rounded-md bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-bold py-1.5">✅ TGT Hit</button>
+              <button onClick={() => onMark(post.id, 'TGT1_HIT')} className="rounded-md bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-bold py-1.5">TGT1</button>
+              <button onClick={() => onMark(post.id, 'TGT2_HIT')} className="rounded-md bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-bold py-1.5">TGT2</button>
+              <button onClick={() => onMark(post.id, 'SL_HIT')} className="rounded-md bg-destructive/10 hover:bg-destructive/20 text-destructive text-[11px] font-bold py-1.5">❌ SL Hit</button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -214,7 +226,12 @@ function SkeletonBubble() {
   );
 }
 
-export function GroupFeed({ groupId, advisorName, advisorPhoto, isSubscribed = true, isOwner = false, onSubscribe, subscribePrice }: FeedProps) {
+export function GroupFeed({ groupId, advisorId, advisorName, advisorPhoto, isSubscribed = true, isOwner = false, onSubscribe, subscribePrice }: FeedProps) {
+  const handleMarkResult = async (signalId: string, result: string) => {
+    const { error } = await supabase.from('signals').update({ result } as any).eq('id', signalId);
+    if (error) toast.error('Update failed: ' + error.message);
+    else toast.success(result === 'SL_HIT' ? 'Marked SL Hit' : 'Marked ' + result.replace('_', ' '));
+  };
   const [posts, setPosts] = useState<FeedPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [limit, setLimit] = useState(50);
