@@ -1,8 +1,10 @@
 import { useEffect, useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { User, ChevronDown, Lock } from 'lucide-react';
+import { User, ChevronDown, Lock, Send, Image as ImageIcon, X, CheckCircle2, XCircle } from 'lucide-react';
 import { getPostVisibility } from '@/lib/accessControl';
+import { sanitizeText, sanitizeTextarea, sanitizeNumeric } from '@/lib/sanitize';
+import { toast } from 'sonner';
 
 interface FeedPost {
   id: string;
