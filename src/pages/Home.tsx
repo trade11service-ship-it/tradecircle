@@ -115,13 +115,22 @@ export default function Home() {
     setAdvisorPhotos(Object.fromEntries((advisors || []).map((a) => [a.id, a.profile_photo_url || ""])));
     setSubscribedGroups(groups || []);
     
-    const { data: advs } = await supabase
-      .from('advisors')
-      .select('id, full_name, profile_photo_url, strategy_type, public_tagline')
-      .eq('status', 'approved')
-      .eq('is_public_featured', true)
-      .limit(4);
+    const [{ data: advs }, { data: pubSigs }] = await Promise.all([
+      supabase
+        .from('advisors')
+        .select('id, full_name, profile_photo_url, strategy_type, public_tagline')
+        .eq('status', 'approved')
+        .eq('is_public_featured', true)
+        .limit(4),
+      supabase
+        .from('signals')
+        .select('*, advisors!inner(full_name, profile_photo_url)')
+        .eq('is_public', true)
+        .order('created_at', { ascending: false })
+        .limit(3),
+    ]);
     setFeaturedAdvisors(advs || []);
+    setPublicSignals(pubSigs || []);
     setLoading(false);
   };
 
