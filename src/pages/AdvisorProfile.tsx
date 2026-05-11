@@ -308,10 +308,16 @@ export default function AdvisorProfile() {
         {/* HEADLINE STATS */}
         <section className="container mx-auto max-w-5xl px-4 -mt-6 relative z-10">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <StatCard icon={Activity} label="Total Signals" value={stats.total.toString()} sub="all time" />
-            <StatCard icon={CheckCircle2} label="Win Rate" value={stats.winRate !== null ? `${stats.winRate}%` : '—'} sub={`${stats.wins}W · ${stats.losses}L · ${stats.pending}P`} accent />
-            <StatCard icon={Users} label="Active Members" value={subscriberCount.toString()} sub="paid subscribers" />
-            <StatCard icon={TrendingUp} label="Followers" value={followerCount.toString()} sub="free updates" />
+            <StatCard icon={Activity} label="Total Signals" value={(liveStats?.total_signals ?? stats.total).toString()} sub="all time" />
+            <StatCard
+              icon={CheckCircle2}
+              label="Win Rate"
+              value={liveStats?.win_rate != null ? `${liveStats.win_rate}%` : (stats.winRate !== null ? `${stats.winRate}%` : '—')}
+              sub={`${liveStats?.win_count ?? stats.wins}W · ${liveStats?.loss_count ?? stats.losses}L · ${liveStats?.pending_count ?? stats.pending}P`}
+              accent
+            />
+            <StatCard icon={Users} label="Active Members" value={(liveStats?.active_members ?? subscriberCount).toString()} sub="paid subscribers" />
+            <StatCard icon={TrendingUp} label="Followers" value={(liveStats?.followers ?? followerCount).toString()} sub="free updates" />
           </div>
         </section>
 
@@ -323,19 +329,33 @@ export default function AdvisorProfile() {
             <span className="text-[10px] text-muted-foreground">— transparency competitors hide</span>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <DeepStat icon={Target} label="Avg Risk:Reward" value={stats.avgRR !== null ? `1 : ${stats.avgRR.toFixed(2)}` : '—'} hint="reward per ₹1 risked" />
-            <DeepStat icon={Activity} label="Signals / Week" value={stats.signalsPerWeek !== null ? stats.signalsPerWeek.toFixed(1) : '—'} hint="posting frequency" />
-            <DeepStat icon={Star} label="Best Month" value={stats.bestMonthRate !== null ? `${stats.bestMonthRate}%` : '—'} hint={stats.bestMonthLabel || 'win-rate peak'} />
+            <DeepStat
+              icon={Activity}
+              label="Signals / Week"
+              value={liveStats?.signals_per_week != null ? Number(liveStats.signals_per_week).toFixed(1) : (stats.signalsPerWeek !== null ? stats.signalsPerWeek.toFixed(1) : '—')}
+              hint="posting frequency"
+            />
             <DeepStat
               icon={Flame}
-              label={stats.currentStreak.type === 'LOSS' ? 'Loss Streak' : 'Win Streak'}
-              value={stats.currentStreak.count > 0 ? `${stats.currentStreak.count}` : '—'}
-              hint={`current ${stats.currentStreak.type?.toLowerCase() || 'streak'}`}
-              tone={stats.currentStreak.type === 'LOSS' ? 'destructive' : 'primary'}
+              label={(liveStats?.current_streak_type === 'LOSS' || stats.currentStreak.type === 'LOSS') ? 'Loss Streak' : 'Win Streak'}
+              value={(liveStats?.current_streak ?? stats.currentStreak.count) > 0 ? `${liveStats?.current_streak ?? stats.currentStreak.count}` : '—'}
+              hint={`current ${(liveStats?.current_streak_type || stats.currentStreak.type || 'streak').toString().toLowerCase()}`}
+              tone={(liveStats?.current_streak_type === 'LOSS' || stats.currentStreak.type === 'LOSS') ? 'destructive' : 'primary'}
             />
-            <DeepStat icon={AlertTriangle} label="Max Loss Streak" value={stats.maxLossStreak > 0 ? `${stats.maxLossStreak}` : '—'} hint="worst losing run" tone="destructive" />
-            <DeepStat icon={Clock} label="Active Hours" value={stats.activeHours || '—'} hint="when signals drop" />
-            <DeepStat icon={ShieldCheck} label="Risk Level" value={risk.label} hint="auto-derived" />
+            <DeepStat
+              icon={AlertTriangle}
+              label="Max Loss Streak"
+              value={(liveStats?.max_loss_streak ?? stats.maxLossStreak) > 0 ? `${liveStats?.max_loss_streak ?? stats.maxLossStreak}` : '—'}
+              hint="worst losing run"
+              tone="destructive"
+            />
+            <DeepStat
+              icon={Clock}
+              label="Active Hours"
+              value={(advisor as any)?.preferred_trading_hours || (liveStats?.active_hour != null ? `${String(liveStats.active_hour).padStart(2,'0')}:00 – ${String((liveStats.active_hour+1)%24).padStart(2,'0')}:00 IST` : (stats.activeHours || '—'))}
+              hint={(advisor as any)?.preferred_trading_hours ? 'advisor pinned' : 'when signals drop'}
+            />
+            <DeepStat icon={ShieldCheck} label="Risk Level" value={risk.label} hint={(advisor as any)?.risk_level ? 'advisor stated' : 'auto-derived'} />
             <DeepStat icon={Lock} label="Audit Trail" value="Immutable" hint="entry/target/SL locked" />
           </div>
         </section>
