@@ -340,9 +340,14 @@ export default function AdvisorDashboard() {
               <Shield className="h-3 w-3" /> SEBI · {advisor.sebi_reg_no}
             </div>
           </div>
-          <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-primary bg-light-green px-4 py-1.5 text-[13px] font-semibold text-primary">
-            ✓ Approved & Active
-          </span>
+          <div className="flex items-center gap-2 shrink-0">
+            <a href="/" target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 h-9 text-[12px] font-bold text-foreground hover:bg-muted transition">
+              <Globe className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Explore Home</span>
+            </a>
+            <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-primary bg-light-green px-4 py-1.5 text-[13px] font-semibold text-primary">
+              ✓ Approved & Active
+            </span>
+          </div>
         </div>
 
         {/* Stats Row */}
