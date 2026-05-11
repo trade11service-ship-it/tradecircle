@@ -976,6 +976,32 @@ export default function AdvisorDashboard() {
                   </Select>
                 </div>
                 <div>
+                  <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Risk Level (shown on profile)</Label>
+                  <Select defaultValue={(advisor as any).risk_level || ''} onValueChange={async (v) => {
+                    await supabase.from('advisors').update({ risk_level: v } as any).eq('id', advisor.id);
+                    toast.success('Risk level updated');
+                    fetchData();
+                  }}>
+                    <SelectTrigger className="mt-1.5 border-[1.5px]"><SelectValue placeholder="Select risk level" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Conservative">Conservative</SelectItem>
+                      <SelectItem value="Moderate">Moderate</SelectItem>
+                      <SelectItem value="Aggressive">Aggressive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Preferred Trading Hours</Label>
+                  <Input defaultValue={(advisor as any).preferred_trading_hours || ''} placeholder="e.g. 09:30 – 11:00 IST" className="mt-1.5 border-[1.5px]" onBlur={async (e) => {
+                    const val = sanitizeText(e.target.value).trim();
+                    if (val !== ((advisor as any).preferred_trading_hours || '')) {
+                      await supabase.from('advisors').update({ preferred_trading_hours: val } as any).eq('id', advisor.id);
+                      toast.success('Trading hours updated');
+                      fetchData();
+                    }
+                  }} />
+                </div>
+                <div>
                   <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Bio</Label>
                   <Textarea defaultValue={advisor.bio || ''} placeholder="Describe your trading style..." className="mt-1.5 border-[1.5px] min-h-[80px]" onBlur={async (e) => {
                     const val = e.target.value.trim();
