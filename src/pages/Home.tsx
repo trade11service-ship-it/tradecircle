@@ -150,41 +150,31 @@ export default function Home() {
     <div className="min-h-full bg-background p-4 md:p-6 lg:p-8">
       <main className="mx-auto w-full max-w-5xl">
         <div className="mb-6 rounded-2xl border border-border bg-gradient-to-r from-primary/5 to-primary/10 p-4">
-          <div className="flex items-center justify-between gap-3 mb-3">
-            <div className="flex-1">
-              <h1 className="text-2xl font-extrabold text-foreground">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl font-extrabold text-foreground truncate">
                 {greeting}, {profile?.full_name?.split(" ")[0] || "Trader"}
               </h1>
               <p className="text-sm text-muted-foreground mt-1">
-                {hasSubscriptions ? "Your live trading signals from SEBI verified advisors" : "See groups and open one feed to start"}
+                {hasSubscriptions ? "Your live trading signals from SEBI verified advisors" : "Discover SEBI verified advisors and unlock premium signals"}
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-1.5 shrink-0">
+              <Link to="/" aria-label="Explore Home">
+                <Button variant="outline" size="sm" className="gap-1 h-9 rounded-full text-xs font-bold">
+                  <Globe className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Explore Home</span>
+                </Button>
+              </Link>
               <Link to="/notifications">
-                <Button variant="outline" size="icon" aria-label="Notifications">
+                <Button variant="outline" size="icon" aria-label="Notifications" className="h-9 w-9 rounded-full">
                   <Bell className="h-4 w-4" />
                 </Button>
               </Link>
               <Link to="/explore">
-                <Button className="gap-2 bg-primary hover:bg-primary/90 text-white">
-                  <Compass className="h-4 w-4" />
-                  Explore
+                <Button size="sm" className="gap-1 bg-primary hover:bg-primary/90 text-white h-9 rounded-full">
+                  <Compass className="h-4 w-4" /> <span className="hidden sm:inline">Explore</span>
                 </Button>
               </Link>
-            </div>
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            <div className="rounded-lg bg-background/70 p-2 text-center">
-              <p className="text-xs text-muted-foreground">Live posts</p>
-              <p className="text-base font-bold text-foreground">{posts.length}</p>
-            </div>
-            <div className="rounded-lg bg-background/70 p-2 text-center">
-              <p className="text-xs text-muted-foreground">Subscriptions</p>
-              <p className="text-base font-bold text-foreground">{hasSubscriptions ? "Active" : "None"}</p>
-            </div>
-            <div className="rounded-lg bg-background/70 p-2 text-center">
-              <p className="text-xs text-muted-foreground">Learning</p>
-              <p className="text-base font-bold text-foreground">On</p>
             </div>
           </div>
         </div>
