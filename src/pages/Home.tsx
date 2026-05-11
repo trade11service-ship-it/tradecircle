@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
-import { Bell, User, ArrowRight, Compass, Clock3, BookOpenText, Shield } from "lucide-react";
+import { Bell, User, ArrowRight, Compass, Clock3, BookOpenText, Shield, Globe } from "lucide-react";
 import { setMetaTags, SEO_CONFIG } from "@/lib/seo";
 
 type FeedItem = {
