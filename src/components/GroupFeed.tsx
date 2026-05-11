@@ -384,7 +384,7 @@ export function GroupFeed({ groupId, advisorId, advisorName, advisorPhoto, isSub
 
                   // Render the post based on visibility
                   if (post.post_type === 'signal') {
-                    return <SignalBubble key={post.id} post={post} advisorName={advisorName} advisorPhoto={advisorPhoto} blurred={vis.blurNumbers} freeBadge={vis.freeBadge} />;
+                    return <SignalBubble key={post.id} post={post} advisorName={advisorName} advisorPhoto={advisorPhoto} blurred={vis.blurNumbers} freeBadge={vis.freeBadge} isOwner={isOwner} onMark={handleMarkResult} />;
                   }
                   return <MessageBubble key={post.id} post={post} advisorName={advisorName} advisorPhoto={advisorPhoto} freeBadge={vis.freeBadge} />;
                 })}
