@@ -142,6 +142,7 @@ export default function AdvisorProfile() {
   const [signals, setSignals] = useState<Signal[]>([]);
   const [subscriberCount, setSubscriberCount] = useState(0);
   const [followerCount, setFollowerCount] = useState(0);
+  const [liveStats, setLiveStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   const goBack = () => {
@@ -152,26 +153,48 @@ export default function AdvisorProfile() {
 
   useEffect(() => { if (id) fetchData(); /* eslint-disable-next-line */ }, [id]);
 
+  // Realtime: refresh on signal/sub/follow changes
+  useEffect(() => {
+    if (!id) return;
+    const ch = supabase
+      .channel(`advisor-profile-${id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'signals', filter: `advisor_id=eq.${id}` }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'subscriptions', filter: `advisor_id=eq.${id}` }, () => fetchData())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [id]);
+
   const fetchData = async () => {
     setLoading(true);
-    const [{ data: adv }, { data: grps }, { data: sigs }, { data: subCount }, { count: fCount }] = await Promise.all([
+    const [{ data: adv }, { data: grps }, { data: sigs }, { data: subCount }, { count: fCount }, { data: live }] = await Promise.all([
       supabase.from('advisors').select('*').eq('id', id!).single(),
       supabase.from('groups').select('*').eq('advisor_id', id!).eq('is_active', true),
       supabase.from('signals').select('*').eq('advisor_id', id!).order('signal_date', { ascending: false }).limit(500),
       supabase.rpc('get_advisor_subscriber_count', { _advisor_id: id! }),
       supabase.from('group_follows').select('id', { count: 'exact', head: true })
         .in('group_id', (await supabase.from('groups').select('id').eq('advisor_id', id!)).data?.map((g: any) => g.id) || []),
+      supabase.rpc('get_advisor_live_stats', { _advisor_id: id! }),
     ]);
     if (adv) setAdvisor(adv);
     setGroups(grps || []);
     setSignals((sigs as Signal[]) || []);
     setSubscriberCount((subCount as number) || 0);
     setFollowerCount(fCount || 0);
+    setLiveStats(live || null);
     setLoading(false);
   };
 
   const stats = useMemo(() => computeStats(signals, advisor?.created_at || null), [signals, advisor]);
-  const risk = useMemo(() => riskLevel(stats.avgRR, stats.signalsPerWeek), [stats]);
+  const risk = useMemo(() => {
+    const adv = advisor as any;
+    if (adv?.risk_level) {
+      const tone = adv.risk_level === 'Conservative' ? 'text-primary bg-primary/10'
+        : adv.risk_level === 'Aggressive' ? 'text-destructive bg-destructive/10'
+        : 'text-[hsl(35,100%,40%)] bg-[hsl(45,100%,94%)]';
+      return { label: adv.risk_level, tone };
+    }
+    return riskLevel(stats.avgRR, stats.signalsPerWeek);
+  }, [stats, advisor]);
 
   const specializations = useMemo(() => {
     const set = new Set<string>();
