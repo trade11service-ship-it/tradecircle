@@ -340,9 +340,14 @@ export default function AdvisorDashboard() {
               <Shield className="h-3 w-3" /> SEBI · {advisor.sebi_reg_no}
             </div>
           </div>
-          <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-primary bg-light-green px-4 py-1.5 text-[13px] font-semibold text-primary">
-            ✓ Approved & Active
-          </span>
+          <div className="flex items-center gap-2 shrink-0">
+            <a href="/" target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 h-9 text-[12px] font-bold text-foreground hover:bg-muted transition">
+              <Globe className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Explore Home</span>
+            </a>
+            <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-primary bg-light-green px-4 py-1.5 text-[13px] font-semibold text-primary">
+              ✓ Approved & Active
+            </span>
+          </div>
         </div>
 
         {/* Stats Row */}
@@ -974,6 +979,32 @@ export default function AdvisorDashboard() {
                       <SelectItem value="F&O">F&O</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+                <div>
+                  <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Risk Level (shown on profile)</Label>
+                  <Select defaultValue={(advisor as any).risk_level || ''} onValueChange={async (v) => {
+                    await supabase.from('advisors').update({ risk_level: v } as any).eq('id', advisor.id);
+                    toast.success('Risk level updated');
+                    fetchData();
+                  }}>
+                    <SelectTrigger className="mt-1.5 border-[1.5px]"><SelectValue placeholder="Select risk level" /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Conservative">Conservative</SelectItem>
+                      <SelectItem value="Moderate">Moderate</SelectItem>
+                      <SelectItem value="Aggressive">Aggressive</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Preferred Trading Hours</Label>
+                  <Input defaultValue={(advisor as any).preferred_trading_hours || ''} placeholder="e.g. 09:30 – 11:00 IST" className="mt-1.5 border-[1.5px]" onBlur={async (e) => {
+                    const val = sanitizeText(e.target.value).trim();
+                    if (val !== ((advisor as any).preferred_trading_hours || '')) {
+                      await supabase.from('advisors').update({ preferred_trading_hours: val } as any).eq('id', advisor.id);
+                      toast.success('Trading hours updated');
+                      fetchData();
+                    }
+                  }} />
                 </div>
                 <div>
                   <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Bio</Label>

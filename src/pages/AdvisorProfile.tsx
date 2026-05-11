@@ -142,6 +142,7 @@ export default function AdvisorProfile() {
   const [signals, setSignals] = useState<Signal[]>([]);
   const [subscriberCount, setSubscriberCount] = useState(0);
   const [followerCount, setFollowerCount] = useState(0);
+  const [liveStats, setLiveStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   const goBack = () => {
@@ -152,26 +153,48 @@ export default function AdvisorProfile() {
 
   useEffect(() => { if (id) fetchData(); /* eslint-disable-next-line */ }, [id]);
 
+  // Realtime: refresh on signal/sub/follow changes
+  useEffect(() => {
+    if (!id) return;
+    const ch = supabase
+      .channel(`advisor-profile-${id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'signals', filter: `advisor_id=eq.${id}` }, () => fetchData())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'subscriptions', filter: `advisor_id=eq.${id}` }, () => fetchData())
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [id]);
+
   const fetchData = async () => {
     setLoading(true);
-    const [{ data: adv }, { data: grps }, { data: sigs }, { data: subCount }, { count: fCount }] = await Promise.all([
+    const [{ data: adv }, { data: grps }, { data: sigs }, { data: subCount }, { count: fCount }, { data: live }] = await Promise.all([
       supabase.from('advisors').select('*').eq('id', id!).single(),
       supabase.from('groups').select('*').eq('advisor_id', id!).eq('is_active', true),
       supabase.from('signals').select('*').eq('advisor_id', id!).order('signal_date', { ascending: false }).limit(500),
       supabase.rpc('get_advisor_subscriber_count', { _advisor_id: id! }),
       supabase.from('group_follows').select('id', { count: 'exact', head: true })
         .in('group_id', (await supabase.from('groups').select('id').eq('advisor_id', id!)).data?.map((g: any) => g.id) || []),
+      supabase.rpc('get_advisor_live_stats', { _advisor_id: id! }),
     ]);
     if (adv) setAdvisor(adv);
     setGroups(grps || []);
     setSignals((sigs as Signal[]) || []);
     setSubscriberCount((subCount as number) || 0);
     setFollowerCount(fCount || 0);
+    setLiveStats(live || null);
     setLoading(false);
   };
 
   const stats = useMemo(() => computeStats(signals, advisor?.created_at || null), [signals, advisor]);
-  const risk = useMemo(() => riskLevel(stats.avgRR, stats.signalsPerWeek), [stats]);
+  const risk = useMemo(() => {
+    const adv = advisor as any;
+    if (adv?.risk_level) {
+      const tone = adv.risk_level === 'Conservative' ? 'text-primary bg-primary/10'
+        : adv.risk_level === 'Aggressive' ? 'text-destructive bg-destructive/10'
+        : 'text-[hsl(35,100%,40%)] bg-[hsl(45,100%,94%)]';
+      return { label: adv.risk_level, tone };
+    }
+    return riskLevel(stats.avgRR, stats.signalsPerWeek);
+  }, [stats, advisor]);
 
   const specializations = useMemo(() => {
     const set = new Set<string>();
@@ -285,10 +308,16 @@ export default function AdvisorProfile() {
         {/* HEADLINE STATS */}
         <section className="container mx-auto max-w-5xl px-4 -mt-6 relative z-10">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <StatCard icon={Activity} label="Total Signals" value={stats.total.toString()} sub="all time" />
-            <StatCard icon={CheckCircle2} label="Win Rate" value={stats.winRate !== null ? `${stats.winRate}%` : '—'} sub={`${stats.wins}W · ${stats.losses}L · ${stats.pending}P`} accent />
-            <StatCard icon={Users} label="Active Members" value={subscriberCount.toString()} sub="paid subscribers" />
-            <StatCard icon={TrendingUp} label="Followers" value={followerCount.toString()} sub="free updates" />
+            <StatCard icon={Activity} label="Total Signals" value={(liveStats?.total_signals ?? stats.total).toString()} sub="all time" />
+            <StatCard
+              icon={CheckCircle2}
+              label="Win Rate"
+              value={liveStats?.win_rate != null ? `${liveStats.win_rate}%` : (stats.winRate !== null ? `${stats.winRate}%` : '—')}
+              sub={`${liveStats?.win_count ?? stats.wins}W · ${liveStats?.loss_count ?? stats.losses}L · ${liveStats?.pending_count ?? stats.pending}P`}
+              accent
+            />
+            <StatCard icon={Users} label="Active Members" value={(liveStats?.active_members ?? subscriberCount).toString()} sub="paid subscribers" />
+            <StatCard icon={TrendingUp} label="Followers" value={(liveStats?.followers ?? followerCount).toString()} sub="free updates" />
           </div>
         </section>
 
@@ -300,19 +329,33 @@ export default function AdvisorProfile() {
             <span className="text-[10px] text-muted-foreground">— transparency competitors hide</span>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <DeepStat icon={Target} label="Avg Risk:Reward" value={stats.avgRR !== null ? `1 : ${stats.avgRR.toFixed(2)}` : '—'} hint="reward per ₹1 risked" />
-            <DeepStat icon={Activity} label="Signals / Week" value={stats.signalsPerWeek !== null ? stats.signalsPerWeek.toFixed(1) : '—'} hint="posting frequency" />
-            <DeepStat icon={Star} label="Best Month" value={stats.bestMonthRate !== null ? `${stats.bestMonthRate}%` : '—'} hint={stats.bestMonthLabel || 'win-rate peak'} />
+            <DeepStat
+              icon={Activity}
+              label="Signals / Week"
+              value={liveStats?.signals_per_week != null ? Number(liveStats.signals_per_week).toFixed(1) : (stats.signalsPerWeek !== null ? stats.signalsPerWeek.toFixed(1) : '—')}
+              hint="posting frequency"
+            />
             <DeepStat
               icon={Flame}
-              label={stats.currentStreak.type === 'LOSS' ? 'Loss Streak' : 'Win Streak'}
-              value={stats.currentStreak.count > 0 ? `${stats.currentStreak.count}` : '—'}
-              hint={`current ${stats.currentStreak.type?.toLowerCase() || 'streak'}`}
-              tone={stats.currentStreak.type === 'LOSS' ? 'destructive' : 'primary'}
+              label={(liveStats?.current_streak_type === 'LOSS' || stats.currentStreak.type === 'LOSS') ? 'Loss Streak' : 'Win Streak'}
+              value={(liveStats?.current_streak ?? stats.currentStreak.count) > 0 ? `${liveStats?.current_streak ?? stats.currentStreak.count}` : '—'}
+              hint={`current ${(liveStats?.current_streak_type || stats.currentStreak.type || 'streak').toString().toLowerCase()}`}
+              tone={(liveStats?.current_streak_type === 'LOSS' || stats.currentStreak.type === 'LOSS') ? 'destructive' : 'primary'}
             />
-            <DeepStat icon={AlertTriangle} label="Max Loss Streak" value={stats.maxLossStreak > 0 ? `${stats.maxLossStreak}` : '—'} hint="worst losing run" tone="destructive" />
-            <DeepStat icon={Clock} label="Active Hours" value={stats.activeHours || '—'} hint="when signals drop" />
-            <DeepStat icon={ShieldCheck} label="Risk Level" value={risk.label} hint="auto-derived" />
+            <DeepStat
+              icon={AlertTriangle}
+              label="Max Loss Streak"
+              value={(liveStats?.max_loss_streak ?? stats.maxLossStreak) > 0 ? `${liveStats?.max_loss_streak ?? stats.maxLossStreak}` : '—'}
+              hint="worst losing run"
+              tone="destructive"
+            />
+            <DeepStat
+              icon={Clock}
+              label="Active Hours"
+              value={(advisor as any)?.preferred_trading_hours || (liveStats?.active_hour != null ? `${String(liveStats.active_hour).padStart(2,'0')}:00 – ${String((liveStats.active_hour+1)%24).padStart(2,'0')}:00 IST` : (stats.activeHours || '—'))}
+              hint={(advisor as any)?.preferred_trading_hours ? 'advisor pinned' : 'when signals drop'}
+            />
+            <DeepStat icon={ShieldCheck} label="Risk Level" value={risk.label} hint={(advisor as any)?.risk_level ? 'advisor stated' : 'auto-derived'} />
             <DeepStat icon={Lock} label="Audit Trail" value="Immutable" hint="entry/target/SL locked" />
           </div>
         </section>
