@@ -399,11 +399,95 @@ export function GroupFeed({ groupId, advisorId, advisorName, advisorPhoto, isSub
       {showNewPill && (
         <button
           onClick={scrollToBottom}
-          className="absolute bottom-4 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-[12px] font-semibold text-primary-foreground shadow-lg"
+          className="absolute bottom-20 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-[12px] font-semibold text-primary-foreground shadow-lg"
         >
           <ChevronDown className="h-3.5 w-3.5" /> New message
         </button>
       )}
+
+      {/* Advisor quick composer (owner only) */}
+      {isOwner && advisorId && (
+        <QuickComposer groupId={groupId} advisorId={advisorId} />
+      )}
+    </div>
+  );
+}
+
+function QuickComposer({ groupId, advisorId }: { groupId: string; advisorId: string }) {
+  const [mode, setMode] = useState<'message' | 'signal'>('message');
+  const [text, setText] = useState('');
+  const [sending, setSending] = useState(false);
+  const [sig, setSig] = useState({ instrument: '', signalType: 'BUY' as 'BUY' | 'SELL', entry: '', target: '', sl: '' });
+  const [isPublic, setIsPublic] = useState(false);
+
+  const send = async () => {
+    if (sending) return;
+    if (mode === 'message') {
+      const t = sanitizeTextarea(text).trim();
+      if (!t) { toast.error('Type a message'); return; }
+      setSending(true);
+      const { error } = await supabase.from('signals').insert({
+        group_id: groupId, advisor_id: advisorId, post_type: 'message', message_text: t, is_public: isPublic,
+      } as any);
+      setSending(false);
+      if (error) { toast.error(error.message); return; }
+      setText('');
+    } else {
+      const inst = sanitizeText(sig.instrument).trim();
+      if (!inst || !sig.entry || !sig.target || !sig.sl) { toast.error('Fill all signal fields'); return; }
+      setSending(true);
+      const { error } = await supabase.from('signals').insert({
+        group_id: groupId, advisor_id: advisorId, post_type: 'signal',
+        instrument: inst, signal_type: sig.signalType,
+        entry_price: Number(sig.entry), target_price: Number(sig.target), stop_loss: Number(sig.sl),
+        timeframe: 'Intraday', notes: sanitizeTextarea(text) || null, is_public: isPublic,
+      } as any);
+      setSending(false);
+      if (error) { toast.error(error.message); return; }
+      setSig({ instrument: '', signalType: 'BUY', entry: '', target: '', sl: '' });
+      setText('');
+      toast.success('Signal posted');
+    }
+  };
+
+  return (
+    <div className="absolute bottom-0 inset-x-0 z-20 border-t border-border bg-card/95 backdrop-blur p-2 pb-[calc(env(safe-area-inset-bottom)+8px)] md:pb-2 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
+      <div className="flex items-center gap-1 mb-1.5">
+        <button onClick={() => setMode('message')} className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${mode==='message' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>Post</button>
+        <button onClick={() => setMode('signal')} className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${mode==='signal' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>Signal</button>
+        <label className="ml-auto inline-flex items-center gap-1 text-[10px] font-semibold text-muted-foreground">
+          <input type="checkbox" checked={isPublic} onChange={e => setIsPublic(e.target.checked)} className="h-3 w-3 accent-primary" /> Public
+        </label>
+      </div>
+      {mode === 'signal' && (
+        <div className="grid grid-cols-2 gap-1.5 mb-1.5">
+          <input value={sig.instrument} onChange={e => setSig({...sig, instrument: sanitizeText(e.target.value)})} placeholder="Instrument" className="col-span-2 rounded-md border border-border bg-background px-2 h-8 text-[13px]" />
+          <div className="flex gap-1">
+            <button onClick={() => setSig({...sig, signalType: 'BUY'})} className={`flex-1 h-8 text-[11px] font-bold rounded-md ${sig.signalType==='BUY'?'bg-primary text-primary-foreground':'bg-muted text-muted-foreground'}`}>BUY</button>
+            <button onClick={() => setSig({...sig, signalType: 'SELL'})} className={`flex-1 h-8 text-[11px] font-bold rounded-md ${sig.signalType==='SELL'?'bg-destructive text-destructive-foreground':'bg-muted text-muted-foreground'}`}>SELL</button>
+          </div>
+          <input value={sig.entry} onChange={e => setSig({...sig, entry: sanitizeNumeric(e.target.value)})} inputMode="decimal" placeholder="Entry" className="rounded-md border border-border bg-background px-2 h-8 text-[13px]" />
+          <input value={sig.target} onChange={e => setSig({...sig, target: sanitizeNumeric(e.target.value)})} inputMode="decimal" placeholder="Target" className="rounded-md border border-border bg-background px-2 h-8 text-[13px]" />
+          <input value={sig.sl} onChange={e => setSig({...sig, sl: sanitizeNumeric(e.target.value)})} inputMode="decimal" placeholder="Stop Loss" className="rounded-md border border-border bg-background px-2 h-8 text-[13px]" />
+        </div>
+      )}
+      <div className="flex items-center gap-1.5">
+        <input
+          value={text}
+          onChange={e => setText(e.target.value)}
+          placeholder={mode==='signal' ? 'Optional note…' : 'Post update…'}
+          onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && mode==='message') { e.preventDefault(); send(); } }}
+          className="flex-1 rounded-full border border-border bg-background px-3 h-9 text-[13px]"
+        />
+        <button
+          onClick={send}
+          disabled={sending}
+          className="h-9 w-9 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md disabled:opacity-50"
+          aria-label="Send"
+        >
+          <Send className="h-4 w-4" />
+        </button>
+      </div>
     </div>
   );
 }
