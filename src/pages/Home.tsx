@@ -292,93 +292,105 @@ export default function Home() {
             </div>
           </div>
         ) : (
-          <div className="space-y-4">
-            {/* Subscriptions Summary Buttons */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
-              {subscribedGroups.map(g => (
-                <Link key={g.id} to={`/group/${g.id}`}>
-                  <Button variant="outline" className="w-full h-12 justify-start px-3 bg-card hover:bg-muted border-border hover:border-primary/50 shadow-sm transition-all rounded-xl">
-                    <div className="flex flex-col items-start min-w-0">
-                      <span className="text-[13px] font-bold text-foreground truncate w-full text-left">{g.name}</span>
-                      <span className="text-[10px] text-muted-foreground">Open Group ↗</span>
-                    </div>
-                  </Button>
+          <div className="space-y-6">
+            {/* MY GROUPS — horizontal scroll */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-base font-bold text-foreground">My Groups</h2>
+                <Link to="/subscriptions" className="text-xs font-semibold text-primary inline-flex items-center gap-1">
+                  Manage <ArrowRight className="h-3 w-3" />
                 </Link>
-              ))}
+              </div>
+              <div className="-mx-4 px-4 overflow-x-auto">
+                <div className="flex gap-2.5 pb-1.5">
+                  {subscribedGroups.map(g => (
+                    <Link key={g.id} to={`/group/${g.id}`} className="shrink-0 w-[150px] rounded-2xl border border-border bg-card p-3 hover:border-primary/40 hover:shadow-md transition shadow-sm">
+                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-secondary text-white font-bold flex items-center justify-center mb-2">
+                        {g.name?.charAt(0)?.toUpperCase() || 'G'}
+                      </div>
+                      <p className="text-[13px] font-bold text-foreground line-clamp-2 leading-snug">{g.name}</p>
+                      <p className="text-[10px] text-primary font-semibold mt-1">Open feed →</p>
+                    </Link>
+                  ))}
+                </div>
+              </div>
             </div>
 
-            {/* Live Feed Section */}
+            {/* LATEST FROM YOUR GROUPS — top 5 */}
             <div>
-              <h2 className="text-lg font-bold text-foreground mb-3">Live Trading Signals</h2>
-              <div className="rounded-2xl border border-border bg-card/50 backdrop-blur-sm p-2">
+              <h2 className="text-base font-bold text-foreground mb-3 flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+                </span>
+                Latest from your groups
+              </h2>
+              <div className="space-y-2">
                 {posts.length === 0 ? (
-                  <div className="py-8 text-center">
-                    <p className="text-sm text-muted-foreground mb-3">
-                      No signals yet from your subscribed advisors
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      Signals will appear here as soon as your advisors post them
-                    </p>
+                  <div className="rounded-xl border border-border bg-card p-6 text-center text-sm text-muted-foreground">
+                    No posts yet. Your advisors will post here soon.
                   </div>
                 ) : (
-                  <div className="h-[62vh] min-h-[420px] overflow-y-auto space-y-3 p-2">
-                    {posts.map((post) => {
-                      const isSignal = post.post_type === "signal";
-                      const isBuy = post.signal_type === "BUY";
-                      const advisorName = advisorNames[post.advisor_id] || "Advisor";
-                      const groupName = groupNames[post.group_id] || "Group";
-                      const advisorPhoto = advisorPhotos[post.advisor_id];
-                      return (
-                        <div key={post.id} className="flex gap-3 rounded-xl border border-border bg-card p-3 hover:bg-muted/40 transition-colors">
-                          <div className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/20 text-primary-foreground border border-primary/30">
-                            {advisorPhoto ? <img src={advisorPhoto} alt="" className="h-full w-full object-cover" /> : <User className="h-5 w-5" />}
+                  posts.slice(0, 5).map(post => {
+                    const isSignal = post.post_type === "signal";
+                    const isBuy = post.signal_type === "BUY";
+                    const advisorName = advisorNames[post.advisor_id] || "Advisor";
+                    const groupName = groupNames[post.group_id] || "Group";
+                    const advisorPhoto = advisorPhotos[post.advisor_id];
+                    return (
+                      <Link key={post.id} to={`/group/${post.group_id}`} className="block rounded-xl border border-border bg-card p-3 hover:bg-muted/40 transition-colors">
+                        <div className="flex gap-3">
+                          <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-primary/15 border border-primary/20">
+                            {advisorPhoto ? <img src={advisorPhoto} alt="" className="h-full w-full object-cover" /> : <User className="h-4 w-4 text-primary" />}
                           </div>
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className="text-sm font-bold text-primary truncate">{advisorName}</span>
-                              <span className="text-xs text-muted-foreground">• {groupName}</span>
+                            <div className="flex items-center gap-2 mb-1.5">
+                              <span className="text-[13px] font-bold text-foreground truncate">{advisorName}</span>
+                              <span className="text-[11px] text-muted-foreground truncate">• {groupName}</span>
+                              <span className="ml-auto text-[10px] text-muted-foreground inline-flex items-center gap-0.5"><Clock3 className="h-3 w-3" />{post.created_at ? new Date(post.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
                             </div>
                             {isSignal ? (
-                              <div className="bg-muted/50 rounded-lg p-3 space-y-2">
-                                <div className="flex items-center justify-between gap-2">
-                                  <p className="text-base font-extrabold text-foreground">{post.instrument}</p>
-                                  <span className={`rounded-full px-3 py-1 text-xs font-bold ${isBuy ? "bg-primary/15 text-primary" : "bg-destructive/15 text-destructive"}`}>
-                                    {isBuy ? "BUY" : "SELL"}
-                                  </span>
-                                </div>
-                                <div className="grid grid-cols-3 gap-2 text-center">
-                                  <div className="bg-background/50 rounded p-2">
-                                    <p className="text-xs text-muted-foreground">Entry</p>
-                                    <p className="text-xs font-bold text-foreground">₹{Number(post.entry_price || 0).toLocaleString("en-IN")}</p>
-                                  </div>
-                                  <div className="bg-background/50 rounded p-2">
-                                    <p className="text-xs text-muted-foreground">Target</p>
-                                    <p className="text-xs font-bold text-primary">₹{Number(post.target_price || 0).toLocaleString("en-IN")}</p>
-                                  </div>
-                                  <div className="bg-background/50 rounded p-2">
-                                    <p className="text-xs text-muted-foreground">SL</p>
-                                    <p className="text-xs font-bold text-destructive">₹{Number(post.stop_loss || 0).toLocaleString("en-IN")}</p>
-                                  </div>
-                                </div>
-                                {post.notes && <p className="text-xs italic text-muted-foreground mt-1 line-clamp-2">{post.notes}</p>}
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-[14px] font-extrabold text-foreground">{post.instrument}</span>
+                                <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${isBuy ? "bg-primary/15 text-primary" : "bg-destructive/15 text-destructive"}`}>{isBuy ? "BUY" : "SELL"}</span>
+                                <span className="text-[11px] text-muted-foreground">Entry ₹{Number(post.entry_price||0).toLocaleString("en-IN")} • Tgt ₹{Number(post.target_price||0).toLocaleString("en-IN")} • SL ₹{Number(post.stop_loss||0).toLocaleString("en-IN")}</span>
                               </div>
                             ) : (
-                              <div className="bg-muted/30 rounded-lg p-3">
-                                <div className="mb-2 inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
-                                  <BookOpenText className="h-3 w-3" /> Mentor Note
-                                </div>
-                                <p className="text-sm text-foreground line-clamp-3">{post.message_text}</p>
-                              </div>
+                              <p className="text-[13px] text-foreground line-clamp-2">{post.message_text}</p>
                             )}
-                            <div className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground">
-                              <Clock3 className="h-3.5 w-3.5" />
-                              {post.created_at ? new Date(post.created_at).toLocaleString("en-IN") : ""}
-                            </div>
                           </div>
                         </div>
-                      );
-                    })}
-                  </div>
+                      </Link>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            {/* MINIMIZED PUBLIC FEED — 3 latest only */}
+            <div>
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-base font-bold text-foreground">Live Public Feed</h2>
+                <Link to="/explore" className="text-xs font-semibold text-primary inline-flex items-center gap-1">
+                  See more on Explore <ArrowRight className="h-3 w-3" />
+                </Link>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-3">
+                {publicSignals.slice(0, 3).map(sig => (
+                  <Link key={sig.id} to={`/explore`} className="rounded-xl border border-border bg-card p-3 hover:bg-muted/40 transition">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border border-primary/20">
+                        {sig.advisors?.profile_photo_url ? <img src={sig.advisors.profile_photo_url} className="h-full w-full object-cover" /> : <User className="h-3.5 w-3.5 text-primary" />}
+                      </div>
+                      <span className="text-[11px] font-bold text-foreground truncate flex-1">{sig.advisors?.full_name}</span>
+                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${sig.signal_type === 'BUY' ? 'bg-primary/15 text-primary' : 'bg-destructive/15 text-destructive'}`}>{sig.signal_type}</span>
+                    </div>
+                    <p className="text-[13px] font-extrabold text-foreground truncate">{sig.instrument}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">Entry ₹{sig.entry_price} • Tgt ₹{sig.target_price}</p>
+                  </Link>
+                ))}
+                {publicSignals.length === 0 && (
+                  <div className="sm:col-span-3 rounded-xl border border-dashed border-border p-4 text-center text-xs text-muted-foreground">No public signals right now.</div>
                 )}
               </div>
             </div>
