@@ -106,7 +106,7 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={`min-h-screen bg-background ${user ? 'pb-[60px] md:pb-0' : ''}`}>
       <Navbar />
 
       {/* ===== COMPACT URGENT HERO ===== */}
