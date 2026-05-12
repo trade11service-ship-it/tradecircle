@@ -296,7 +296,7 @@ export default function Groups() {
       <div className="border-t bg-muted px-4 py-3 text-center">
         <p className="text-[11px] text-muted-foreground">
           <Shield className="inline h-3 w-3 text-primary mr-1" />
-          All advisors on StockCircle are SEBI registered. SEBI does not endorse any advisor's performance.
+          All advisors on TradeCircle are SEBI registered. SEBI does not endorse any advisor's performance.
         </p>
       </div>
 

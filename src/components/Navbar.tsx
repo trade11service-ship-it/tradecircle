@@ -32,7 +32,7 @@ export function Navbar() {
   const getDashboardLink = () => {
     if (profile?.role === 'admin') return '/admin';
     if (profile?.role === 'advisor') return '/advisor/dashboard';
-    return '/dashboard';
+    return '/home';
   };
 
   const isActive = (path: string) => location.pathname === path;
@@ -54,12 +54,12 @@ export function Navbar() {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-black text-primary-foreground transition-transform group-hover:scale-105">
-              S
+              T
             </div>
             <span className={`text-lg font-extrabold tracking-tight transition-colors ${
               !scrolled && isHeroPage ? 'text-white' : 'text-foreground'
             }`}>
-              Stock<span className="text-primary">Circle</span>
+              Trade<span className="text-primary">Circle</span>
             </span>
           </Link>
 

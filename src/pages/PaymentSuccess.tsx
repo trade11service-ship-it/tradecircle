@@ -8,25 +8,41 @@ import { CheckCircle, XCircle } from 'lucide-react';
 export default function PaymentSuccess() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying');
+  const [errorReason, setErrorReason] = useState<string>('');
   const [groupName, setGroupName] = useState('');
   const [advisorName, setAdvisorName] = useState('');
 
   useEffect(() => {
-    const groupId = searchParams.get('group_id');
-    const paymentId = searchParams.get('payment_id');
-    const paymentStatus = searchParams.get('status');
-    if (groupId && user && paymentStatus === 'paid') createSubscription(groupId, paymentId || '');
-    else if (paymentStatus && paymentStatus !== 'paid') setStatus('error');
-  }, [user, searchParams]);
+    if (authLoading) return; // wait for auth to resolve before deciding
 
-  const createSubscription = async (groupId: string, paymentId: string) => {
-    if (!paymentId) {
+    const groupId = searchParams.get('group_id');
+    // Razorpay payment_link callback returns these params after redirect:
+    //  razorpay_payment_id, razorpay_payment_link_id, razorpay_payment_link_reference_id,
+    //  razorpay_payment_link_status, razorpay_signature
+    // Our edge function ALSO appends status=paid to the callback URL.
+    const paymentId = searchParams.get('razorpay_payment_id') || searchParams.get('payment_id') || '';
+    const linkStatus = searchParams.get('razorpay_payment_link_status');
+    const ourStatus = searchParams.get('status');
+    const isPaid = linkStatus === 'paid' || ourStatus === 'paid';
+
+    if (!groupId) { setErrorReason('Missing group reference.'); setStatus('error'); return; }
+    if (!user) { setErrorReason('Please sign in to confirm your subscription.'); setStatus('error'); return; }
+    if (!isPaid) {
+      setErrorReason(linkStatus === 'expired' ? 'This payment link has expired.' : 'Payment was not completed.');
       setStatus('error');
       return;
     }
+    if (!paymentId) {
+      setErrorReason('We could not find a payment reference. If money was deducted, contact support with the time of payment.');
+      setStatus('error');
+      return;
+    }
+    createSubscription(groupId, paymentId);
+  }, [user, authLoading, searchParams]);
 
+  const createSubscription = async (groupId: string, paymentId: string) => {
     const { data: existingByPayment } = await supabase
       .from('subscriptions')
       .select('id, group_id, groups(name, advisors(full_name))')
@@ -135,7 +151,11 @@ export default function PaymentSuccess() {
       consent_ip: null,
     });
 
-    if (error) { console.error('Subscription error:', error); setStatus('error'); }
+    if (error) {
+      console.error('Subscription error:', error);
+      setErrorReason(error.message || 'Could not activate your subscription. Your payment is safe — contact support.');
+      setStatus('error');
+    }
     else {
       // Clear subscription data from sessionStorage
       sessionStorage.removeItem('subscription_pan');
@@ -180,8 +200,11 @@ export default function PaymentSuccess() {
               </div>
               <p className="mt-3 text-[12px] text-muted-foreground">Your subscription is valid for 30 days.</p>
               <div className="mt-4 flex gap-2">
-                <Link to="/dashboard" className="flex-1">
+                <Link to="/home" className="flex-1">
                   <Button className="w-full rounded-xl bg-primary font-bold">Go to Feed</Button>
+                </Link>
+                <Link to="/subscriptions" className="flex-1">
+                  <Button variant="outline" className="w-full rounded-xl font-bold">My Subscriptions</Button>
                 </Link>
               </div>
             </>
@@ -189,10 +212,20 @@ export default function PaymentSuccess() {
           {status === 'error' && (
             <>
               <XCircle className="mx-auto h-16 w-16 text-destructive mb-4" />
-              <h1 className="text-2xl font-bold text-foreground">Payment Issue</h1>
-              <p className="mt-2 text-muted-foreground">Something went wrong. Please contact support if money was deducted.</p>
-              <p className="mt-1 text-[12px] text-muted-foreground">Email: trade11.service@gmail.com</p>
-              <Link to="/discover"><Button className="mt-4 rounded-xl">Browse Advisors</Button></Link>
+              <h1 className="text-2xl font-bold text-foreground">Payment Not Confirmed</h1>
+              <p className="mt-2 text-[14px] text-muted-foreground">{errorReason || 'We could not verify your payment.'}</p>
+              <div className="mt-4 rounded-xl bg-muted/50 border border-border p-3 text-left">
+                <p className="text-[12px] text-foreground font-semibold mb-1">What to do next</p>
+                <ul className="text-[12px] text-muted-foreground space-y-1 list-disc pl-4">
+                  <li>If money was deducted, it will auto-refund within 5–7 working days.</li>
+                  <li>Check your bank/UPI app for the payment status before retrying.</li>
+                  <li>Email <strong className="text-foreground">support@tradecircle.in</strong> with your payment reference.</li>
+                </ul>
+              </div>
+              <div className="mt-4 flex gap-2">
+                <Button variant="outline" className="flex-1 rounded-xl" onClick={() => navigate(-1)}>Try Again</Button>
+                <Link to="/discover" className="flex-1"><Button className="w-full rounded-xl">Browse Advisors</Button></Link>
+              </div>
             </>
           )}
         </div>

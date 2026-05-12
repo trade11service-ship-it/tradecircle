@@ -246,10 +246,10 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ===== WHY STOCKCIRCLE ===== */}
+      {/* ===== WHY TradeCircle ===== */}
       <section className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6">
         <div className="text-center mb-10">
-          <p className="text-[11px] font-bold text-primary uppercase tracking-[2px]">WHY STOCKCIRCLE</p>
+          <p className="text-[11px] font-bold text-primary uppercase tracking-[2px]">WHY TradeCircle</p>
           <h2 className="mt-2 text-3xl font-extrabold text-foreground tracking-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>
             Built for trust. Designed for traders.
           </h2>
@@ -336,11 +336,11 @@ export default function Landing() {
         <div className="rounded-xl border border-border bg-card overflow-hidden">
           <Accordion type="single" collapsible defaultValue="faq-0">
             {[
-              { q: 'Is StockCircle a SEBI registered advisor?', a: "No. StockCircle is a technology marketplace operated by STREZONIC PRIVATE LIMITED. We verify SEBI-registered advisors (INH holders) but do not give investment advice ourselves." },
+              { q: 'Is TradeCircle a SEBI registered advisor?', a: "No. TradeCircle is a technology marketplace operated by STREZONIC PRIVATE LIMITED. We verify SEBI-registered advisors (INH holders) but do not give investment advice ourselves." },
               { q: 'How do you verify advisors?', a: "We manually check each advisor's SEBI registration number (INH number) on sebi.gov.in before approval. Unverified advisors are never listed." },
               { q: 'Can I cancel my subscription?', a: 'Yes. Cancel anytime from your profile. Monthly billing, no lock-in, no questions asked.' },
               { q: 'How do I receive signals?', a: 'After subscribing, you will be added to the advisor\'s private Telegram group. All signals arrive instantly with entry, target, and stop loss.' },
-              { q: 'What makes this different from Telegram channels?', a: 'StockCircle only allows SEBI-registered advisors. Every signal is permanently timestamped — advisors cannot delete bad calls. You can see full win/loss history before subscribing.' },
+              { q: 'What makes this different from Telegram channels?', a: 'TradeCircle only allows SEBI-registered advisors. Every signal is permanently timestamped — advisors cannot delete bad calls. You can see full win/loss history before subscribing.' },
             ].map((faq, i) => (
               <AccordionItem key={i} value={`faq-${i}`} className="border-b border-border last:border-0">
                 <AccordionTrigger className="px-5 py-4 text-[14px] font-semibold text-foreground hover:text-primary transition-colors">{faq.q}</AccordionTrigger>
@@ -383,7 +383,7 @@ export default function Landing() {
           <div className="rounded-lg border border-border bg-muted/50 px-4 py-3">
             <p className="text-[11px] text-muted-foreground">
               <Shield className="inline h-3 w-3 text-primary mr-1" />
-              All advisors on StockCircle are SEBI registered (INH holders). StockCircle is not a SEBI registered entity. Investment in securities involves market risk.
+              All advisors on TradeCircle are SEBI registered (INH holders). TradeCircle is not a SEBI registered entity. Investment in securities involves market risk.
             </p>
           </div>
         </div>

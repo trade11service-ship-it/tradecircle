@@ -104,7 +104,7 @@ export default function FeaturedAdvisors() {
             <span className="text-xs font-bold uppercase tracking-widest text-primary">SEBI Verified Advisors</span>
           </div>
           <h1 className="text-3xl md:text-4xl font-extrabold text-foreground tracking-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>
-            Advisors on StockCircle
+            Advisors on TradeCircle
           </h1>
           <p className="mt-2 text-sm text-muted-foreground max-w-xl mx-auto">
             Tap any card to see full track record, signals, and subscription details.

@@ -339,6 +339,26 @@ export default function GroupDetails() {
               subscribePrice={group.monthly_price}
             />
           </div>
+
+          {/* Mobile sticky bottom Subscribe CTA — only when not subscribed */}
+          {!isSubscribed && (
+            <div className="md:hidden shrink-0 z-30 bg-card border-t border-border shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.18)] pb-safe">
+              <div className="flex items-center gap-3 p-3">
+                <div className="flex flex-col">
+                  <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Monthly</span>
+                  <span className="text-lg font-extrabold text-foreground leading-none">₹{group.monthly_price}</span>
+                </div>
+                <Button
+                  size="lg"
+                  className="flex-1 h-12 rounded-xl text-[15px] font-bold shadow-md"
+                  onClick={() => setModalOpen(true)}
+                  disabled={subscribing}
+                >
+                  {subscribing ? 'Processing…' : 'Subscribe Now'}
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

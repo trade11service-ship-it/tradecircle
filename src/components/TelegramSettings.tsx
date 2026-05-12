@@ -15,7 +15,7 @@ interface TelegramSetting {
   telegram_chat_id: string | null;
 }
 
-const BOT_USERNAME = 'StockCircle_alerts_bot';
+const BOT_USERNAME = 'TradeCircle_alerts_bot';
 
 export function TelegramSettings() {
   const { user, profile } = useAuth();

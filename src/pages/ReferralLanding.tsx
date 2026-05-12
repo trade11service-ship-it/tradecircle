@@ -354,7 +354,7 @@ export default function ReferralLanding() {
           <div className="tc-card-static p-6 text-center">
             <CheckCircle className="mx-auto h-12 w-12 text-primary mb-3" />
             <p className="font-bold">You're already subscribed!</p>
-            <Link to="/dashboard"><Button className="mt-3">Go to Dashboard</Button></Link>
+            <Link to="/home"><Button className="mt-3">Go to Dashboard</Button></Link>
           </div>
         ) : user && !showSignup ? (
           <div className="space-y-4">

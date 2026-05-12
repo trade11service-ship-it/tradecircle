@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { sanitizeText, sanitizeName, sanitizeEmail, sanitizePhone, isValidEmail, isValidPhone } from '@/lib/sanitize';
 import { supabase } from '@/integrations/supabase/client';
-import { lovable } from '@/integrations/lovable/index';
 import { Navbar } from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -93,11 +92,12 @@ export default function Register() {
   const handleGoogleSignUp = async () => {
     if (!termsAccepted) { toast.error('Please accept the terms to proceed'); return; }
     setGoogleLoading(true);
-    const { error } = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin + '/login',
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin + '/login' },
     });
     if (error) {
-      toast.error('Google sign-up failed');
+      toast.error(error.message || 'Google sign-up failed');
       setGoogleLoading(false);
     }
   };
@@ -135,7 +135,7 @@ export default function Register() {
               </div>
               <h1 className="text-2xl font-extrabold text-foreground" style={{ fontFamily: 'Outfit, sans-serif' }}>Create Account</h1>
               <p className="mt-2 text-sm text-muted-foreground">
-                Join <span className="font-bold text-foreground">Stock<span className="text-primary">Circle</span></span> and find verified advisors
+                Join <span className="font-bold text-foreground">Trade<span className="text-primary">Circle</span></span> and find verified advisors
               </p>
             </div>
 

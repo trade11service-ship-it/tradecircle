@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { lovable } from '@/integrations/lovable/index';
 import { Navbar } from '@/components/Navbar';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
@@ -29,7 +28,7 @@ export default function Login() {
         } else if (profile.role === 'admin') {
           navigate('/admin', { replace: true });
         } else {
-          navigate('/dashboard', { replace: true });
+          navigate('/home', { replace: true });
         }
       };
       checkAdvisor();
@@ -50,18 +49,19 @@ export default function Login() {
       const { data: advisor } = await supabase.from('advisors').select('id').eq('user_id', data.user.id).maybeSingle();
       if (profile?.role === 'advisor' || advisor) navigate('/advisor/dashboard');
       else if (profile?.role === 'admin') navigate('/admin');
-      else navigate('/dashboard');
+      else navigate('/home');
     }
     setLoading(false);
   };
 
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
-    const { error } = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin + '/login',
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: window.location.origin + '/login' },
     });
     if (error) {
-      toast.error('Google sign-in failed');
+      toast.error(error.message || 'Google sign-in failed');
       setGoogleLoading(false);
     }
   };
@@ -80,7 +80,7 @@ export default function Login() {
               </div>
               <h1 className="text-2xl font-extrabold text-foreground" style={{ fontFamily: 'Outfit, sans-serif' }}>Welcome Back</h1>
               <p className="mt-2 text-sm text-muted-foreground">
-                Sign in to your <span className="font-bold text-foreground">Stock<span className="text-primary">Circle</span></span> account
+                Sign in to your <span className="font-bold text-foreground">Trade<span className="text-primary">Circle</span></span> account
               </p>
             </div>
 

@@ -15,11 +15,11 @@ export function BottomNavigation() {
   const getDashboardPath = () => {
     if (profile?.role === 'admin') return '/admin';
     if (profile?.role === 'advisor') return '/advisor/dashboard';
-    return '/dashboard';
+    return '/home';
   };
 
   const navItems = [
-    { icon: Home, label: 'Home', path: user ? '/dashboard' : '/' },
+    { icon: Home, label: 'Home', path: user ? '/home' : '/' },
     { icon: Users, label: 'Advisors', path: '/discover' },
     { icon: Rss, label: 'Public Feed', path: '/explore' },
     {
@@ -30,11 +30,10 @@ export function BottomNavigation() {
   ];
 
   const isActive = (path: string) => {
-    if (path === '/' || path === '/dashboard') {
+    if (path === '/' || path === '/home') {
       return (
         location.pathname === "/" ||
-        location.pathname === "/home" ||
-        location.pathname === "/dashboard"
+        location.pathname === "/home"
       );
     }
     if (path === '__profile_menu__') return location.pathname === '/profile';
