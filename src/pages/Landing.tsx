@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
+import { BottomNavigation } from '@/components/BottomNavigation';
 import { GroupCard } from '@/components/GroupCard';
 import { Button } from '@/components/ui/button';
 import { Shield, ShieldCheck, ArrowRight, Bell, CreditCard, Search, Users, CheckCircle, TrendingUp, BookOpen, MessageSquare, Lock, Eye, Zap, BarChart3, AlertTriangle, UserCircle } from 'lucide-react';
@@ -37,21 +38,16 @@ export default function Landing() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { setMetaTags(SEO_CONFIG.landing); }, []);
-  
-  // Redirect to app if already logged in
-  useEffect(() => {
-    if (user && !authLoading) {
-      navigate('/home', { replace: true });
-    }
-  }, [user, authLoading, navigate]);
 
-  useEffect(() => { 
-    if (!user && !authLoading) {
-      fetchGroups(); 
+  // Landing is the same public Home for guests AND logged-in users.
+  // Logged-in users get a Dashboard tab in the bottom nav (rendered below) to reach /home or /advisor/dashboard.
+  useEffect(() => {
+    if (!authLoading) {
+      fetchGroups();
       fetchFeaturedAdvisors();
       fetchPublicSignals();
     }
-  }, [user, authLoading]);
+  }, [authLoading]);
 
   const fetchGroups = async () => {
     const { data: grps } = await supabase
@@ -111,7 +107,7 @@ export default function Landing() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className={`min-h-screen bg-background ${user ? 'pb-[60px] md:pb-0' : ''}`}>
       <Navbar />
 
       {/* ===== COMPACT URGENT HERO ===== */}
@@ -390,6 +386,7 @@ export default function Landing() {
       </div>
 
       <Footer />
+      {user && <BottomNavigation />}
     </div>
   );
 }

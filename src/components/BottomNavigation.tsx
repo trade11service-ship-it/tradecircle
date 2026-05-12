@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, Users, Rss, User, LogIn, LogOut, Settings, LayoutDashboard, X } from 'lucide-react';
+import { Home, Compass, User, LogIn, LogOut, Settings, LayoutDashboard, X } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 
 export function BottomNavigation() {
@@ -9,8 +9,9 @@ export function BottomNavigation() {
   const { user, profile, signOut } = useAuth();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
 
-  // Hide on admin dashboard
+  // Hide on admin dashboard and inside the immersive group/chat view
   if (location.pathname.startsWith('/admin')) return null;
+  if (location.pathname.startsWith('/group/')) return null;
 
   const getDashboardPath = () => {
     if (profile?.role === 'admin') return '/admin';
@@ -18,26 +19,26 @@ export function BottomNavigation() {
     return '/home';
   };
 
-  const navItems = [
-    { icon: Home, label: 'Home', path: user ? '/home' : '/' },
-    { icon: Users, label: 'Advisors', path: '/discover' },
-    { icon: Rss, label: 'Public Feed', path: '/explore' },
-    {
-      icon: user ? User : LogIn,
-      label: user ? 'Profile' : 'Sign In',
-      path: user ? '__profile_menu__' : '/login',
-    },
-  ];
+  // Public Home stays the same for everyone. Logged-in users get a Dashboard tab.
+  const navItems = user
+    ? [
+        { icon: Home, label: 'Home', path: '/' },
+        { icon: Compass, label: 'Discover', path: '/discover' },
+        { icon: LayoutDashboard, label: 'Dashboard', path: getDashboardPath() },
+        { icon: User, label: 'Profile', path: '__profile_menu__' },
+      ]
+    : [
+        { icon: Home, label: 'Home', path: '/' },
+        { icon: Compass, label: 'Discover', path: '/discover' },
+        { icon: LogIn, label: 'Sign In', path: '/login' },
+      ];
 
   const isActive = (path: string) => {
-    if (path === '/' || path === '/home') {
-      return (
-        location.pathname === "/" ||
-        location.pathname === "/home"
-      );
-    }
+    if (path === '/') return location.pathname === '/';
     if (path === '__profile_menu__') return location.pathname === '/profile';
-    return location.pathname === path;
+    if (path.startsWith('/advisor/dashboard')) return location.pathname.startsWith('/advisor/dashboard');
+    if (path === '/home') return location.pathname === '/home';
+    return location.pathname.startsWith(path);
   };
 
   return (
@@ -58,7 +59,7 @@ export function BottomNavigation() {
                 <div>
                   <p className="text-sm font-semibold text-foreground">{profile?.full_name || 'User'}</p>
                   <p className="text-xs text-muted-foreground">{profile?.email}</p>
-                  <p className="text-[10px] text-primary font-bold mt-0.5">Stock<span className="text-secondary">Circle</span></p>
+                  <p className="text-[10px] text-primary font-bold mt-0.5">Trade<span className="text-secondary">Circle</span></p>
                 </div>
               </div>
               <button onClick={() => setShowProfileMenu(false)} className="p-1 text-muted-foreground">
