@@ -37,21 +37,16 @@ export default function Landing() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { setMetaTags(SEO_CONFIG.landing); }, []);
-  
-  // Redirect to app if already logged in
-  useEffect(() => {
-    if (user && !authLoading) {
-      navigate('/home', { replace: true });
-    }
-  }, [user, authLoading, navigate]);
 
-  useEffect(() => { 
-    if (!user && !authLoading) {
-      fetchGroups(); 
+  // Landing is the same public Home for guests AND logged-in users.
+  // Logged-in users get a Dashboard tab in the bottom nav (rendered below) to reach /home or /advisor/dashboard.
+  useEffect(() => {
+    if (!authLoading) {
+      fetchGroups();
       fetchFeaturedAdvisors();
       fetchPublicSignals();
     }
-  }, [user, authLoading]);
+  }, [authLoading]);
 
   const fetchGroups = async () => {
     const { data: grps } = await supabase
