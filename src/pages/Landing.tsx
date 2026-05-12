@@ -385,6 +385,7 @@ export default function Landing() {
       </div>
 
       <Footer />
+      {user && <LandingBottomNav />}
     </div>
   );
 }
