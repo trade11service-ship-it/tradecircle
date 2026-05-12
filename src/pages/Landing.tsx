@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
+import { BottomNavigation } from '@/components/BottomNavigation';
 import { GroupCard } from '@/components/GroupCard';
 import { Button } from '@/components/ui/button';
 import { Shield, ShieldCheck, ArrowRight, Bell, CreditCard, Search, Users, CheckCircle, TrendingUp, BookOpen, MessageSquare, Lock, Eye, Zap, BarChart3, AlertTriangle, UserCircle } from 'lucide-react';
