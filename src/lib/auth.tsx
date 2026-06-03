@@ -99,8 +99,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     });
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session }, error }) => {
       if (!mounted) return;
+
+      // Stale/invalid refresh token: clear local session so we don't loop on 400s.
+      if (error && /refresh.*token/i.test(error.message || '')) {
+        try { await supabase.auth.signOut({ scope: 'local' }); } catch {}
+        setUser(null);
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
+
       const currentUser = session?.user ?? null;
       setUser(currentUser);
 

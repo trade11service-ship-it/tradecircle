@@ -43,18 +43,22 @@ export default function PaymentSuccess() {
   }, [user, authLoading, searchParams]);
 
   const createSubscription = async (groupId: string, paymentId: string) => {
-    const { data: existingByPayment } = await supabase
-      .from('subscriptions')
-      .select('id, group_id, groups(name, advisors(full_name))')
-      .eq('razorpay_payment_id', paymentId)
-      .maybeSingle();
+    // Poll up to 6s for the webhook to create the sub server-side (preferred path).
+    for (let i = 0; i < 6; i++) {
+      const { data: existingByPayment } = await supabase
+        .from('subscriptions')
+        .select('id, group_id, groups(name, advisors(full_name))')
+        .eq('razorpay_payment_id', paymentId)
+        .maybeSingle();
 
-    if (existingByPayment) {
-      const group = existingByPayment.groups as any;
-      setGroupName(group?.name || '');
-      setAdvisorName(group?.advisors?.full_name || '');
-      setStatus('success');
-      return;
+      if (existingByPayment) {
+        const group = existingByPayment.groups as any;
+        setGroupName(group?.name || '');
+        setAdvisorName(group?.advisors?.full_name || '');
+        setStatus('success');
+        return;
+      }
+      await new Promise(r => setTimeout(r, 1000));
     }
 
     const now = new Date().toISOString();

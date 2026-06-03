@@ -36,6 +36,7 @@ import Explore from "./pages/Explore";
 import ListedAdvisors from "./pages/ListedAdvisors";
 import FeaturedAdvisors from "./pages/FeaturedAdvisors";
 import GroupDetails from "./pages/GroupDetails";
+import Dashboard from "./pages/Dashboard";
 import { useAuth } from "@/lib/auth";
 
 const queryClient = new QueryClient();
@@ -89,6 +90,7 @@ const App = () => (
               {/* App Shell Routes (With Sidebar/Bottom Nav) */}
               <Route element={<AppShell />}>
                 <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/discover" element={<Discover />} />
                 <Route path="/listed-advisors" element={<ListedAdvisors />} />
                 <Route path="/featured-advisors" element={<FeaturedAdvisors />} />
