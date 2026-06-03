@@ -36,6 +36,7 @@ import Explore from "./pages/Explore";
 import ListedAdvisors from "./pages/ListedAdvisors";
 import FeaturedAdvisors from "./pages/FeaturedAdvisors";
 import GroupDetails from "./pages/GroupDetails";
+import Dashboard from "./pages/Dashboard";
 import { useAuth } from "@/lib/auth";
 
 const queryClient = new QueryClient();
