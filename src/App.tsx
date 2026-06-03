@@ -90,6 +90,7 @@ const App = () => (
               {/* App Shell Routes (With Sidebar/Bottom Nav) */}
               <Route element={<AppShell />}>
                 <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+                <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/discover" element={<Discover />} />
                 <Route path="/listed-advisors" element={<ListedAdvisors />} />
                 <Route path="/featured-advisors" element={<FeaturedAdvisors />} />
