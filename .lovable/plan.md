@@ -1,127 +1,135 @@
-# Plan — Home rework, premium blur, advisor stats, admin fixes
+# TradeCircle Launch-Readiness Plan
 
-## 1. Home page (`/home`) — subscriber-first layout
-File: `src/pages/Home.tsx`
+Goal: take the app from "MVP that mostly works" to "production-ready, trust-first marketplace" that can onboard 2–3 SEBI advisors immediately and absorb 10–20k traders without breaking.
 
-When the logged-in user has at least one active subscription, restructure the page top-to-bottom as:
+I'll execute this in 4 sequential phases. Each phase is independently shippable.
 
-1. **Greeting card** (kept, slimmed — remove the 3 generic "Live posts / Subscriptions / Learning" tiles).
-2. **My Groups** — horizontal scroll row of subscribed groups (avatar + name + unread dot). Tap → opens that group's feed.
-3. **Latest from your groups** — most recent 5 signals/posts across all subscribed groups (compact cards, full content, tap → group). Live updated via realtime on `signals`.
-4. **Public Feed (minimized)** — collapsed section header "Live Public Feed" + only 3 latest public/free posts + "See more on Explore →" link. Removes the heavy mixed-feed list currently rendered.
+---
 
-Non-subscribers keep current layout (greeting + Live Public Feed) but also get the simplified 3-item preview.
+## Phase 1 — Stop the bleeding (auth, payments, core flows)
 
-Add a small pill button at the top right of `/home` labeled **"Explore Home"** that routes to `/` (the marketing landing). Place next to the bell/Explore button.
+Without these working, no advisor or trader can transact. This is launch-blocker #1.
 
-## 2. Admin dashboard — fix "Go to Website"
-File: `src/pages/AdminDashboard.tsx` (lines 603–618)
+1. **Auth pipeline**
+   - Audit `Login.tsx` / `Register.tsx` / `AdvisorRegister.tsx` / `ResetPassword.tsx` end-to-end on both email+password and Google OAuth.
+   - Fix the recurring `refresh_token_not_found` (visible in auth logs) by clearing stale sessions on 400 and not auto-redirecting logged-out users into protected routes.
+   - Ensure `handle_new_user` trigger fires for OAuth signups and that role (`trader` vs `advisor`) is set correctly at signup (currently advisors signing up via `/register` then `/advisor-register` can end up with `role='trader'` forever).
+   - Add a single `/dashboard` route that smart-redirects: trader → `/home`, advisor → `/advisor/dashboard`, admin → `/admin`.
 
-- Replace the broken `Open in new tab` button (which currently does `window.open('/', '_blank')` but is reported broken by the user — likely popup-blocked or sidebar-collapse stealing the click).
-- Make a single working "Go to Website" button: `<a href="/" target="_blank" rel="noopener">` styled as the existing pill so the browser handles it natively (no JS popup).
-- Keep the same icon and label.
+2. **Payment pipeline (Razorpay)**
+   - Audit `initiate-payment`, `razorpay-webhook`, `create-payment-link` edge functions:
+     - Webhook signature verification is missing — add HMAC check using `RAZORPAY_WEBHOOK_SECRET`.
+     - Webhook GET callback uses `SUPABASE_URL` to guess frontend origin — replace with stored origin from `initiate-payment` (pass through `notes.origin`).
+     - Move subscription creation to webhook only (don't trust client `/payment-success` redirect).
+   - Add `payments` audit table (id, user, group, amount, razorpay_payment_id, status, raw_payload) for reconciliation.
+   - Verify earnings trigger `record_subscription_earning` actually fires and computes 30% vs 15% (referral) correctly.
 
-## 3. Premium signal blur for non-subscribers in group page
-Files: `src/components/GroupFeed.tsx`, `src/lib/accessControl.ts`
+3. **`/payment-success` page**
+   - Show real subscription status by polling `subscriptions` for ~10s (covers webhook delay).
+   - Clear messaging for "pending", "active", "failed" states + manual "Contact support" CTA.
 
-Current rule: first 3 posts visible to free, then lock overlay, then hidden.
+4. **Referral pipeline sanity check**
+   - Verify referral cookie → `referral_signups` → `subscription.from_referral=true` → 15% fee actually flows through.
+   - Add referral link generation in advisor dashboard if missing (group-scoped + advisor-scoped codes).
 
-New rule the user wants:
-- Free / guest / logged-in non-subscriber: **all premium signals are visible but blurred** (numbers + entire price block obfuscated with frosted glass).
-- Only active subscribers of that group see them clearly.
-- F&O 24h public rule and `is_public` after-24h rule still apply (those become clear once the timer passes).
-- Remove the "hide completely after 3rd" branch in `getPostVisibility`. Replace with: not subscribed → blur all premium; subscribed/owner → clear.
-- Keep the "Subscribe to unlock" sticky CTA at top of feed for non-subscribers.
+**Deliverable:** A trader can sign up, subscribe, pay, get added, and the advisor sees revenue. End-to-end smoke test passes.
 
-## 4. Advisor stats — make them advisor-driven and live
-Files: `src/pages/AdvisorProfile.tsx`, `src/pages/AdvisorDashboard.tsx`, new SQL function.
+---
 
-### 4a. Remove from profile deep-dive
-- ❌ Avg Risk:Reward
-- ❌ Best Month
-- (keep cards: Total Signals, Win Rate, Active Members, Followers, Signals/Week, Win Streak, Max Loss Streak, Active Hours, Risk Level, Audit Trail, Last 5 Signals)
+## Phase 2 — Trust & differentiation layer (UI/UX rebuild of public surfaces)
 
-### 4b. Auto-computed (no advisor input, real-time)
-Computed via a new SECURITY DEFINER RPC `get_advisor_live_stats(_advisor_id)` returning:
-- `total_signals` — count of `signals` where `post_type='signal'` (excludes `message`/posts).
-- `win_count` / `loss_count` — `result IN ('WIN','LOSS')` (also accept new values `TGT1_HIT`, `TGT2_HIT`, `TGT_HIT` as wins; `SL_HIT` as loss).
-- `win_rate` — wins / (wins + losses).
-- `active_members` — distinct active subscribers across the advisor's groups (no caching).
-- `followers` — count of `group_follows` rows across the advisor's groups (never decremented by us; only user can unfollow).
-- `signals_per_week` — `total_signals / max(1, weeks_since_first_group_created)` using `groups.created_at MIN`.
-- `current_win_streak`, `max_loss_streak` — derived from chronological resolved signals.
-- `active_hours` — top hour-of-day bucket from `signals.created_at` (auto-derived; no manual override needed but we still let the advisor pin a "preferred trading window" — see 4c).
+The user's exact complaint: "looking typical old style AI made website." This is the conversion killer.
 
-Frontend subscribes via Supabase realtime to `signals`, `subscriptions`, `group_follows` for the advisor's groups → re-runs RPC on change.
+1. **New visual identity pass** (kept inside existing Navy/Green tokens but elevated):
+   - Replace generic hero with a *proof-first* hero: live ticker of recent verified signals, "Verified by SEBI INH-XXXXX" badges, real advisor faces.
+   - Add an "How we're different from Telegram" comparison strip (Telegram vs TradeCircle table: deletable signals vs immutable, anonymous vs SEBI-verified, etc.).
+   - Editorial typography: pair a distinctive display font (e.g. Fraunces / Instrument Serif) for headlines with Inter for body — current single-font feels generic.
+   - Trust band: STREZONIC PVT LTD, CIN, SEBI disclaimer, "₹47,000 Cr lost in fake channels — we exist to stop that" stat.
 
-### 4c. Advisor-controlled fields (new "Public Profile / Stats" tab in Advisor Dashboard)
-Add columns to `advisors`:
-- `preferred_trading_hours text` (e.g. "09:30–11:00")
-- `risk_level text` (enum: `Conservative | Moderate | Aggressive`) — stored as advisor's own pick, replaces auto-derive label.
+2. **Unified shell** so every page feels like one product:
+   - Single `PageShell` wrapping Landing, Explore, AdvisorProfile, GroupDetails, Home with consistent header, nav, footer, spacing scale, container width.
+   - Kill duplicate nav (`Navbar.tsx` vs `BottomNavigation.tsx` vs `BottomNav.tsx`) — keep one desktop nav + one mobile bottom nav.
 
-UI in `AdvisorDashboard.tsx` → new "Public Profile" tab with simple form: Risk Level (dropdown), Preferred Trading Hours (text), Bio, Years Experience, Tagline. Save via update on `advisors`.
+3. **Onboarding & CTA funnel** (Trader):
+   - Landing → "Browse verified advisors" (primary) / "I'm an advisor" (secondary).
+   - Advisor profile → sticky "Subscribe ₹X/mo" with trust badges underneath.
+   - Subscribe → 3-step modal (PAN → MITC consent → Pay) with progress bar.
+   - Post-pay → "You're in" screen with Telegram join CTA + first signal preview.
 
-### 4d. Audit Trail card — keep as-is ("Immutable — entry/target/SL locked").
+4. **Onboarding funnel (Advisor)**:
+   - Dedicated `/for-advisors` landing with revenue calculator (slider: subs × price → "You'd earn ₹X/mo at 70%").
+   - 4-step KYC with progress, autosave, clear "what happens next" after submit.
+   - Approval email + dashboard tour on first login.
 
-## 5. Mark signal result + auto-recompute
-Files: `src/components/GroupFeed.tsx` (advisor view), migration on `signals.result`.
+**Deliverable:** Pages feel like one cohesive premium product, not a Lovable template. Conversion-ready funnel.
 
-Currently `result` column accepts `PENDING/WIN/LOSS`. Extend allowed values to:
-`PENDING | TGT1_HIT | TGT2_HIT | TGT_HIT | SL_HIT | WIN | LOSS`.
+---
 
-In group feed, when viewer is the owner advisor and signal is `PENDING`, show inline action row under the bubble:
-`[ TGT Hit ] [ TGT1 Hit ] [ TGT2 Hit ] [ SL Hit ]`
+## Phase 3 — Scale-readiness for 10–20k users
 
-Clicking updates `signals.result` (existing RLS allows advisor update). Stats RPC treats any TGT*_HIT as a win, SL_HIT as a loss → win rate / streaks update automatically. Realtime subscription on `signals` re-fetches stats so the change appears live on profile and dashboard.
+Currently the app does naive `SELECT *` everywhere. Won't survive load.
 
-## 6. Advisor Dashboard fine-tune & home/dashboard split
-Files: `src/pages/AdvisorDashboard.tsx`, `src/components/AppLayout.tsx`, routing.
+1. **DB & RLS audit**
+   - Add indexes on `signals(group_id, created_at desc)`, `subscriptions(user_id, status)`, `group_follows(user_id)`, `signals(advisor_id, post_type, result)`.
+   - Review every RLS policy for `SELECT 1 FROM advisors WHERE ...` patterns — convert to `SECURITY DEFINER` helper functions to avoid per-row planner cost.
+   - Confirm Realtime is enabled only on `signals` (not everything) to limit fan-out.
 
-### Bug: advisor sees Home and Dashboard as the same page (footer connects both)
-Today, when an approved advisor logs in, the bottom-nav "Home" tab and the dashboard route render essentially the same content because of how `AppLayout` and routing are set up.
+2. **Frontend perf**
+   - Paginate the public feed (`PublicMixedFeed`, `/explore`, `Home`) — currently fetches unbounded.
+   - Add React Query caching on advisor stats RPC (currently re-fetched on every nav).
+   - Lazy-load admin + advisor dashboard routes.
+   - Image optimization: store advisor avatars/covers via Supabase Storage transforms (resize + WebP).
 
-Fix:
-- For role=`advisor`, the bottom nav becomes 3 tabs: **Dashboard** (their workbench), **Groups** (list of their own groups), **Profile**. Remove the trader "Home/Discover/Profile" tabs for advisors.
-- `/home` for advisors redirects to `/advisor/dashboard`.
-- Add a top-right "Explore Home" pill on `AdvisorDashboard.tsx` that opens `/` in a new tab — same as the admin button.
+3. **Edge function hardening**
+   - Add Zod validation on every function body.
+   - Rate limit `initiate-payment` (1/min/user) via simple in-memory or DB counter.
+   - CORS lock to known origins, not `*`.
 
-### Bug: advisor can't open their own group
-Investigation needed but likely: `GroupDetails` access check requires a subscription row, and the owner advisor has none. Fix: in `GroupDetails.tsx`, treat the user as full access if `auth.uid() === group.advisor.user_id`. (RLS already lets them read signals; this is just the client gate.)
+4. **Observability**
+   - Add structured logs in webhook + payment functions (already partially there).
+   - Add a `/admin/health` page showing today's signups, payments, failed webhooks.
 
-### Quick post composer at bottom of group feed (advisor-only)
-File: `src/components/GroupFeed.tsx`
+**Deliverable:** Loads in <2s on 3G, no N+1 queries, can absorb a marketing push without 500s.
 
-For the owner advisor viewing their own group, render a sticky WhatsApp-style composer above the bottom-nav with:
-- Text input ("Post update or signal…")
-- Toggle: Post / Signal
-- If Signal: 4 small fields appear inline (Instrument, Entry, Target, SL) + BUY/SELL pill + Send.
-- If Post: just Send → inserts a `post_type='message'` row.
+---
 
-Non-advisor viewers don't see the composer.
+## Phase 4 — Live-pressure features (public feed + advisor ops)
 
-### Bug: white blank gap inside group page (advisor side)
-File: `src/components/AppLayout.tsx` (already partially fixed for traders)
+What advisors and traders actually do day-to-day during market hours.
 
-The group page detection (`isGroupPage`) currently only suppresses bottom-nav padding for trader routes. For advisor route shape (`/advisor/group/:id` or wherever they land), the bottom-nav placeholder still reserves 60px → white gap. Extend `isGroupPage` regex to include advisor group routes and ensure the composer's own height (≈64px) is the new bottom padding instead.
+1. **Public feed (free 3 signals + blurred rest)**
+   - Confirm the "3 free, rest blurred" logic is consistent across `Home`, `Explore`, `AdvisorProfile`.
+   - Add "F&O auto-public after 24h" cron (currently relies on RLS time check — verify).
 
-## 7. Database migrations
-- `ALTER TABLE advisors ADD COLUMN preferred_trading_hours text, ADD COLUMN risk_level text;`
-- New RPC `get_advisor_live_stats(_advisor_id uuid) RETURNS json` (SECURITY DEFINER) — public-readable aggregate, no RLS needed.
-- No change to `signals.result` column type (already text); just expand client-side allowed values.
+2. **Advisor quick composer (already started)**
+   - Polish: instrument autocomplete (NSE symbol list), validation (entry/target/SL numeric, SL on correct side of entry), shortcut to mark TGT_HIT/SL_HIT.
+   - Realtime push to subscribers' `/home` feed via Supabase Realtime channel.
 
-## Files to touch
-- `src/pages/Home.tsx` — subscriber-first layout, Explore Home pill
-- `src/pages/AdminDashboard.tsx` — fix Go to Website button
-- `src/pages/AdvisorDashboard.tsx` — Public Profile tab, Explore Home pill, ensure separate from /home
-- `src/pages/AdvisorProfile.tsx` — remove Avg R:R + Best Month, switch to live RPC
-- `src/pages/GroupDetails.tsx` — owner full-access fix
-- `src/components/GroupFeed.tsx` — blur all premium for non-subs, advisor result-mark buttons, quick composer
-- `src/components/AppLayout.tsx` — advisor group route gap fix, advisor-specific bottom nav
-- `src/components/BottomNavigation.tsx` — advisor 3-tab variant
-- `src/lib/accessControl.ts` — new visibility rule (blur-all instead of hide-after-3)
-- New SQL migration
+3. **Telegram delivery**
+   - Verify `send-telegram-signal` fires on every advisor post, handles failures, retries.
+   - Subscriber onboarding: 3-step Telegram link flow (already exists — QA it).
 
-## Open questions before I implement
-1. For advisor bottom nav, OK with **Dashboard / Groups / Profile** or do you want a different 3rd tab?
-2. "Active members" — count distinct users across **all** advisor's groups, or per-group on the profile? (Plan assumes platform-wide for the advisor.)
-3. Should the Explore-Home pill also appear in the advisor's mobile header, not just dashboard top?
+4. **Reconciliation & payouts**
+   - Admin view of pending advisor payouts (net earnings ≥ ₹500 threshold).
+   - Export CSV for manual bank transfer (until payout automation is built).
+
+**Deliverable:** Advisor posts a signal → trader sees it in app + Telegram within seconds → result marking flows into stats → earnings update.
+
+---
+
+## Cross-cutting
+
+- **Security scan:** run `security--run_security_scan` after Phase 1 + Phase 3.
+- **Legal:** confirm MITC text, refund policy, and immutable acceptance trail are wired into every paywall.
+- **Mobile QA:** every flow tested on 360px width (most Indian retail traders are on budget Android).
+
+---
+
+## What I need from you before I start building
+
+1. **Phase order** — proceed Phase 1 → 4 as above, or you want a different priority (e.g. visual redesign first to start advisor outreach)?
+2. **Visual direction** — for Phase 2 should I generate 2–3 prototype directions (hero + advisor profile) for you to pick, or just rebuild based on your existing Navy/Green palette?
+3. **Razorpay webhook secret** — do you have one configured at Razorpay dashboard? If not, I'll guide you to set it up and add `RAZORPAY_WEBHOOK_SECRET` via the secrets tool.
+4. **Test advisor account** — give me one real advisor profile (or a test INH) so I can run the full subscribe→pay→deliver loop end-to-end.
+
+Once you answer these, I'll start Phase 1 immediately.
