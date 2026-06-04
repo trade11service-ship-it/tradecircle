@@ -16,6 +16,7 @@ import {
   ShieldAlert, IndianRupee, Search, Download, CheckCircle, UserPlus, BarChart3,
   ChevronRight, Lock, Shield, Eye, ExternalLink, Trash2, Radio, Menu, X,
 } from 'lucide-react';
+import { DashboardHero } from '@/components/DashboardHero';
 
 type Advisor = Tables<'advisors'>;
 

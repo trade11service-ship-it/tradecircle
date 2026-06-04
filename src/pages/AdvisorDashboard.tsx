@@ -18,6 +18,7 @@ import { BarChart3, Radio, Users, UserCircle, IndianRupee, TrendingUp, Clock, Ch
 import { sanitizeText, sanitizeTextarea, sanitizeNumeric, sanitizeAlphanumeric } from '@/lib/sanitize';
 import type { Tables } from '@/integrations/supabase/types';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { DashboardHero } from '@/components/DashboardHero';
 
 type Advisor = Tables<'advisors'>;
 type Group = Tables<'groups'>;
