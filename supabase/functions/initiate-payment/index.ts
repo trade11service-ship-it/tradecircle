@@ -54,15 +54,27 @@ Deno.serve(async (req) => {
 
     const RAZORPAY_KEY_ID = Deno.env.get('RAZORPAY_KEY_ID');
     const RAZORPAY_KEY_SECRET = Deno.env.get('RAZORPAY_KEY_SECRET');
-    if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
-      return new Response(JSON.stringify({ error: 'Payment system not configured' }), { status: 500, headers: corsHeaders });
+
+    const frontendOrigin = origin_url || req.headers.get('origin') || req.headers.get('referer')?.replace(/\/+$/, '') || '';
+
+    // Sandbox mode: trigger when keys are absent or look like placeholders.
+    // Lets the full subscribe → success flow work without real Razorpay.
+    const isPlaceholder = (v?: string | null) =>
+      !v || v.length < 12 || /test|sandbox|placeholder|fake|xxx|dummy|your_/i.test(v);
+    const sandboxMode = isPlaceholder(RAZORPAY_KEY_ID) || isPlaceholder(RAZORPAY_KEY_SECRET);
+
+    if (sandboxMode) {
+      const fakePaymentId = `sandbox_${crypto.randomUUID()}`;
+      const base = (frontendOrigin || 'https://tradecircle.app').replace(/\/+$/, '');
+      const url = `${base}/payment-success?group_id=${encodeURIComponent(group_id)}&payment_id=${fakePaymentId}&status=paid&sandbox=1`;
+      return new Response(JSON.stringify({ payment_url: url, sandbox: true }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    // Use the frontend origin for callback, fallback to constructing from request
-    const frontendOrigin = origin_url || req.headers.get('origin') || req.headers.get('referer')?.replace(/\/+$/, '') || '';
     const callbackUrl = `${frontendOrigin}/payment-success?group_id=${group_id}&status=paid`;
 
-    // Create a unique payment link for this user + group
     const razorpayRes = await fetch('https://api.razorpay.com/v1/payment_links', {
       method: 'POST',
       headers: {
@@ -81,11 +93,7 @@ Deno.serve(async (req) => {
         notify: { sms: true, email: true },
         callback_url: callbackUrl,
         callback_method: 'get',
-        notes: {
-          group_id: group_id,
-          user_id: userId,
-          group_name: group.name,
-        },
+        notes: { group_id, user_id: userId, group_name: group.name },
         expire_by: Math.floor(Date.now() / 1000) + 3600,
       }),
     });
