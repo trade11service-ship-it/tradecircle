@@ -16,6 +16,7 @@ import {
   ShieldAlert, IndianRupee, Search, Download, CheckCircle, UserPlus, BarChart3,
   ChevronRight, Lock, Shield, Eye, ExternalLink, Trash2, Radio, Menu, X,
 } from 'lucide-react';
+import { DashboardHero } from '@/components/DashboardHero';
 
 type Advisor = Tables<'advisors'>;
 
@@ -641,19 +642,35 @@ export default function AdminDashboard() {
 
         <div className="p-4 md:p-7 max-w-[100vw] overflow-x-hidden">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-            <div>
-              <h1 className="text-[20px] md:text-[24px] font-extrabold text-foreground">{PAGE_TITLES[tab]}</h1>
-              <p className="text-[13px] text-muted-foreground mt-0.5">{today}</p>
+          {tab === 'dashboard' ? (
+            <DashboardHero
+              name={profile?.full_name || 'Admin'}
+              roleLabel="Super Admin"
+              subtitle={today}
+              badge="Platform Live · All Systems Operational"
+              variant="admin"
+              stats={[
+                { label: "Pending", value: pendingAdvisors.length },
+                { label: "Advisors", value: approvedCount },
+                { label: "Users", value: users.length },
+                { label: "Revenue", value: `₹${Math.round(totalRevenue).toLocaleString('en-IN')}` },
+              ]}
+            />
+          ) : (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+              <div>
+                <h1 className="text-[20px] md:text-[24px] font-extrabold text-foreground">{PAGE_TITLES[tab]}</h1>
+                <p className="text-[13px] text-muted-foreground mt-0.5">{today}</p>
+              </div>
+              <div className="flex items-center gap-1.5 bg-[hsl(var(--light-green))] border border-primary rounded-full px-4 py-1.5 self-start sm:self-auto">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+                </span>
+                <span className="text-[13px] text-primary font-semibold">Platform Live</span>
+              </div>
             </div>
-            <div className="flex items-center gap-1.5 bg-[hsl(var(--light-green))] border border-primary rounded-full px-4 py-1.5 self-start sm:self-auto">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
-              </span>
-              <span className="text-[13px] text-primary font-semibold">Platform Live</span>
-            </div>
-          </div>
+          )}
 
         {loading && <div className="py-20 text-center text-muted-foreground">Loading data...</div>}
 

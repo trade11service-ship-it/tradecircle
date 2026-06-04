@@ -18,6 +18,7 @@ import { BarChart3, Radio, Users, UserCircle, IndianRupee, TrendingUp, Clock, Ch
 import { sanitizeText, sanitizeTextarea, sanitizeNumeric, sanitizeAlphanumeric } from '@/lib/sanitize';
 import type { Tables } from '@/integrations/supabase/types';
 import { useLocation, useNavigate } from 'react-router-dom';
+import { DashboardHero } from '@/components/DashboardHero';
 
 type Advisor = Tables<'advisors'>;
 type Group = Tables<'groups'>;
@@ -331,24 +332,29 @@ export default function AdvisorDashboard() {
       
       <div className="w-full max-w-full px-4 sm:px-6 lg:px-8 py-6 flex-1">
 
-        {/* Welcome Bar */}
-        <div className="mb-5 flex items-center justify-between rounded-2xl border-[1.5px] border-border bg-card p-5 shadow-[0_2px_8px_rgba(0,0,0,0.06)]">
-          <div>
-            <h1 className="text-[22px] font-extrabold text-foreground">{greeting}, {advisor.full_name.split(' ')[0]} 👋</h1>
-            <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-              <span className="h-2 w-2 rounded-full bg-primary" />
-              <Shield className="h-3 w-3" /> SEBI · {advisor.sebi_reg_no}
-            </div>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            <a href="/" target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 h-9 text-[12px] font-bold text-foreground hover:bg-muted transition">
-              <Globe className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Explore Home</span>
-            </a>
-            <span className="hidden sm:inline-flex items-center gap-1.5 rounded-full border border-primary bg-light-green px-4 py-1.5 text-[13px] font-semibold text-primary">
-              ✓ Approved & Active
-            </span>
-          </div>
-        </div>
+        <DashboardHero
+          name={advisor.full_name}
+          roleLabel="SEBI Verified Advisor"
+          subtitle="Manage your groups, post signals, and grow your subscriber base."
+          badge={`SEBI · ${advisor.sebi_reg_no}`}
+          variant="advisor"
+          stats={[
+            { label: "Subscribers", value: totalSubs },
+            { label: "Groups", value: groups.length },
+            { label: "Signals", value: signalCount },
+            { label: "30D Net", value: `₹${Math.round(rolling30Net).toLocaleString('en-IN')}` },
+          ]}
+          actions={
+            <>
+              <a href="/" target="_blank" rel="noopener" className="inline-flex items-center gap-1.5 rounded-full bg-white/15 hover:bg-white/25 border border-white/20 backdrop-blur px-3 h-9 text-[12px] font-bold text-white transition">
+                <Globe className="h-3.5 w-3.5" /> Website
+              </a>
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white text-primary px-3.5 h-9 text-[12px] font-bold shadow-md">
+                ✓ Approved & Active
+              </span>
+            </>
+          }
+        />
 
         {/* Stats Row */}
         <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
