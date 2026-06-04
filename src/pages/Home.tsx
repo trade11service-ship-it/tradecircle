@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Bell, User, ArrowRight, Compass, Clock3, BookOpenText, Shield, Globe } from "lucide-react";
 import { setMetaTags, SEO_CONFIG } from "@/lib/seo";
+import { DashboardHero } from "@/components/DashboardHero";
 
 type FeedItem = {
   id: string;
