@@ -158,35 +158,32 @@ export default function Home() {
   return (
     <div className="min-h-full bg-background p-4 md:p-6 lg:p-8">
       <main className="mx-auto w-full max-w-5xl">
-        <div className="mb-6 rounded-2xl border border-border bg-gradient-to-r from-primary/5 to-primary/10 p-4">
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex-1 min-w-0">
-              <h1 className="text-2xl font-extrabold text-foreground truncate">
-                {greeting}, {profile?.full_name?.split(" ")[0] || "Trader"}
-              </h1>
-              <p className="text-sm text-muted-foreground mt-1">
-                {hasSubscriptions ? "Your live trading signals from SEBI verified advisors" : "Discover SEBI verified advisors and unlock premium signals"}
-              </p>
-            </div>
-            <div className="flex gap-1.5 shrink-0">
-              <Link to="/" aria-label="Explore Home">
-                <Button variant="outline" size="sm" className="gap-1 h-9 rounded-full text-xs font-bold">
-                  <Globe className="h-3.5 w-3.5" /> <span className="hidden sm:inline">Explore Home</span>
-                </Button>
-              </Link>
+        <DashboardHero
+          name={profile?.full_name || "Trader"}
+          roleLabel="Trader Account"
+          subtitle={hasSubscriptions ? "Your live trading signals from SEBI verified advisors." : "Discover SEBI verified advisors and unlock premium signals."}
+          variant="trader"
+          stats={[
+            { label: "Active Groups", value: subscribedGroups.length },
+            { label: "New Signals", value: posts.length },
+            { label: "Public Live", value: publicSignals.length },
+            { label: "Status", value: hasSubscriptions ? "Live" : "Explore" },
+          ]}
+          actions={
+            <>
               <Link to="/notifications">
-                <Button variant="outline" size="icon" aria-label="Notifications" className="h-9 w-9 rounded-full">
+                <Button variant="secondary" size="sm" className="gap-1.5 h-9 rounded-full bg-white/15 hover:bg-white/25 text-white border border-white/20 backdrop-blur">
                   <Bell className="h-4 w-4" />
                 </Button>
               </Link>
               <Link to="/explore">
-                <Button size="sm" className="gap-1 bg-primary hover:bg-primary/90 text-white h-9 rounded-full">
-                  <Compass className="h-4 w-4" /> <span className="hidden sm:inline">Explore</span>
+                <Button size="sm" className="gap-1.5 bg-white text-secondary hover:bg-white/90 h-9 rounded-full font-bold shadow-md">
+                  <Compass className="h-4 w-4" /> Explore
                 </Button>
               </Link>
-            </div>
-          </div>
-        </div>
+            </>
+          }
+        />
 
         {/* Main Content */}
         {!hasSubscriptions && loading ? (
