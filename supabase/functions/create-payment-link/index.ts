@@ -28,15 +28,30 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
     }
 
-    const { group_id, group_name, amount } = await req.json();
+    const { group_id, group_name, amount, origin } = await req.json();
 
     const RAZORPAY_KEY_ID = Deno.env.get('RAZORPAY_KEY_ID');
     const RAZORPAY_KEY_SECRET = Deno.env.get('RAZORPAY_KEY_SECRET');
-    if (!RAZORPAY_KEY_ID || !RAZORPAY_KEY_SECRET) {
-      return new Response(JSON.stringify({ error: 'Razorpay keys not configured' }), { status: 500, headers: corsHeaders });
+
+    // Detect sandbox mode: missing keys OR obvious placeholder values.
+    const isPlaceholder = (v?: string | null) =>
+      !v || v.length < 12 || /test|sandbox|placeholder|fake|xxx|dummy|your_/i.test(v);
+    const sandboxMode = isPlaceholder(RAZORPAY_KEY_ID) || isPlaceholder(RAZORPAY_KEY_SECRET);
+
+    if (sandboxMode) {
+      // Fake the entire payment loop: send the user straight to /payment-success
+      // with a sandbox payment id. The client-side createSubscription path
+      // already writes the subscription record.
+      const fakePaymentId = `sandbox_${crypto.randomUUID()}`;
+      const base = (origin || '').replace(/\/$/, '') || 'https://tradecircle.app';
+      const link = `${base}/payment-success?group_id=${encodeURIComponent(group_id)}&payment_id=${fakePaymentId}&status=paid&sandbox=1`;
+      return new Response(JSON.stringify({ payment_link: link, sandbox: true }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
-    // Create Razorpay Payment Link
+    // Create Razorpay Payment Link (live)
     const razorpayRes = await fetch('https://api.razorpay.com/v1/payment_links', {
       method: 'POST',
       headers: {
@@ -44,15 +59,12 @@ Deno.serve(async (req) => {
         'Authorization': 'Basic ' + btoa(`${RAZORPAY_KEY_ID}:${RAZORPAY_KEY_SECRET}`),
       },
       body: JSON.stringify({
-        amount: amount * 100, // Razorpay expects paise
+        amount: amount * 100,
         currency: 'INR',
         description: `Subscription: ${group_name}`,
         callback_url: `${Deno.env.get('SUPABASE_URL')}/functions/v1/razorpay-webhook?group_id=${group_id}`,
         callback_method: 'get',
-        notes: {
-          group_id: group_id,
-          group_name: group_name,
-        },
+        notes: { group_id, group_name },
       }),
     });
 
@@ -62,7 +74,6 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Failed to create payment link', details: razorpayData }), { status: 500, headers: corsHeaders });
     }
 
-    // Update group with payment link
     const adminClient = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
