@@ -70,39 +70,39 @@
   }
 
   .dark {
-    --background: 224 32% 8%;
-    --foreground: 0 0% 98%;
-    --card: 224 28% 12%;
-    --card-foreground: 0 0% 98%;
-    --popover: 224 28% 12%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 160 84% 45%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 243 75% 65%;
-    --secondary-foreground: 0 0% 100%;
-    --muted: 224 20% 18%;
-    --muted-foreground: 220 12% 60%;
-    --accent: 243 75% 65%;
-    --accent-foreground: 0 0% 98%;
-    --destructive: 0 84% 65%;
-    --destructive-foreground: 0 0% 100%;
-    --border: 224 18% 20%;
-    --input: 224 18% 20%;
-    --ring: 160 84% 45%;
-    --sidebar-background: 160 84% 32%;
-    --sidebar-foreground: 0 0% 98%;
-    --sidebar-primary: 0 0% 100%;
-    --sidebar-primary-foreground: 160 84% 32%;
-    --sidebar-accent: 243 75% 55%;
-    --sidebar-accent-foreground: 0 0% 98%;
-    --sidebar-border: 160 84% 38%;
-    --sidebar-ring: 0 0% 100%;
-    --light-green: 160 84% 25%;
-    --light-blue: 243 75% 30%;
-    --off-white: 224 28% 12%;
-    --grey-text: 220 12% 60%;
-    --small-text: 220 12% 48%;
-    --chat-bg: 224 28% 11%;
+    --background: 222 47% 6%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 10%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 10%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 210 40% 98%;
+    --primary-foreground: 222 47% 11%;
+    --secondary: 160 84% 42%;
+    --secondary-foreground: 222 47% 6%;
+    --muted: 222 47% 14%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 160 84% 42%;
+    --accent-foreground: 222 47% 6%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 222 47% 16%;
+    --input: 222 47% 16%;
+    --ring: 160 84% 42%;
+    --sidebar-background: 222 47% 6%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 160 84% 42%;
+    --sidebar-primary-foreground: 222 47% 6%;
+    --sidebar-accent: 222 47% 14%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 222 47% 16%;
+    --sidebar-ring: 160 84% 42%;
+    --light-green: 160 84% 18%;
+    --light-blue: 215 50% 18%;
+    --off-white: 222 47% 10%;
+    --grey-text: 215 20% 65%;
+    --small-text: 215 14% 55%;
+    --chat-bg: 222 47% 8%;
   }
 }
 
