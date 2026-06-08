@@ -92,12 +92,12 @@ export default function Register() {
   const handleGoogleSignUp = async () => {
     if (!termsAccepted) { toast.error('Please accept the terms to proceed'); return; }
     setGoogleLoading(true);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: window.location.origin + '/login' },
+    const { lovable } = await import('@/integrations/lovable/index');
+    const result = await lovable.auth.signInWithOAuth('google', {
+      redirect_uri: window.location.origin + '/login',
     });
-    if (error) {
-      toast.error(error.message || 'Google sign-up failed');
+    if (result.error) {
+      toast.error((result.error as any)?.message || 'Google sign-up failed');
       setGoogleLoading(false);
     }
   };

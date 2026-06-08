@@ -39,17 +39,14 @@ export function Navbar() {
   const linkClass = (path: string) =>
     `text-sm font-medium transition-colors duration-200 ${isActive(path) ? 'text-primary font-semibold' : 'text-muted-foreground hover:text-foreground'}`;
 
-  const isHeroPage = location.pathname === '/' || location.pathname === '/about';
+  const isHeroPage = false;
 
   return (
     <>
-      <nav className={`sticky top-0 z-50 h-14 transition-all duration-300 ${
-        scrolled 
-          ? 'bg-card/95 backdrop-blur-xl border-b border-border shadow-sm' 
-          : isHeroPage
-            ? 'bg-transparent border-b border-transparent'
-            : 'bg-card/95 backdrop-blur-xl border-b border-border'
+      <nav className={`sticky top-0 z-50 h-14 transition-all duration-300 bg-card/95 backdrop-blur-xl border-b border-border ${
+        scrolled ? 'shadow-sm' : ''
       }`}>
+
         <div className="container mx-auto flex h-full items-center justify-between px-4">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">

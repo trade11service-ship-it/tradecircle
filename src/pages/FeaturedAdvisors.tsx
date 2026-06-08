@@ -135,12 +135,12 @@ export default function FeaturedAdvisors() {
                     <div className="h-1.5 w-full bg-gradient-to-r from-primary via-primary/80 to-secondary" />
 
                     {/* Card body */}
-                    <div className="p-5">
-                      {/* Row 1: Photo + Name + Badge */}
-                      <div className="flex items-start gap-4 mb-4">
+                    <div className="p-4 sm:p-5">
+                      {/* Row 1: Photo + Name */}
+                      <div className="flex items-start gap-3 mb-3">
                         {/* Avatar */}
                         <div className="relative flex-shrink-0">
-                          <div className="h-20 w-20 rounded-full border-2 border-primary/20 overflow-hidden">
+                          <div className="h-16 w-16 sm:h-20 sm:w-20 rounded-full border-2 border-primary/20 overflow-hidden">
                             {advisor.profile_photo_url ? (
                               <img src={advisor.profile_photo_url} alt={advisor.full_name} className="h-full w-full object-cover" />
                             ) : (
@@ -155,23 +155,26 @@ export default function FeaturedAdvisors() {
                         </div>
 
                         {/* Name & info */}
-                        <div className="flex-1 min-w-0">
-                          <h2 className="text-lg font-bold text-foreground leading-tight truncate">
+                        <div className="flex-1 min-w-0 overflow-hidden">
+                          <h2 className="text-base sm:text-lg font-bold text-foreground leading-tight truncate">
                             {toTitleCase(advisor.full_name)}
                           </h2>
                           <div className="flex items-center gap-1 mt-0.5">
-                            <CheckCircle className="h-3 w-3 text-primary" />
+                            <CheckCircle className="h-3 w-3 text-primary shrink-0" />
                             <span className="text-[11px] font-semibold text-primary">SEBI Verified</span>
                           </div>
                           {advisor.public_tagline && (
                             <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{advisor.public_tagline}</p>
                           )}
-                          <div className="inline-flex items-center gap-1.5 mt-2 rounded-full bg-primary/10 border border-primary/20 px-3 py-1 text-[11px] font-bold text-primary">
-                            <Shield className="h-3 w-3" />
-                            SEBI ✓ {advisor.sebi_reg_no}
-                          </div>
                         </div>
                       </div>
+
+                      {/* SEBI Reg - own row to prevent overflow */}
+                      <div className="inline-flex max-w-full items-center gap-1.5 mb-3 rounded-full bg-primary/10 border border-primary/20 px-3 py-1 text-[11px] font-bold text-primary">
+                        <Shield className="h-3 w-3 shrink-0" />
+                        <span className="truncate">SEBI ✓ {advisor.sebi_reg_no}</span>
+                      </div>
+
 
                       {/* Bio */}
                       <p className="text-[13px] text-muted-foreground leading-relaxed mb-4 line-clamp-2">
