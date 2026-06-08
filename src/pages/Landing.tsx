@@ -137,20 +137,25 @@ export default function Landing() {
           {/* LIVE PUBLIC SIGNALS SLIDESHOW */}
           {publicSignals.length > 0 && (
             <div className="mt-8 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-              <div className="flex items-center gap-2 mb-3 px-1">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+              <Link to="/explore" className="flex items-center justify-between gap-2 mb-3 px-1 group">
+                <div className="flex items-center gap-2">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+                  </span>
+                  <span className="text-[11px] font-bold text-primary uppercase tracking-wider group-hover:underline">Live Public Signals</span>
+                </div>
+                <span className="text-[11px] font-bold text-primary inline-flex items-center gap-1 group-hover:gap-1.5 transition-all">
+                  View All Free Signals <ArrowRight className="h-3 w-3" />
                 </span>
-                <span className="text-[11px] font-bold text-primary uppercase tracking-wider">Live Public Signals</span>
-              </div>
+              </Link>
               
               <div className="relative overflow-hidden rounded-xl border border-border bg-card shadow-sm">
                 <div className="flex animate-marquee hover:[animation-play-state:paused]">
                   {Array(2).fill(null).map((_, ri) => (
                     <div key={ri} className="flex gap-4 p-4">
                       {publicSignals.map((sig, i) => (
-                        <div key={`${ri}-${i}`} className="w-[280px] shrink-0 rounded-lg border border-border bg-muted/30 p-3">
+                        <Link to="/explore" key={`${ri}-${i}`} className="w-[280px] shrink-0 rounded-lg border border-border bg-muted/30 p-3 hover:border-primary/40 hover:shadow-sm transition-all">
                           <div className="flex justify-between items-start mb-2">
                             <div className="flex items-center gap-2">
                               <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden shrink-0">
@@ -182,7 +187,7 @@ export default function Landing() {
                               </div>
                             </div>
                           )}
-                        </div>
+                        </Link>
                       ))}
                     </div>
                   ))}
@@ -192,6 +197,7 @@ export default function Landing() {
           )}
         </div>
       </section>
+
 
 
 
