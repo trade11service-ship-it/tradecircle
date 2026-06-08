@@ -61,7 +61,13 @@ export default {
         "light-blue": "hsl(var(--light-blue))",
         "off-white": "hsl(var(--off-white))",
         warning: "hsl(var(--warning))",
+        navy: "hsl(var(--navy))",
+        emerald: "hsl(var(--emerald))",
+        crimson: "hsl(var(--crimson))",
       },
+      fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
