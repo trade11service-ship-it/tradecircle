@@ -118,12 +118,25 @@
     @apply bg-background text-foreground;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
     font-size: 15px;
+    font-feature-settings: 'cv11', 'ss01', 'ss03';
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overscroll-behavior-y: none;
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+    font-family: 'Inter', system-ui, sans-serif;
+    font-weight: 900;
+    letter-spacing: -0.035em;
+  }
+  .font-mono, .tc-mono {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-feature-settings: 'tnum', 'zero';
+  }
+  .tc-caption {
+    text-transform: uppercase;
+    letter-spacing: 0.2em;
+    font-weight: 700;
+    font-size: 11px;
   }
 }
 
