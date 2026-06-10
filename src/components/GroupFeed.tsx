@@ -334,8 +334,8 @@ export function GroupFeed({ groupId, advisorId, advisorName, advisorPhoto, isSub
   let globalIdx = 0;
 
   return (
-    <div className="relative flex flex-col h-full">
-      <div ref={feedContainerRef} className={`flex-1 overflow-y-auto px-2 md:px-4 py-4 ${isOwner ? 'pb-[180px]' : 'pb-[80px] md:pb-4'} space-y-4 bg-transparent z-10 relative scroll-smooth`}>
+    <div className="relative flex flex-col h-full min-h-0">
+      <div ref={feedContainerRef} className="flex-1 min-h-0 overflow-y-auto px-2 md:px-4 py-4 space-y-4 bg-transparent z-10 relative scroll-smooth">
         {hasMore && (
           <div className="flex justify-center mb-2">
             <Button variant="ghost" size="sm" className="text-[12px] text-muted-foreground" onClick={() => setLimit(prev => prev + 50)}>
@@ -356,7 +356,6 @@ export function GroupFeed({ groupId, advisorId, advisorName, advisorPhoto, isSub
                   if (vis.hideCompletely) return null;
 
                   if (vis.showLockOverlay) {
-                    // Show lock overlay with blurred preview
                     return (
                       <div key={post.id} className="relative">
                         <div className="pointer-events-none blur-[6px] opacity-60 space-y-3">
@@ -382,7 +381,6 @@ export function GroupFeed({ groupId, advisorId, advisorName, advisorPhoto, isSub
                     );
                   }
 
-                  // Render the post based on visibility
                   if (post.post_type === 'signal') {
                     return <SignalBubble key={post.id} post={post} advisorName={advisorName} advisorPhoto={advisorPhoto} blurred={vis.blurNumbers} freeBadge={vis.freeBadge} isOwner={isOwner} onMark={handleMarkResult} />;
                   }
@@ -395,25 +393,28 @@ export function GroupFeed({ groupId, advisorId, advisorName, advisorPhoto, isSub
         <div ref={feedEndRef} />
       </div>
 
-      {/* New message pill */}
       {showNewPill && (
         <button
           onClick={scrollToBottom}
-          className="absolute bottom-20 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-[12px] font-semibold text-primary-foreground shadow-lg"
+          className="absolute bottom-24 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-[12px] font-semibold text-primary-foreground shadow-lg"
         >
           <ChevronDown className="h-3.5 w-3.5" /> New message
         </button>
       )}
 
-      {/* Advisor quick composer (owner only) */}
       {isOwner && advisorId && (
-        <QuickComposer groupId={groupId} advisorId={advisorId} />
+        <div className="shrink-0 z-20">
+          <QuickComposer groupId={groupId} advisorId={advisorId} onPosted={(row) => {
+            setPosts(prev => prev.some(p => p.id === row.id) ? prev : [...prev, row]);
+            setTimeout(() => feedEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+          }} />
+        </div>
       )}
     </div>
   );
 }
 
-function QuickComposer({ groupId, advisorId }: { groupId: string; advisorId: string }) {
+function QuickComposer({ groupId, advisorId, onPosted }: { groupId: string; advisorId: string; onPosted?: (row: any) => void }) {
   const [mode, setMode] = useState<'message' | 'signal'>('message');
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
@@ -426,32 +427,35 @@ function QuickComposer({ groupId, advisorId }: { groupId: string; advisorId: str
       const t = sanitizeTextarea(text).trim();
       if (!t) { toast.error('Type a message'); return; }
       setSending(true);
-      const { error } = await supabase.from('signals').insert({
+      const { data, error } = await supabase.from('signals').insert({
         group_id: groupId, advisor_id: advisorId, post_type: 'message', message_text: t, is_public: isPublic,
-      } as any);
+      } as any).select().single();
       setSending(false);
       if (error) { toast.error(error.message); return; }
       setText('');
+      if (data) onPosted?.(data);
     } else {
       const inst = sanitizeText(sig.instrument).trim();
       if (!inst || !sig.entry || !sig.target || !sig.sl) { toast.error('Fill all signal fields'); return; }
       setSending(true);
-      const { error } = await supabase.from('signals').insert({
+      const { data, error } = await supabase.from('signals').insert({
         group_id: groupId, advisor_id: advisorId, post_type: 'signal',
         instrument: inst, signal_type: sig.signalType,
         entry_price: Number(sig.entry), target_price: Number(sig.target), stop_loss: Number(sig.sl),
         timeframe: 'Intraday', notes: sanitizeTextarea(text) || null, is_public: isPublic,
-      } as any);
+      } as any).select().single();
       setSending(false);
       if (error) { toast.error(error.message); return; }
       setSig({ instrument: '', signalType: 'BUY', entry: '', target: '', sl: '' });
       setText('');
       toast.success('Signal posted');
+      if (data) onPosted?.(data);
     }
   };
 
   return (
-    <div className="absolute bottom-0 inset-x-0 z-20 border-t border-border bg-card/95 backdrop-blur p-2 pb-[calc(env(safe-area-inset-bottom)+8px)] md:pb-2 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
+    <div className="border-t border-border bg-card/95 backdrop-blur p-2 pb-[calc(env(safe-area-inset-bottom)+8px)] md:pb-2 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
+
       <div className="flex items-center gap-1 mb-1.5">
         <button onClick={() => setMode('message')} className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${mode==='message' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>Post</button>
         <button onClick={() => setMode('signal')} className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${mode==='signal' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>Signal</button>

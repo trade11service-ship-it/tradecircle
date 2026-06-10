@@ -73,6 +73,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!mounted) return;
       const currentUser = session?.user ?? null;
       setUser(currentUser);
+      // Keep realtime authorized with the latest JWT so RLS evaluates correctly on postgres_changes.
+      try { (supabase.realtime as any).setAuth(session?.access_token ?? null); } catch {}
+
 
       if (event === 'PASSWORD_RECOVERY') {
         navigate('/reset-password');
