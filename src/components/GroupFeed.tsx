@@ -414,7 +414,7 @@ export function GroupFeed({ groupId, advisorId, advisorName, advisorPhoto, isSub
   );
 }
 
-function QuickComposer({ groupId, advisorId }: { groupId: string; advisorId: string }) {
+function QuickComposer({ groupId, advisorId, onPosted }: { groupId: string; advisorId: string; onPosted?: (row: any) => void }) {
   const [mode, setMode] = useState<'message' | 'signal'>('message');
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
@@ -427,32 +427,35 @@ function QuickComposer({ groupId, advisorId }: { groupId: string; advisorId: str
       const t = sanitizeTextarea(text).trim();
       if (!t) { toast.error('Type a message'); return; }
       setSending(true);
-      const { error } = await supabase.from('signals').insert({
+      const { data, error } = await supabase.from('signals').insert({
         group_id: groupId, advisor_id: advisorId, post_type: 'message', message_text: t, is_public: isPublic,
-      } as any);
+      } as any).select().single();
       setSending(false);
       if (error) { toast.error(error.message); return; }
       setText('');
+      if (data) onPosted?.(data);
     } else {
       const inst = sanitizeText(sig.instrument).trim();
       if (!inst || !sig.entry || !sig.target || !sig.sl) { toast.error('Fill all signal fields'); return; }
       setSending(true);
-      const { error } = await supabase.from('signals').insert({
+      const { data, error } = await supabase.from('signals').insert({
         group_id: groupId, advisor_id: advisorId, post_type: 'signal',
         instrument: inst, signal_type: sig.signalType,
         entry_price: Number(sig.entry), target_price: Number(sig.target), stop_loss: Number(sig.sl),
         timeframe: 'Intraday', notes: sanitizeTextarea(text) || null, is_public: isPublic,
-      } as any);
+      } as any).select().single();
       setSending(false);
       if (error) { toast.error(error.message); return; }
       setSig({ instrument: '', signalType: 'BUY', entry: '', target: '', sl: '' });
       setText('');
       toast.success('Signal posted');
+      if (data) onPosted?.(data);
     }
   };
 
   return (
-    <div className="absolute bottom-0 inset-x-0 z-20 border-t border-border bg-card/95 backdrop-blur p-2 pb-[calc(env(safe-area-inset-bottom)+8px)] md:pb-2 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
+    <div className="border-t border-border bg-card/95 backdrop-blur p-2 pb-[calc(env(safe-area-inset-bottom)+8px)] md:pb-2 shadow-[0_-4px_12px_rgba(0,0,0,0.06)]">
+
       <div className="flex items-center gap-1 mb-1.5">
         <button onClick={() => setMode('message')} className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${mode==='message' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>Post</button>
         <button onClick={() => setMode('signal')} className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${mode==='signal' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>Signal</button>
