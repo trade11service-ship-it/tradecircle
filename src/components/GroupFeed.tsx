@@ -334,8 +334,8 @@ export function GroupFeed({ groupId, advisorId, advisorName, advisorPhoto, isSub
   let globalIdx = 0;
 
   return (
-    <div className="relative flex flex-col h-full">
-      <div ref={feedContainerRef} className={`flex-1 overflow-y-auto px-2 md:px-4 py-4 ${isOwner ? 'pb-[180px]' : 'pb-[80px] md:pb-4'} space-y-4 bg-transparent z-10 relative scroll-smooth`}>
+    <div className="relative flex flex-col h-full min-h-0">
+      <div ref={feedContainerRef} className="flex-1 min-h-0 overflow-y-auto px-2 md:px-4 py-4 space-y-4 bg-transparent z-10 relative scroll-smooth">
         {hasMore && (
           <div className="flex justify-center mb-2">
             <Button variant="ghost" size="sm" className="text-[12px] text-muted-foreground" onClick={() => setLimit(prev => prev + 50)}>
@@ -356,7 +356,6 @@ export function GroupFeed({ groupId, advisorId, advisorName, advisorPhoto, isSub
                   if (vis.hideCompletely) return null;
 
                   if (vis.showLockOverlay) {
-                    // Show lock overlay with blurred preview
                     return (
                       <div key={post.id} className="relative">
                         <div className="pointer-events-none blur-[6px] opacity-60 space-y-3">
@@ -382,7 +381,6 @@ export function GroupFeed({ groupId, advisorId, advisorName, advisorPhoto, isSub
                     );
                   }
 
-                  // Render the post based on visibility
                   if (post.post_type === 'signal') {
                     return <SignalBubble key={post.id} post={post} advisorName={advisorName} advisorPhoto={advisorPhoto} blurred={vis.blurNumbers} freeBadge={vis.freeBadge} isOwner={isOwner} onMark={handleMarkResult} />;
                   }
@@ -395,19 +393,22 @@ export function GroupFeed({ groupId, advisorId, advisorName, advisorPhoto, isSub
         <div ref={feedEndRef} />
       </div>
 
-      {/* New message pill */}
       {showNewPill && (
         <button
           onClick={scrollToBottom}
-          className="absolute bottom-20 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-[12px] font-semibold text-primary-foreground shadow-lg"
+          className="absolute bottom-24 left-1/2 -translate-x-1/2 z-30 flex items-center gap-1.5 rounded-full bg-primary px-4 py-2 text-[12px] font-semibold text-primary-foreground shadow-lg"
         >
           <ChevronDown className="h-3.5 w-3.5" /> New message
         </button>
       )}
 
-      {/* Advisor quick composer (owner only) */}
       {isOwner && advisorId && (
-        <QuickComposer groupId={groupId} advisorId={advisorId} />
+        <div className="shrink-0 z-20">
+          <QuickComposer groupId={groupId} advisorId={advisorId} onPosted={(row) => {
+            setPosts(prev => prev.some(p => p.id === row.id) ? prev : [...prev, row]);
+            setTimeout(() => feedEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+          }} />
+        </div>
       )}
     </div>
   );
