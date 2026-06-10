@@ -1,0 +1,3 @@
+ALTER TABLE public.signals REPLICA IDENTITY FULL;
+ALTER TABLE public.groups REPLICA IDENTITY FULL;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.groups;
