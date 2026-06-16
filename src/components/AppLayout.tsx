@@ -47,7 +47,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   ];
 
   return (
-    <div className="flex h-[100dvh] w-[100vw] bg-background overflow-hidden relative">
+    <div className="flex h-[100dvh] w-[100vw] bg-background overflow-hidden fixed inset-0">
       
       {/* Desktop Sidebar (Fixed Left) */}
       <aside className="hidden md:flex flex-col w-[260px] lg:w-[280px] border-r border-border bg-card shrink-0 z-20 h-full">
@@ -129,39 +129,45 @@ export function AppLayout({ children }: AppLayoutProps) {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col min-w-0 h-[100dvh] relative z-10 bg-background">
-        {/* Mobile Header (always visible — including on group pages so platform nav stays accessible) */}
-        <header className="md:hidden h-14 flex items-center justify-between px-4 bg-card border-b border-border shrink-0 z-30 sticky top-0">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground font-bold text-sm">
-              T
+      <main className="flex-1 flex flex-col min-w-0 min-h-0 h-full relative z-10 bg-background overflow-hidden">
+        {/* Mobile Header — hidden on group pages (group page owns its own chat header) */}
+        {!isGroupPage && (
+          <header className="md:hidden h-14 flex items-center justify-between px-4 bg-card border-b border-border shrink-0 z-30">
+            <Link to="/" className="flex items-center gap-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground font-bold text-sm">
+                T
+              </div>
+              <span className="text-lg font-extrabold tracking-tight text-foreground" style={{ fontFamily: 'Outfit, sans-serif' }}>
+                Trade<span className="text-primary">Circle</span>
+              </span>
+            </Link>
+            <div className="flex items-center gap-2">
+              {user ? (
+                <Link to="/profile" aria-label="Profile" className="p-2 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted">
+                  <User className="h-5 w-5" />
+                </Link>
+              ) : (
+                <Link to="/login" className="rounded-full bg-primary px-3.5 h-8 inline-flex items-center text-[12px] font-bold text-primary-foreground shadow-sm hover:bg-primary/90 transition">
+                  Sign In
+                </Link>
+              )}
             </div>
-            <span className="text-lg font-extrabold tracking-tight text-foreground" style={{ fontFamily: 'Outfit, sans-serif' }}>
-              Trade<span className="text-primary">Circle</span>
-            </span>
-          </Link>
-          <div className="flex items-center gap-2">
-            {user ? (
-              <Link to="/profile" aria-label="Profile" className="p-2 text-muted-foreground hover:text-foreground rounded-full hover:bg-muted">
-                <User className="h-5 w-5" />
-              </Link>
-            ) : (
-              <Link to="/login" className="rounded-full bg-primary px-3.5 h-8 inline-flex items-center text-[12px] font-bold text-primary-foreground shadow-sm hover:bg-primary/90 transition">
-                Sign In
-              </Link>
-            )}
-          </div>
-        </header>
+          </header>
+        )}
 
-        {/* Scrollable Content (Strictly bound to flex-1) */}
-        <div className={`flex-1 min-h-0 relative w-full ${isGroupPage ? "overflow-hidden" : "overflow-y-auto overflow-x-hidden scroll-smooth"}`}>
-          <div className={isGroupPage ? "h-full" : "min-h-full flex flex-col"}>
+        {/* Content area: group pages get a strict fixed-height container; everything else scrolls normally */}
+        {isGroupPage ? (
+          <div className="flex-1 min-h-0 h-full w-full overflow-hidden relative">
             {children}
           </div>
-        </div>
+        ) : (
+          <div className="flex-1 min-h-0 relative w-full overflow-y-auto overflow-x-hidden scroll-smooth">
+            <div className="min-h-full flex flex-col">
+              {children}
+            </div>
+          </div>
+        )}
 
-        
-        {/* Mobile Bottom Navigation Placeholder — skip on group page (chat owns full height) */}
         {!isGroupPage && <div className="md:hidden h-[60px] shrink-0 w-full bg-background"></div>}
       </main>
 

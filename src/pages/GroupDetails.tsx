@@ -39,17 +39,8 @@ export default function GroupDetails() {
     fetchGroup();
   }, [id, user?.id]);
 
-  // Force layout recalculation on mount to fix mobile browser viewport lag
-  useEffect(() => {
-    const tick = () => window.dispatchEvent(new Event("resize"));
-    tick();
-    const t1 = setTimeout(tick, 50);
-    const t2 = setTimeout(tick, 250);
-    return () => {
-      clearTimeout(t1);
-      clearTimeout(t2);
-    };
-  }, []);
+  // (removed previous resize-dispatch hack — strict flex layout makes it unnecessary)
+
 
   const fetchGroup = async () => {
     if (!id) return;
@@ -164,7 +155,8 @@ export default function GroupDetails() {
 
   return (
     <div className="w-full h-full min-h-0 bg-background flex flex-col overflow-hidden">
-      <div className="flex-1 flex overflow-hidden min-h-0">
+      <div className="flex-1 flex overflow-hidden min-h-0 h-full">
+
 
         {/* Left Sidebar (Desktop Only) */}
         <div className="hidden md:flex w-[380px] lg:w-[420px] flex-col border-r border-border bg-card shadow-sm z-10 overflow-y-auto">
@@ -278,12 +270,13 @@ export default function GroupDetails() {
         </div>
 
         {/* Right Area - Chat Interface */}
-        <div className="flex-1 flex flex-col relative bg-[#E7EBF0] dark:bg-[#0B141A]">
+        <div className="flex-1 flex flex-col relative bg-[#E7EBF0] dark:bg-[#0B141A] min-h-0 h-full overflow-hidden">
           {/* Subtle Chat Background Pattern */}
           <div className="absolute inset-0 opacity-[0.25] dark:opacity-[0.05] pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M54.627 0l.83.83v58.34h-58.34l-.83-.83L0 54.628l54.627-54.627zM58.34 0v58.34L0 0h58.34zM0 58.34h58.34v.83l-58.34-.83v-.83zM0 0v.83L.83 0H0z' fill='%23000000' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E")` }}></div>
 
-          {/* Chat Header (Sticky top for stability) */}
-          <div className="flex items-center gap-2 px-3 py-2 bg-card border-b border-border shadow-[0_2px_10px_rgba(0,0,0,0.05)] z-20 shrink-0 sticky top-0">
+          {/* Chat Header — fixed height block at top of the column */}
+          <div className="flex items-center gap-2 px-3 py-2 bg-card border-b border-border shadow-[0_2px_10px_rgba(0,0,0,0.05)] z-20 shrink-0 relative">
+
             <button
               onClick={goBack}
               aria-label="Back"
@@ -339,8 +332,8 @@ export default function GroupDetails() {
             </div>
           </div>
 
-          {/* The Actual Feed */}
-          <div className="flex-1 overflow-hidden relative">
+          {/* The Actual Feed — the ONLY scrollable region on this page */}
+          <div className="flex-1 min-h-0 overflow-hidden relative z-10">
             <GroupFeed
               groupId={group.id}
               advisorId={group.advisor_id}
@@ -353,9 +346,11 @@ export default function GroupDetails() {
             />
           </div>
 
-          {/* Mobile sticky bottom Subscribe CTA — only when not subscribed */}
+
+          {/* Mobile bottom Subscribe CTA — flex child, never sticky/fixed so it can't create stray gaps */}
           {!isSubscribed && (
-            <div className="md:hidden shrink-0 z-30 bg-card border-t border-border shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.18)]" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)' }}>
+            <div className="md:hidden shrink-0 z-30 bg-card border-t border-border shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.18)] relative" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)' }}>
+
               <div className="flex items-center gap-3 p-3">
                 <div className="flex flex-col">
                   <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Monthly</span>
