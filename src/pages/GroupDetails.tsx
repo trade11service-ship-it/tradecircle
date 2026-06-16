@@ -151,8 +151,8 @@ export default function GroupDetails() {
   }
 
   return (
-    <div className="absolute inset-0 z-10 bg-background flex flex-col overflow-hidden">
-      <div className="flex-1 flex overflow-hidden">
+    <div className="h-full w-full bg-background flex flex-col overflow-hidden">
+      <div className="flex-1 flex overflow-hidden min-h-0">
         {/* Left Sidebar (Desktop Only) */}
         <div className="hidden md:flex w-[380px] lg:w-[420px] flex-col border-r border-border bg-card shadow-sm z-10 overflow-y-auto">
           {/* Back link */}
@@ -342,7 +342,7 @@ export default function GroupDetails() {
 
           {/* Mobile sticky bottom Subscribe CTA — only when not subscribed */}
           {!isSubscribed && (
-            <div className="md:hidden shrink-0 z-30 bg-card border-t border-border shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.18)] pb-safe">
+            <div className="md:hidden shrink-0 z-30 bg-card border-t border-border shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.18)]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
               <div className="flex items-center gap-3 p-3">
                 <div className="flex flex-col">
                   <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Monthly</span>
