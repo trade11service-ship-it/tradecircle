@@ -154,7 +154,9 @@ export default function Landing() {
                 <div className="flex animate-marquee hover:[animation-play-state:paused]">
                   {Array(2).fill(null).map((_, ri) => (
                     <div key={ri} className="flex gap-4 p-4">
-                      {publicSignals.map((sig, i) => (
+                      {publicSignals.map((sig, i) => {
+                        const isTextPost = sig.post_type === 'message' || sig.post_type === 'text' || !sig.instrument || !(sig.entry_price > 0);
+                        return (
                         <Link to="/explore" key={`${ri}-${i}`} className="w-[280px] shrink-0 rounded-lg border border-border bg-muted/30 p-3 hover:border-primary/40 hover:shadow-sm transition-all">
                           <div className="flex justify-between items-start mb-2">
                             <div className="flex items-center gap-2">
@@ -165,30 +167,42 @@ export default function Landing() {
                             </div>
                             <span className="text-[10px] text-muted-foreground">{new Date(sig.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${sig.signal_type === 'BUY' ? 'bg-light-green text-primary' : 'bg-destructive/10 text-destructive'}`}>
-                              {sig.signal_type}
-                            </span>
-                            <span className="text-[13px] font-extrabold text-foreground">{sig.instrument}</span>
-                          </div>
-                          {sig.entry_price > 0 && (
-                            <div className="mt-2 grid grid-cols-3 gap-1 text-[10px]">
-                              <div className="bg-card border border-border rounded p-1 text-center">
-                                <p className="text-muted-foreground">Entry</p>
-                                <p className="font-bold text-foreground">₹{sig.entry_price}</p>
-                              </div>
-                              <div className="bg-card border border-border rounded p-1 text-center">
-                                <p className="text-muted-foreground">Target</p>
-                                <p className="font-bold text-primary">₹{sig.target_price}</p>
-                              </div>
-                              <div className="bg-card border border-border rounded p-1 text-center">
-                                <p className="text-muted-foreground">SL</p>
-                                <p className="font-bold text-destructive">₹{sig.stop_loss}</p>
-                              </div>
+                          {isTextPost ? (
+                            <div className="min-h-[64px] flex flex-col">
+                              <span className="inline-flex w-fit items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-1.5 py-0.5 rounded mb-1.5">
+                                <MessageSquare className="h-2.5 w-2.5" /> Update
+                              </span>
+                              <p className="text-[12px] text-foreground leading-snug line-clamp-3 whitespace-pre-wrap">
+                                {sig.message_text || sig.notes || 'New update from advisor'}
+                              </p>
                             </div>
+                          ) : (
+                            <>
+                              <div className="flex items-center gap-2">
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${sig.signal_type === 'BUY' ? 'bg-light-green text-primary' : 'bg-destructive/10 text-destructive'}`}>
+                                  {sig.signal_type}
+                                </span>
+                                <span className="text-[13px] font-extrabold text-foreground">{sig.instrument}</span>
+                              </div>
+                              <div className="mt-2 grid grid-cols-3 gap-1 text-[10px]">
+                                <div className="bg-card border border-border rounded p-1 text-center">
+                                  <p className="text-muted-foreground">Entry</p>
+                                  <p className="font-bold text-foreground">₹{sig.entry_price}</p>
+                                </div>
+                                <div className="bg-card border border-border rounded p-1 text-center">
+                                  <p className="text-muted-foreground">Target</p>
+                                  <p className="font-bold text-primary">₹{sig.target_price}</p>
+                                </div>
+                                <div className="bg-card border border-border rounded p-1 text-center">
+                                  <p className="text-muted-foreground">SL</p>
+                                  <p className="font-bold text-destructive">₹{sig.stop_loss}</p>
+                                </div>
+                              </div>
+                            </>
                           )}
                         </Link>
-                      ))}
+                        );
+                      })}
                     </div>
                   ))}
                 </div>
