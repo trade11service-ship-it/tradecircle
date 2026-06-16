@@ -418,7 +418,7 @@ export function GroupFeed({ groupId, advisorId, advisorName, advisorPhoto, isSub
         <div className="shrink-0 z-20">
           <QuickComposer groupId={groupId} advisorId={advisorId} onPosted={(row) => {
             setPosts(prev => prev.some(p => p.id === row.id) ? prev : [...prev, row]);
-            setTimeout(() => feedEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+            setTimeout(() => scrollFeedToBottom(true), 50);
           }} />
         </div>
       )}
