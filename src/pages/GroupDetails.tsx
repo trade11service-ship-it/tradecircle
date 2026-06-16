@@ -355,7 +355,7 @@ export default function GroupDetails() {
 
           {/* Mobile sticky bottom Subscribe CTA — only when not subscribed */}
           {!isSubscribed && (
-            <div className="md:hidden shrink-0 z-30 bg-card border-t border-border shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.18)]" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+            <div className="md:hidden shrink-0 z-30 bg-card border-t border-border shadow-[0_-8px_24px_-12px_rgba(0,0,0,0.18)]" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 12px)' }}>
               <div className="flex items-center gap-3 p-3">
                 <div className="flex flex-col">
                   <span className="text-[10px] uppercase tracking-wider font-bold text-muted-foreground">Monthly</span>
