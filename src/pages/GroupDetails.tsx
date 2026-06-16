@@ -163,8 +163,9 @@ export default function GroupDetails() {
   }
 
   return (
-    <div className="h-full w-full bg-background flex flex-col overflow-hidden">
+    <div className="w-full h-[100dvh] bg-background flex flex-col overflow-hidden">
       <div className="flex-1 flex overflow-hidden min-h-0">
+
         {/* Left Sidebar (Desktop Only) */}
         <div className="hidden md:flex w-[380px] lg:w-[420px] flex-col border-r border-border bg-card shadow-sm z-10 overflow-y-auto">
           {/* Back link */}
