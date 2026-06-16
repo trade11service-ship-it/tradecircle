@@ -82,10 +82,23 @@ export default function FeaturedAdvisors() {
     return Math.round((stats.win_count / stats.resolved_count) * 100);
   };
 
+  const STANDARD_BIO = 'SEBI Registered Research Analyst providing verified trading signals and transparent track records.';
+  const isLowQualityText = (text: string) => {
+    const t = text.trim();
+    if (t.length < 30) return true;
+    const lower = t.toLowerCase();
+    const bad = ['registerd', 'dvisor', 'yars', 'experince', 'we r', 'r the', 'plz', 'pls'];
+    if (bad.some((b) => lower.includes(b))) return true;
+    return false;
+  };
   const getBio = (advisor: FeaturedAdvisor) => {
     const text = advisor.public_description || advisor.bio || '';
-    if (text.length < 30) return 'SEBI registered Research Analyst providing verified trading signals and market analysis.';
-    return text;
+    return isLowQualityText(text) ? STANDARD_BIO : text;
+  };
+  const getTagline = (advisor: FeaturedAdvisor) => {
+    const t = (advisor.public_tagline || '').trim();
+    if (!t) return null;
+    return isLowQualityText(t) ? 'SEBI Registered Advisor' : t;
   };
 
   const memberSince = (date: string | null) => {
@@ -163,8 +176,8 @@ export default function FeaturedAdvisors() {
                             <CheckCircle className="h-3 w-3 text-primary shrink-0" />
                             <span className="text-[11px] font-semibold text-primary">SEBI Verified</span>
                           </div>
-                          {advisor.public_tagline && (
-                            <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{advisor.public_tagline}</p>
+                          {getTagline(advisor) && (
+                            <p className="text-xs text-muted-foreground mt-1 line-clamp-1">{getTagline(advisor)}</p>
                           )}
                         </div>
                       </div>
