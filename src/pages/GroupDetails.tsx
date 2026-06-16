@@ -39,6 +39,18 @@ export default function GroupDetails() {
     fetchGroup();
   }, [id, user?.id]);
 
+  // Force layout recalculation on mount to fix mobile browser viewport lag
+  useEffect(() => {
+    const tick = () => window.dispatchEvent(new Event("resize"));
+    tick();
+    const t1 = setTimeout(tick, 50);
+    const t2 = setTimeout(tick, 250);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, []);
+
   const fetchGroup = async () => {
     if (!id) return;
     setLoading(true);
