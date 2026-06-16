@@ -257,10 +257,20 @@ export function GroupFeed({ groupId, advisorId, advisorName, advisorPhoto, isSub
     fetchPosts(limit);
   }, [groupId, limit]);
 
+  // Scroll the feed container itself (avoids scrollIntoView pushing the document on iOS)
+  const scrollFeedToBottom = (smooth = true) => {
+    const c = feedContainerRef.current;
+    if (!c) return;
+    c.scrollTo({ top: c.scrollHeight, behavior: smooth ? 'smooth' : 'auto' });
+  };
+
   // Auto-scroll to bottom on initial load
   useEffect(() => {
     if (!loading && posts.length > 0) {
-      setTimeout(() => feedEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+      // Two passes: instant snap + smooth correction after images settle
+      requestAnimationFrame(() => scrollFeedToBottom(false));
+      const t = setTimeout(() => scrollFeedToBottom(false), 120);
+      return () => clearTimeout(t);
     }
   }, [loading]);
 
@@ -273,7 +283,7 @@ export function GroupFeed({ groupId, advisorId, advisorName, advisorPhoto, isSub
       isNearBottom.current = container.scrollHeight - container.scrollTop - container.clientHeight < threshold;
       if (isNearBottom.current) setShowNewPill(false);
     };
-    container.addEventListener('scroll', handleScroll);
+    container.addEventListener('scroll', handleScroll, { passive: true });
     return () => container.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -284,7 +294,7 @@ export function GroupFeed({ groupId, advisorId, advisorName, advisorPhoto, isSub
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'signals', filter: `group_id=eq.${groupId}` }, (payload) => {
         setPosts(prev => [...prev, payload.new as FeedPost]);
         if (isNearBottom.current) {
-          setTimeout(() => feedEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+          setTimeout(() => scrollFeedToBottom(true), 80);
         } else {
           setShowNewPill(true);
         }
@@ -297,9 +307,10 @@ export function GroupFeed({ groupId, advisorId, advisorName, advisorPhoto, isSub
   }, [groupId]);
 
   const scrollToBottom = () => {
-    feedEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    scrollFeedToBottom(true);
     setShowNewPill(false);
   };
+
 
   // Group posts by date
   const groupedPosts: { label: string; posts: FeedPost[] }[] = [];
