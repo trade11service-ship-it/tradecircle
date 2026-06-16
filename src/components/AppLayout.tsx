@@ -154,11 +154,12 @@ export function AppLayout({ children }: AppLayoutProps) {
         </header>
 
         {/* Scrollable Content (Strictly bound to flex-1) */}
-        <div className="flex-1 overflow-y-auto overflow-x-hidden relative w-full scroll-smooth">
+        <div className={`flex-1 min-h-0 relative w-full ${isGroupPage ? "overflow-hidden" : "overflow-y-auto overflow-x-hidden scroll-smooth"}`}>
           <div className={isGroupPage ? "h-full" : "min-h-full flex flex-col"}>
             {children}
           </div>
         </div>
+
         
         {/* Mobile Bottom Navigation Placeholder — skip on group page (chat owns full height) */}
         {!isGroupPage && <div className="md:hidden h-[60px] shrink-0 w-full bg-background"></div>}
