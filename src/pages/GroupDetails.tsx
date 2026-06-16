@@ -163,7 +163,7 @@ export default function GroupDetails() {
   }
 
   return (
-    <div className="w-full h-[100dvh] bg-background flex flex-col overflow-hidden">
+    <div className="w-full h-full min-h-0 bg-background flex flex-col overflow-hidden">
       <div className="flex-1 flex overflow-hidden min-h-0">
 
         {/* Left Sidebar (Desktop Only) */}
