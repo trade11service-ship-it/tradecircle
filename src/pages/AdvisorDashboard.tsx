@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
-import { BarChart3, Radio, Users, UserCircle, IndianRupee, TrendingUp, Clock, CheckCircle2, XCircle, AlertTriangle, MessageSquare, ImageIcon, X, Globe, Lock, Gift, Plus, Shield } from 'lucide-react';
+import { BarChart3, Radio, Users, UserCircle, IndianRupee, TrendingUp, Clock, CheckCircle2, XCircle, AlertTriangle, MessageSquare, ImageIcon, X, Globe, Lock, Gift, Plus, Shield, Download, FileSpreadsheet } from 'lucide-react';
 import { sanitizeText, sanitizeTextarea, sanitizeNumeric, sanitizeAlphanumeric } from '@/lib/sanitize';
 import type { Tables } from '@/integrations/supabase/types';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -53,6 +53,104 @@ export default function AdvisorDashboard() {
 
   // Feed view
   const [feedGroupId, setFeedGroupId] = useState<string | null>(null);
+
+  // SEBI audit CSV
+  const [exportingCsv, setExportingCsv] = useState(false);
+
+  const csvCell = (v: any): string => {
+    if (v === null || v === undefined) return '';
+    const s = String(v).replace(/"/g, '""');
+    return /[",\n\r]/.test(s) ? `"${s}"` : s;
+  };
+
+  const planLabelFromDates = (start?: string | null, end?: string | null): string => {
+    if (!start || !end) return 'Custom';
+    const days = Math.round((new Date(end).getTime() - new Date(start).getTime()) / 86400000);
+    if (days <= 35) return 'Monthly';
+    if (days <= 100) return 'Quarterly';
+    if (days <= 200) return 'Half-Yearly';
+    return 'Yearly';
+  };
+
+  const downloadSebiAuditCsv = async (advisorId: string, advisorName: string | null | undefined) => {
+    try {
+      setExportingCsv(true);
+
+      // Pull subscriptions joined with profiles (name + email only — phone excluded by design)
+      const { data: subs, error: subsErr } = await supabase
+        .from('subscriptions')
+        .select('id, user_id, plan:platform_fee_percent, amount_paid, start_date, end_date, razorpay_payment_id, created_at, pan_number, consent_timestamp, profiles!inner(full_name, email)' as any)
+        .eq('advisor_id', advisorId)
+        .order('created_at', { ascending: false });
+
+      if (subsErr) throw subsErr;
+      const rows = (subs as any[]) || [];
+
+      // Pull risk-disclosure consents for these users in one shot
+      const userIds = Array.from(new Set(rows.map(r => r.user_id)));
+      let consentMap = new Map<string, string>();
+      if (userIds.length > 0) {
+        const { data: consents } = await supabase
+          .from('user_legal_acceptances')
+          .select('user_id, acceptance_type, accepted_at')
+          .in('user_id', userIds);
+        for (const c of (consents as any[]) || []) {
+          // Prefer subscription_pan consent; fall back to most recent of any type
+          const existing = consentMap.get(c.user_id);
+          if (!existing || c.acceptance_type === 'subscription_pan') {
+            consentMap.set(c.user_id, c.accepted_at);
+          }
+        }
+      }
+
+      const headers = [
+        'Subscriber Name',
+        'Email ID',
+        'PAN Number',
+        'Plan Type',
+        'Amount Paid',
+        'Purchase Date',
+        'Subscription End Date',
+        'SEBI Risk Disclosure Consent Timestamp',
+        'Razorpay Payment ID',
+      ];
+
+      const lines = [headers.join(',')];
+      for (const r of rows) {
+        const consentTs = r.consent_timestamp || consentMap.get(r.user_id) || '';
+        lines.push([
+          csvCell(r.profiles?.full_name || ''),
+          csvCell(r.profiles?.email || ''),
+          csvCell(r.pan_number || ''),
+          csvCell(planLabelFromDates(r.start_date, r.end_date)),
+          csvCell(r.amount_paid ?? ''),
+          csvCell(r.start_date ? new Date(r.start_date).toISOString() : ''),
+          csvCell(r.end_date ? new Date(r.end_date).toISOString() : ''),
+          csvCell(consentTs ? new Date(consentTs).toISOString() : ''),
+          csvCell(r.razorpay_payment_id || ''),
+        ].join(','));
+      }
+
+      const csv = '\uFEFF' + lines.join('\r\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const stamp = new Date().toISOString().slice(0, 10);
+      const safeName = (advisorName || 'advisor').replace(/[^A-Za-z0-9_-]/g, '_');
+      a.href = url;
+      a.download = `SEBI_Audit_Log_${safeName}_${stamp}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success(`Audit log exported — ${rows.length} subscriber record(s)`);
+    } catch (e: any) {
+      console.error('SEBI audit export failed:', e);
+      toast.error(e?.message || 'Failed to generate audit log');
+    } finally {
+      setExportingCsv(false);
+    }
+  };
 
   useEffect(() => { if (user) fetchData(); }, [user]);
 
@@ -745,6 +843,34 @@ export default function AdvisorDashboard() {
         {/* SUBSCRIBERS TAB */}
         {tab === 'subscribers' && (
           <div>
+            {/* SEBI Compliance Audit Log download */}
+            {advisor && (
+              <div className="mb-6 rounded-2xl border-[1.5px] border-slate-200 bg-gradient-to-br from-slate-50 to-white p-5 shadow-[0_2px_8px_rgba(15,23,42,0.04)]">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-white">
+                      <Shield className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-[15px] font-bold text-slate-900 leading-tight">SEBI Compliance Audit Log</h3>
+                      <p className="mt-1 text-[12.5px] text-slate-600 leading-snug">Subscriber name, email, PAN, plan, payment ID and risk-disclosure consent timestamp. Phone numbers are intentionally excluded.</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => downloadSebiAuditCsv(advisor.id, advisor.full_name)}
+                    disabled={exportingCsv}
+                    className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-[13px] font-bold text-white shadow-sm transition-colors hover:bg-slate-800 disabled:opacity-60"
+                  >
+                    {exportingCsv ? (
+                      <><Clock className="h-4 w-4 animate-spin" /> Preparing…</>
+                    ) : (
+                      <><Download className="h-4 w-4" /> Download Audit Log (CSV)</>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+
             {groups.map(g => {
               const groupSubs = subscribers.filter(s => s.group_id === g.id);
               const activeGroupSubs = groupSubs.filter(s => s.status === 'active' && s.end_date && new Date(s.end_date).getTime() > now);
