@@ -117,26 +117,12 @@ export default function PaymentSuccess() {
     }
 
     setErrorReason('Your payment is being processed. If this persists, contact support — your payment is safe.');
-      setStatus('error');
-    }
-    else {
-      // Clear subscription data from sessionStorage
-      sessionStorage.removeItem('subscription_pan');
-      sessionStorage.removeItem('subscription_consent');
-      sessionStorage.removeItem('subscription_consent_timestamp');
-      
-      if (fromReferral && referralCode) {
-        try {
-          await supabase.rpc('increment_referral_conversions', { _code: referralCode, _revenue: group.monthly_price });
-          await supabase.from('referral_signups')
-            .update({ converted_to_paid: true })
-            .eq('user_id', user!.id)
-            .eq('group_id', groupId);
-        } catch (e) { console.error('Referral tracking:', e); }
-        document.cookie = 'referral_code=;path=/;max-age=0';
-      }
-      setStatus('success');
-    }
+    setStatus('error');
+
+    // Clear sessionStorage either way
+    sessionStorage.removeItem('subscription_pan');
+    sessionStorage.removeItem('subscription_consent');
+    sessionStorage.removeItem('subscription_consent_timestamp');
   };
 
   return (
