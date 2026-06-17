@@ -12,7 +12,7 @@ Deno.serve(async (req) => {
 
   try {
     const { signal_id } = await req.json();
-    if (!signal_id) {
+    if (!signal_id || typeof signal_id !== 'string') {
       return new Response(JSON.stringify({ error: 'signal_id required' }), { status: 400, headers: corsHeaders });
     }
 
@@ -20,6 +20,23 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     );
+
+    // Require authenticated caller and verify they own the signal's advisor row.
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
+    }
+    const token = authHeader.replace('Bearer ', '');
+    const authClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_ANON_KEY')!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+    const { data: claims, error: claimsErr } = await authClient.auth.getClaims(token);
+    const callerId = claims?.claims?.sub as string | undefined;
+    if (claimsErr || !callerId) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
+    }
 
     const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN');
     if (!TELEGRAM_BOT_TOKEN) {
@@ -29,12 +46,21 @@ Deno.serve(async (req) => {
     // Get signal details
     const { data: signal, error: sigError } = await supabase
       .from('signals')
-      .select('*, groups!inner(name), advisors!inner(full_name)')
+      .select('*, groups!inner(name), advisors!inner(full_name, user_id)')
       .eq('id', signal_id)
       .single();
 
     if (sigError || !signal) {
       return new Response(JSON.stringify({ error: 'Signal not found' }), { status: 404, headers: corsHeaders });
+    }
+
+    // Authorization: only the advisor who owns this signal (or an admin) may dispatch.
+    const advisorOwnerId = (signal as any).advisors?.user_id;
+    let isAdmin = false;
+    const { data: prof } = await supabase.from('profiles').select('role').eq('id', callerId).maybeSingle();
+    isAdmin = prof?.role === 'admin';
+    if (advisorOwnerId !== callerId && !isAdmin) {
+      return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: corsHeaders });
     }
 
     // Only send Telegram for signal posts, not message posts
