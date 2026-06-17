@@ -14,7 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
-import { BarChart3, Radio, Users, UserCircle, IndianRupee, TrendingUp, Clock, CheckCircle2, XCircle, AlertTriangle, MessageSquare, ImageIcon, X, Globe, Lock, Gift, Plus, Shield } from 'lucide-react';
+import { BarChart3, Radio, Users, UserCircle, IndianRupee, TrendingUp, Clock, CheckCircle2, XCircle, AlertTriangle, MessageSquare, ImageIcon, X, Globe, Lock, Gift, Plus, Shield, Download, FileSpreadsheet } from 'lucide-react';
 import { sanitizeText, sanitizeTextarea, sanitizeNumeric, sanitizeAlphanumeric } from '@/lib/sanitize';
 import type { Tables } from '@/integrations/supabase/types';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -745,6 +745,34 @@ export default function AdvisorDashboard() {
         {/* SUBSCRIBERS TAB */}
         {tab === 'subscribers' && (
           <div>
+            {/* SEBI Compliance Audit Log download */}
+            {advisor && (
+              <div className="mb-6 rounded-2xl border-[1.5px] border-slate-200 bg-gradient-to-br from-slate-50 to-white p-5 shadow-[0_2px_8px_rgba(15,23,42,0.04)]">
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex items-start gap-3">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-white">
+                      <Shield className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h3 className="text-[15px] font-bold text-slate-900 leading-tight">SEBI Compliance Audit Log</h3>
+                      <p className="mt-1 text-[12.5px] text-slate-600 leading-snug">Subscriber name, email, PAN, plan, payment ID and risk-disclosure consent timestamp. Phone numbers are intentionally excluded.</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => downloadSebiAuditCsv(advisor.id, advisor.full_name)}
+                    disabled={exportingCsv}
+                    className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-slate-900 px-5 py-3 text-[13px] font-bold text-white shadow-sm transition-colors hover:bg-slate-800 disabled:opacity-60"
+                  >
+                    {exportingCsv ? (
+                      <><Clock className="h-4 w-4 animate-spin" /> Preparing…</>
+                    ) : (
+                      <><Download className="h-4 w-4" /> Download Audit Log (CSV)</>
+                    )}
+                  </button>
+                </div>
+              </div>
+            )}
+
             {groups.map(g => {
               const groupSubs = subscribers.filter(s => s.group_id === g.id);
               const activeGroupSubs = groupSubs.filter(s => s.status === 'active' && s.end_date && new Date(s.end_date).getTime() > now);
