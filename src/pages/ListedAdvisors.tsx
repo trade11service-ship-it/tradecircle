@@ -70,7 +70,7 @@ export default function ListedAdvisors() {
     try {
       // Fetch featured advisors
       const { data: advisorData, error: advisorError } = await (supabase.from('advisors') as any)
-        .select('id, full_name, profile_photo_url, sebi_reg_no, strategy_type, bio, public_description, public_tagline, public_years_experience, email, phone, status')
+        .select('id, full_name, profile_photo_url, sebi_reg_no, strategy_type, bio, public_description, public_tagline, public_years_experience, status')
         .eq('status', 'approved')
         .eq('is_public_featured', true)
         .order('public_sort_order', { ascending: true });
