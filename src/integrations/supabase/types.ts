@@ -728,11 +728,15 @@ export type Database = {
         Row: {
           advisor_id: string
           amount_paid: number | null
+          consent_given: boolean | null
+          consent_ip: string | null
+          consent_timestamp: string | null
           created_at: string | null
           end_date: string | null
           from_referral: boolean | null
           group_id: string
           id: string
+          pan_number: string | null
           platform_fee_percent: number | null
           razorpay_payment_id: string | null
           referral_advisor_id: string | null
@@ -744,11 +748,15 @@ export type Database = {
         Insert: {
           advisor_id: string
           amount_paid?: number | null
+          consent_given?: boolean | null
+          consent_ip?: string | null
+          consent_timestamp?: string | null
           created_at?: string | null
           end_date?: string | null
           from_referral?: boolean | null
           group_id: string
           id?: string
+          pan_number?: string | null
           platform_fee_percent?: number | null
           razorpay_payment_id?: string | null
           referral_advisor_id?: string | null
@@ -760,11 +768,15 @@ export type Database = {
         Update: {
           advisor_id?: string
           amount_paid?: number | null
+          consent_given?: boolean | null
+          consent_ip?: string | null
+          consent_timestamp?: string | null
           created_at?: string | null
           end_date?: string | null
           from_referral?: boolean | null
           group_id?: string
           id?: string
+          pan_number?: string | null
           platform_fee_percent?: number | null
           razorpay_payment_id?: string | null
           referral_advisor_id?: string | null
