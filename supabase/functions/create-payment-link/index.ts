@@ -92,10 +92,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Failed to create payment link', details: razorpayData }), { status: 500, headers: corsHeaders });
     }
 
-    const adminClient = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    );
+    // adminClient was created above for price lookup; reuse it.
 
     await adminClient.from('groups').update({
       razorpay_payment_link: razorpayData.short_url,
