@@ -167,7 +167,7 @@ export default function AdvisorProfile() {
   const fetchData = async () => {
     setLoading(true);
     const [{ data: adv }, { data: grps }, { data: sigs }, { data: subCount }, { count: fCount }, { data: live }] = await Promise.all([
-      supabase.from('advisors').select('*').eq('id', id!).single(),
+      supabase.from('advisors').select('id, user_id, full_name, sebi_reg_no, bio, strategy_type, status, rejection_reason, created_at, profile_photo_url, cover_image_url, is_public_featured, public_sort_order, public_tagline, public_description, public_years_experience, risk_level, preferred_trading_hours').eq('id', id!).single(),
       supabase.from('groups').select('*').eq('advisor_id', id!).eq('is_active', true),
       supabase.from('signals').select('*').eq('advisor_id', id!).order('signal_date', { ascending: false }).limit(500),
       supabase.rpc('get_advisor_subscriber_count', { _advisor_id: id! }),
