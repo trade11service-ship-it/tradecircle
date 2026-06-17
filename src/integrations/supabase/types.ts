@@ -918,9 +918,117 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_list_advisors: {
+        Args: { _status?: string }
+        Returns: {
+          aadhaar_no: string | null
+          aadhaar_photo_url: string | null
+          address: string | null
+          bio: string | null
+          cover_image_url: string | null
+          created_at: string | null
+          email: string
+          full_name: string
+          id: string
+          is_public_featured: boolean | null
+          pan_no: string | null
+          pan_photo_url: string | null
+          phone: string | null
+          preferred_trading_hours: string | null
+          profile_photo_url: string | null
+          public_description: string | null
+          public_sort_order: number | null
+          public_tagline: string | null
+          public_years_experience: number | null
+          rejection_reason: string | null
+          risk_level: string | null
+          sebi_reg_no: string
+          status: string | null
+          strategy_type: string | null
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "advisors"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       get_advisor_earnings: {
         Args: { _advisor_id: string; _month?: string }
         Returns: Json
+      }
+      get_advisor_full: {
+        Args: { _advisor_id: string }
+        Returns: {
+          aadhaar_no: string | null
+          aadhaar_photo_url: string | null
+          address: string | null
+          bio: string | null
+          cover_image_url: string | null
+          created_at: string | null
+          email: string
+          full_name: string
+          id: string
+          is_public_featured: boolean | null
+          pan_no: string | null
+          pan_photo_url: string | null
+          phone: string | null
+          preferred_trading_hours: string | null
+          profile_photo_url: string | null
+          public_description: string | null
+          public_sort_order: number | null
+          public_tagline: string | null
+          public_years_experience: number | null
+          rejection_reason: string | null
+          risk_level: string | null
+          sebi_reg_no: string
+          status: string | null
+          strategy_type: string | null
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "advisors"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      get_advisor_full_by_user: {
+        Args: { _user_id: string }
+        Returns: {
+          aadhaar_no: string | null
+          aadhaar_photo_url: string | null
+          address: string | null
+          bio: string | null
+          cover_image_url: string | null
+          created_at: string | null
+          email: string
+          full_name: string
+          id: string
+          is_public_featured: boolean | null
+          pan_no: string | null
+          pan_photo_url: string | null
+          phone: string | null
+          preferred_trading_hours: string | null
+          profile_photo_url: string | null
+          public_description: string | null
+          public_sort_order: number | null
+          public_tagline: string | null
+          public_years_experience: number | null
+          rejection_reason: string | null
+          risk_level: string | null
+          sebi_reg_no: string
+          status: string | null
+          strategy_type: string | null
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "advisors"
+          isOneToOne: false
+          isSetofReturn: true
+        }
       }
       get_advisor_live_stats: { Args: { _advisor_id: string }; Returns: Json }
       get_advisor_signal_stats: { Args: { _advisor_id: string }; Returns: Json }

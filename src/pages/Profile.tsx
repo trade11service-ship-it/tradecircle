@@ -65,7 +65,8 @@ export default function Profile() {
   };
 
   const fetchAdvisorData = async () => {
-    const { data: adv } = await supabase.from('advisors').select('*').eq('user_id', user!.id).single();
+    const { data: advRows } = await (supabase as any).rpc('get_advisor_full_by_user', { _user_id: user!.id });
+    const adv = Array.isArray(advRows) ? advRows[0] : null;
     if (adv) {
       setAdvisor(adv);
       const { data: grps } = await supabase.from('groups').select('*').eq('advisor_id', adv.id);

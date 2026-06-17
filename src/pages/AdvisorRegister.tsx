@@ -32,8 +32,9 @@ export default function AdvisorRegister() {
   useEffect(() => {
     if (user) {
       setCheckingAdvisor(true);
-      supabase.from('advisors').select('*').eq('user_id', user.id).single().then(({ data }) => {
-        if (data) setExistingAdvisor(data);
+      (supabase as any).rpc('get_advisor_full_by_user', { _user_id: user.id }).then(({ data }: any) => {
+        const adv = Array.isArray(data) ? data[0] : null;
+        if (adv) setExistingAdvisor(adv);
         setCheckingAdvisor(false);
       });
     }

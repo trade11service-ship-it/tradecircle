@@ -17,7 +17,9 @@ serve(async (req: Request) => {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) throw new Error('No authorization header');
     const { data: { user } } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
-    if (user?.user_metadata?.role !== 'admin') throw new Error('Admin only');
+    if (!user) throw new Error('Unauthorized');
+    const { data: prof } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+    if (prof?.role !== 'admin') throw new Error('Admin only');
 
     const { advisor_id, email, full_name, rejection_reason } = await req.json();
 

@@ -197,8 +197,8 @@ export default function AdminDashboard() {
 
   const fetchData = async () => {
     const [pending, all, usersData, paymentsData] = await Promise.all([
-      supabase.from('advisors').select('*').eq('status', 'pending').order('created_at', { ascending: false }),
-      supabase.from('advisors').select('*').order('created_at', { ascending: false }),
+      (supabase as any).rpc('admin_list_advisors', { _status: 'pending' }),
+      (supabase as any).rpc('admin_list_advisors', { _status: null }),
       supabase.from('profiles').select('*').order('created_at', { ascending: false }),
       supabase.from('subscriptions').select('*, profiles!inner(full_name), advisors!inner(full_name), groups!inner(name)').order('created_at', { ascending: false }),
     ]);

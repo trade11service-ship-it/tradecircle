@@ -43,8 +43,30 @@ export default function PaymentSuccess() {
   }, [user, authLoading, searchParams]);
 
   const createSubscription = async (groupId: string, paymentId: string) => {
-    // Poll up to 6s for the webhook to create the sub server-side (preferred path).
-    for (let i = 0; i < 6; i++) {
+    const isSandbox = paymentId.startsWith('sandbox_') || searchParams.get('sandbox') === '1';
+    const panNumber = sessionStorage.getItem('subscription_pan');
+    const consentGiven = sessionStorage.getItem('subscription_consent') === 'true';
+    const consentTimestamp = sessionStorage.getItem('subscription_consent_timestamp');
+
+    // Sandbox: ask the server (service role) to materialize the subscription.
+    if (isSandbox) {
+      try {
+        await supabase.functions.invoke('sandbox-confirm-subscription', {
+          body: {
+            group_id: groupId,
+            payment_id: paymentId,
+            pan_number: panNumber,
+            consent_given: consentGiven,
+            consent_timestamp: consentTimestamp,
+          },
+        });
+      } catch (e) {
+        console.error('Sandbox confirm failed', e);
+      }
+    }
+
+    // Poll up to 10s for the subscription row (created by webhook or sandbox fn).
+    for (let i = 0; i < 10; i++) {
       const { data: existingByPayment } = await supabase
         .from('subscriptions')
         .select('id, group_id, groups(name, advisors(full_name))')
@@ -61,9 +83,10 @@ export default function PaymentSuccess() {
       await new Promise(r => setTimeout(r, 1000));
     }
 
+    // Fallback: maybe user already had an active sub for this group
     const now = new Date().toISOString();
     const { data: existing } = await supabase.from('subscriptions')
-      .select('id')
+      .select('id, groups(name, advisors(full_name))')
       .eq('user_id', user!.id)
       .eq('group_id', groupId)
       .eq('status', 'active')
@@ -71,59 +94,14 @@ export default function PaymentSuccess() {
       .maybeSingle();
 
     if (existing) {
-      // Already subscribed and not expired
-      const { data: group } = await supabase.from('groups').select('name, advisors!inner(full_name)').eq('id', groupId).single();
-      if (group) {
-        setGroupName(group.name);
-        setAdvisorName((group as any).advisors.full_name);
-      }
+      const group = (existing as any).groups;
+      setGroupName(group?.name || '');
+      setAdvisorName(group?.advisors?.full_name || '');
       setStatus('success');
       return;
     }
 
-    const { data: group } = await supabase.from('groups').select('*, advisors!inner(full_name)').eq('id', groupId).single();
-    if (!group) { setStatus('error'); return; }
-
-    setGroupName(group.name);
-    setAdvisorName((group as any).advisors.full_name);
-
-    // CRITICAL: end_date = now + 30 days (subscription expires after 30 days, no grace period)
-    const endDate = new Date();
-    endDate.setDate(endDate.getDate() + 30);
-
-    // Check for referral
-    let fromReferral = false;
-    let referralCode: string | null = null;
-    let platformFee = 30;
-    const cookie = document.cookie.split(';').find(c => c.trim().startsWith('referral_code='));
-    const cookieCode = cookie?.split('=')?.[1]?.trim();
-
-    if (cookieCode) {
-      const { data: refSignup } = await supabase.from('referral_signups')
-        .select('*')
-        .eq('user_id', user!.id)
-        .eq('group_id', groupId)
-        .eq('is_referral_active', true)
-        .maybeSingle();
-
-      if (refSignup) {
-        const signupDate = new Date(refSignup.signed_up_at);
-        const daysSince = (Date.now() - signupDate.getTime()) / (1000 * 60 * 60 * 24);
-        if (daysSince <= 30) {
-          fromReferral = true;
-          referralCode = refSignup.referral_code;
-          platformFee = 15;
-        }
-      }
-    }
-
-    // CRITICAL: group_id from the URL matches the group we're creating subscription for
-    // We verify amount matches group price stored in DB (prevent tampering)
-    const panNumber = sessionStorage.getItem('subscription_pan');
-    const consentGiven = sessionStorage.getItem('subscription_consent') === 'true';
-    const consentTimestamp = sessionStorage.getItem('subscription_consent_timestamp');
-
-    // Store PAN acceptance in user_legal_acceptances for compliance
+    // Persist PAN acceptance regardless (legal compliance)
     if (panNumber && consentGiven) {
       await supabase.from('user_legal_acceptances').insert({
         user_id: user!.id,
@@ -138,46 +116,13 @@ export default function PaymentSuccess() {
       }).then(() => {});
     }
 
-    const { error } = await (supabase.from('subscriptions') as any).insert({
-      user_id: user!.id,
-      group_id: groupId,
-      advisor_id: group.advisor_id,
-      end_date: endDate.toISOString(),
-      amount_paid: group.monthly_price,
-      status: 'active',
-      razorpay_payment_id: paymentId,
-      from_referral: fromReferral,
-      referral_code: referralCode,
-      platform_fee_percent: platformFee,
-      pan_number: panNumber || null,
-      consent_given: consentGiven,
-      consent_timestamp: consentTimestamp || new Date().toISOString(),
-      consent_ip: null,
-    });
+    setErrorReason('Your payment is being processed. If this persists, contact support — your payment is safe.');
+    setStatus('error');
 
-    if (error) {
-      console.error('Subscription error:', error);
-      setErrorReason(error.message || 'Could not activate your subscription. Your payment is safe — contact support.');
-      setStatus('error');
-    }
-    else {
-      // Clear subscription data from sessionStorage
-      sessionStorage.removeItem('subscription_pan');
-      sessionStorage.removeItem('subscription_consent');
-      sessionStorage.removeItem('subscription_consent_timestamp');
-      
-      if (fromReferral && referralCode) {
-        try {
-          await supabase.rpc('increment_referral_conversions', { _code: referralCode, _revenue: group.monthly_price });
-          await supabase.from('referral_signups')
-            .update({ converted_to_paid: true })
-            .eq('user_id', user!.id)
-            .eq('group_id', groupId);
-        } catch (e) { console.error('Referral tracking:', e); }
-        document.cookie = 'referral_code=;path=/;max-age=0';
-      }
-      setStatus('success');
-    }
+    // Clear sessionStorage either way
+    sessionStorage.removeItem('subscription_pan');
+    sessionStorage.removeItem('subscription_consent');
+    sessionStorage.removeItem('subscription_consent_timestamp');
   };
 
   return (
