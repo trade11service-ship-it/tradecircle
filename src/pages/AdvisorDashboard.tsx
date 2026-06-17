@@ -54,6 +54,104 @@ export default function AdvisorDashboard() {
   // Feed view
   const [feedGroupId, setFeedGroupId] = useState<string | null>(null);
 
+  // SEBI audit CSV
+  const [exportingCsv, setExportingCsv] = useState(false);
+
+  const csvCell = (v: any): string => {
+    if (v === null || v === undefined) return '';
+    const s = String(v).replace(/"/g, '""');
+    return /[",\n\r]/.test(s) ? `"${s}"` : s;
+  };
+
+  const planLabelFromDates = (start?: string | null, end?: string | null): string => {
+    if (!start || !end) return 'Custom';
+    const days = Math.round((new Date(end).getTime() - new Date(start).getTime()) / 86400000);
+    if (days <= 35) return 'Monthly';
+    if (days <= 100) return 'Quarterly';
+    if (days <= 200) return 'Half-Yearly';
+    return 'Yearly';
+  };
+
+  const downloadSebiAuditCsv = async (advisorId: string, advisorName: string | null | undefined) => {
+    try {
+      setExportingCsv(true);
+
+      // Pull subscriptions joined with profiles (name + email only — phone excluded by design)
+      const { data: subs, error: subsErr } = await supabase
+        .from('subscriptions')
+        .select('id, user_id, plan:platform_fee_percent, amount_paid, start_date, end_date, razorpay_payment_id, created_at, pan_number, consent_timestamp, profiles!inner(full_name, email)' as any)
+        .eq('advisor_id', advisorId)
+        .order('created_at', { ascending: false });
+
+      if (subsErr) throw subsErr;
+      const rows = (subs as any[]) || [];
+
+      // Pull risk-disclosure consents for these users in one shot
+      const userIds = Array.from(new Set(rows.map(r => r.user_id)));
+      let consentMap = new Map<string, string>();
+      if (userIds.length > 0) {
+        const { data: consents } = await supabase
+          .from('user_legal_acceptances')
+          .select('user_id, acceptance_type, accepted_at')
+          .in('user_id', userIds);
+        for (const c of (consents as any[]) || []) {
+          // Prefer subscription_pan consent; fall back to most recent of any type
+          const existing = consentMap.get(c.user_id);
+          if (!existing || c.acceptance_type === 'subscription_pan') {
+            consentMap.set(c.user_id, c.accepted_at);
+          }
+        }
+      }
+
+      const headers = [
+        'Subscriber Name',
+        'Email ID',
+        'PAN Number',
+        'Plan Type',
+        'Amount Paid',
+        'Purchase Date',
+        'Subscription End Date',
+        'SEBI Risk Disclosure Consent Timestamp',
+        'Razorpay Payment ID',
+      ];
+
+      const lines = [headers.join(',')];
+      for (const r of rows) {
+        const consentTs = r.consent_timestamp || consentMap.get(r.user_id) || '';
+        lines.push([
+          csvCell(r.profiles?.full_name || ''),
+          csvCell(r.profiles?.email || ''),
+          csvCell(r.pan_number || ''),
+          csvCell(planLabelFromDates(r.start_date, r.end_date)),
+          csvCell(r.amount_paid ?? ''),
+          csvCell(r.start_date ? new Date(r.start_date).toISOString() : ''),
+          csvCell(r.end_date ? new Date(r.end_date).toISOString() : ''),
+          csvCell(consentTs ? new Date(consentTs).toISOString() : ''),
+          csvCell(r.razorpay_payment_id || ''),
+        ].join(','));
+      }
+
+      const csv = '\uFEFF' + lines.join('\r\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const stamp = new Date().toISOString().slice(0, 10);
+      const safeName = (advisorName || 'advisor').replace(/[^A-Za-z0-9_-]/g, '_');
+      a.href = url;
+      a.download = `SEBI_Audit_Log_${safeName}_${stamp}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast.success(`Audit log exported — ${rows.length} subscriber record(s)`);
+    } catch (e: any) {
+      console.error('SEBI audit export failed:', e);
+      toast.error(e?.message || 'Failed to generate audit log');
+    } finally {
+      setExportingCsv(false);
+    }
+  };
+
   useEffect(() => { if (user) fetchData(); }, [user]);
 
   useEffect(() => {
