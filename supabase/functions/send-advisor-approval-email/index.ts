@@ -14,11 +14,13 @@ serve(async (req: Request) => {
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, serviceKey);
 
-    // Verify auth
+    // Verify auth — server-side admin check using profiles table (never trust user_metadata)
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) throw new Error('No authorization header');
     const { data: { user } } = await supabase.auth.getUser(authHeader.replace('Bearer ', ''));
-    if (user?.user_metadata?.role !== 'admin') throw new Error('Admin only');
+    if (!user) throw new Error('Unauthorized');
+    const { data: prof } = await supabase.from('profiles').select('role').eq('id', user.id).maybeSingle();
+    if (prof?.role !== 'admin') throw new Error('Admin only');
 
     const { advisor_id, email, full_name } = await req.json();
 
