@@ -175,7 +175,7 @@ export default function AdvisorProfile() {
         .in('group_id', (await supabase.from('groups').select('id').eq('advisor_id', id!)).data?.map((g: any) => g.id) || []),
       supabase.rpc('get_advisor_live_stats', { _advisor_id: id! }),
     ]);
-    if (adv) setAdvisor(adv);
+    if (adv) setAdvisor(adv as any);
     setGroups(grps || []);
     setSignals((sigs as Signal[]) || []);
     setSubscriberCount((subCount as number) || 0);
