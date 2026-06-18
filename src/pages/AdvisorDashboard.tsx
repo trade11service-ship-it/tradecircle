@@ -154,6 +154,14 @@ export default function AdvisorDashboard() {
 
   useEffect(() => { if (user) fetchData(); }, [user]);
 
+  // Auto-select the first/primary group in composer forms when groups load
+  useEffect(() => {
+    if (groups.length === 0) return;
+    const defaultId = groups[0].id;
+    setMessageForm(prev => prev.groupId ? prev : { ...prev, groupId: defaultId });
+    setSignalForm(prev => prev.groupId ? prev : { ...prev, groupId: defaultId });
+  }, [groups]);
+
   useEffect(() => {
     const path = location.pathname;
     if (path.endsWith('/groups')) setTab('groups');
