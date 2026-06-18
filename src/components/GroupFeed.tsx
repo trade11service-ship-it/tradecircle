@@ -242,15 +242,23 @@ export function GroupFeed({ groupId, advisorId, advisorName, advisorPhoto, isSub
   const isNearBottom = useRef(true);
 
   const fetchPosts = async (lim: number) => {
-    const { data, count } = await supabase
-      .from('signals')
-      .select('*', { count: 'exact' })
-      .eq('group_id', groupId)
-      .order('created_at', { ascending: true })
-      .limit(lim);
-    setPosts((data as FeedPost[]) || []);
-    setHasMore((count || 0) > lim);
+    const { data, error } = await (supabase as any).rpc('get_group_feed_posts', { _group_id: groupId, _limit: lim });
+    if (error) {
+      console.error('Feed fetch error:', error);
+      setPosts([]);
+      setHasMore(false);
+    } else {
+      const rows = (data as FeedPost[]) || [];
+      setPosts(rows);
+      setHasMore(rows.length >= lim);
+    }
     setLoading(false);
+  };
+
+  const fetchOnePost = async (signalId: string): Promise<FeedPost | null> => {
+    const { data } = await (supabase as any).rpc('get_group_feed_posts', { _group_id: groupId, _limit: 500 });
+    const rows = (data as FeedPost[]) || [];
+    return rows.find(r => r.id === signalId) || null;
   };
 
   useEffect(() => {
@@ -267,7 +275,6 @@ export function GroupFeed({ groupId, advisorId, advisorName, advisorPhoto, isSub
   // Auto-scroll to bottom on initial load
   useEffect(() => {
     if (!loading && posts.length > 0) {
-      // Two passes: instant snap + smooth correction after images settle
       requestAnimationFrame(() => scrollFeedToBottom(false));
       const t = setTimeout(() => scrollFeedToBottom(false), 120);
       return () => clearTimeout(t);
@@ -287,29 +294,42 @@ export function GroupFeed({ groupId, advisorId, advisorName, advisorPhoto, isSub
     return () => container.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Realtime — instantly append new posts (signals/text/updates) and reflect updates
+  // Realtime via lightweight events table — works for guests and non-subscribers too
   useEffect(() => {
     if (!groupId) return;
     const channel = supabase
-      .channel(`feed-${groupId}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'signals', filter: `group_id=eq.${groupId}` }, (payload) => {
-        const row = payload.new as FeedPost;
-        setPosts(prev => (prev.some(p => p.id === row.id) ? prev : [...prev, row]));
-        if (isNearBottom.current) {
-          setTimeout(() => scrollFeedToBottom(true), 80);
-        } else {
-          setShowNewPill(true);
+      .channel(`feed-events-${groupId}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'group_feed_events', filter: `group_id=eq.${groupId}` }, async (payload) => {
+        const evt = payload.new as { signal_id: string; event_type: string };
+        if (evt.event_type === 'DELETE') {
+          setPosts(prev => prev.filter(p => p.id !== evt.signal_id));
+          return;
+        }
+        const row = await fetchOnePost(evt.signal_id);
+        if (!row) return;
+        setPosts(prev => {
+          const idx = prev.findIndex(p => p.id === row.id);
+          if (idx >= 0) {
+            const copy = [...prev];
+            copy[idx] = row;
+            return copy;
+          }
+          return [...prev, row];
+        });
+        if (evt.event_type === 'INSERT') {
+          if (isNearBottom.current) setTimeout(() => scrollFeedToBottom(true), 80);
+          else setShowNewPill(true);
         }
       })
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'signals', filter: `group_id=eq.${groupId}` }, (payload) => {
-        setPosts(prev => prev.map(p => p.id === (payload.new as FeedPost).id ? payload.new as FeedPost : p));
-      })
-      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'signals', filter: `group_id=eq.${groupId}` }, (payload) => {
-        setPosts(prev => prev.filter(p => p.id !== (payload.old as any).id));
-      })
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+          // Fallback refresh on reconnect issues
+          fetchPosts(limit);
+        }
+      });
     return () => { supabase.removeChannel(channel); };
   }, [groupId]);
+
 
   const scrollToBottom = () => {
     scrollFeedToBottom(true);
@@ -384,7 +404,7 @@ export function GroupFeed({ groupId, advisorId, advisorName, advisorPhoto, isSub
                           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-card border-2 border-primary/30 shadow-md">
                             <Lock className="h-5 w-5 text-primary" />
                           </div>
-                          <p className="mt-2 text-[14px] font-bold text-foreground">Premium signal</p>
+                          <p className="mt-2 text-[14px] font-bold text-foreground">{post.post_type === 'signal' ? 'Premium signal' : 'Premium update'}</p>
                           {onSubscribe ? (
                             <button onClick={onSubscribe} className="mt-2 rounded-xl bg-primary px-5 py-2 text-[12px] font-bold text-primary-foreground shadow-md hover:bg-primary/90">
                               🔒 Subscribe to Unlock{subscribePrice ? ` — ₹${subscribePrice}/mo` : ''}

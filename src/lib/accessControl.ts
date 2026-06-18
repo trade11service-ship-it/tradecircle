@@ -59,9 +59,10 @@ export function shouldShowFree(post: {
   created_at: string | null;
   signal_type: string | null;
 }): { isFree: boolean; reason: 'fno_expired' | 'public_delayed' | 'analysis' | null } {
-  // Analysis posts are always public
+  // Analysis/message posts: only free if explicitly marked public by advisor
   if (post.post_type === 'message') {
-    return { isFree: true, reason: 'analysis' };
+    if (post.is_public) return { isFree: true, reason: 'analysis' };
+    return { isFree: false, reason: null };
   }
 
   const createdAt = post.created_at ? new Date(post.created_at) : null;
@@ -127,7 +128,10 @@ export function getPostVisibility(
   if (post.post_type === 'signal') {
     return { showFully: false, blurNumbers: true, hideCompletely: false, showLockOverlay: true, freeBadge: null };
   }
-  // Other premium posts (text/update): show fully (analysis is free per shouldShowFree above).
+  // Premium message/update posts (is_public=false): also show blurred with lock overlay.
+  if (post.is_public === false) {
+    return { showFully: false, blurNumbers: false, hideCompletely: false, showLockOverlay: true, freeBadge: null };
+  }
   return { showFully: true, blurNumbers: false, hideCompletely: false, showLockOverlay: false, freeBadge: null };
 }
 

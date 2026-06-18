@@ -266,6 +266,30 @@ export type Database = {
         }
         Relationships: []
       }
+      group_feed_events: {
+        Row: {
+          created_at: string
+          event_type: string
+          group_id: string
+          id: number
+          signal_id: string
+        }
+        Insert: {
+          created_at?: string
+          event_type: string
+          group_id: string
+          id?: number
+          signal_id: string
+        }
+        Update: {
+          created_at?: string
+          event_type?: string
+          group_id?: string
+          id?: number
+          signal_id?: string
+        }
+        Relationships: []
+      }
       group_follows: {
         Row: {
           created_at: string
@@ -1035,6 +1059,28 @@ export type Database = {
       get_advisor_subscriber_count: {
         Args: { _advisor_id: string }
         Returns: number
+      }
+      get_group_feed_posts: {
+        Args: { _group_id: string; _limit?: number }
+        Returns: {
+          advisor_id: string
+          created_at: string
+          entry_price: number
+          group_id: string
+          id: string
+          image_url: string
+          instrument: string
+          is_public: boolean
+          message_text: string
+          notes: string
+          post_type: string
+          result: string
+          signal_date: string
+          signal_type: string
+          stop_loss: number
+          target_price: number
+          timeframe: string
+        }[]
       }
       get_referral_link_by_code: {
         Args: { _code: string }
