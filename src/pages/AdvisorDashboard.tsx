@@ -746,15 +746,28 @@ export default function AdvisorDashboard() {
                     <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Notes (optional)</Label>
                     <Textarea value={signalForm.notes} onChange={e => setSignalForm({ ...signalForm, notes: e.target.value })} className="mt-1.5 border-[1.5px]" />
                   </div>
-                  <div className="flex items-center justify-between rounded-xl border-[1.5px] border-border p-3.5 bg-muted">
-                    <div className="flex items-center gap-2">
-                      {signalForm.isPublic ? <Globe className="h-4 w-4 text-primary" /> : <Lock className="h-4 w-4 text-muted-foreground" />}
-                      <div>
-                        <p className="text-sm font-medium">{signalForm.isPublic ? 'Public after 24h' : 'Subscribers Only'}</p>
-                        <p className="text-[11px] text-muted-foreground">{signalForm.isPublic ? 'Visible free after 24 hours (preview for non-subs)' : 'Only paid subscribers can see this forever'}</p>
-                      </div>
+                  <div>
+                    <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Visibility</Label>
+                    <div className="mt-1.5 grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setSignalForm({ ...signalForm, isPublic: true })}
+                        aria-pressed={signalForm.isPublic}
+                        className={`rounded-xl border-[1.5px] p-3 text-left transition-all ${signalForm.isPublic ? 'border-primary bg-primary/5 ring-2 ring-primary/20' : 'border-border bg-card hover:border-primary/40'}`}
+                      >
+                        <div className="flex items-center gap-2"><Globe className="h-4 w-4 text-primary" /><span className="text-sm font-bold">🔓 Public</span></div>
+                        <p className="mt-0.5 text-[11px] text-muted-foreground">Free after 24h (preview for non-subs)</p>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setSignalForm({ ...signalForm, isPublic: false })}
+                        aria-pressed={!signalForm.isPublic}
+                        className={`rounded-xl border-[1.5px] p-3 text-left transition-all ${!signalForm.isPublic ? 'border-primary bg-primary/5 ring-2 ring-primary/20' : 'border-border bg-card hover:border-primary/40'}`}
+                      >
+                        <div className="flex items-center gap-2"><Lock className="h-4 w-4 text-primary" /><span className="text-sm font-bold">🔒 Subscribers Only</span></div>
+                        <p className="mt-0.5 text-[11px] text-muted-foreground">Only paid subscribers can see this</p>
+                      </button>
                     </div>
-                    <Switch checked={signalForm.isPublic} onCheckedChange={v => setSignalForm({ ...signalForm, isPublic: v })} />
                   </div>
                   <button
                     className="flex h-[42px] w-full items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground disabled:opacity-50"
