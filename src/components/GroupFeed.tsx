@@ -287,12 +287,14 @@ export function GroupFeed({ groupId, advisorId, advisorName, advisorPhoto, isSub
     return () => container.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Realtime
+  // Realtime — instantly append new posts (signals/text/updates) and reflect updates
   useEffect(() => {
+    if (!groupId) return;
     const channel = supabase
       .channel(`feed-${groupId}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'signals', filter: `group_id=eq.${groupId}` }, (payload) => {
-        setPosts(prev => [...prev, payload.new as FeedPost]);
+        const row = payload.new as FeedPost;
+        setPosts(prev => (prev.some(p => p.id === row.id) ? prev : [...prev, row]));
         if (isNearBottom.current) {
           setTimeout(() => scrollFeedToBottom(true), 80);
         } else {
@@ -301,6 +303,9 @@ export function GroupFeed({ groupId, advisorId, advisorName, advisorPhoto, isSub
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'signals', filter: `group_id=eq.${groupId}` }, (payload) => {
         setPosts(prev => prev.map(p => p.id === (payload.new as FeedPost).id ? payload.new as FeedPost : p));
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'signals', filter: `group_id=eq.${groupId}` }, (payload) => {
+        setPosts(prev => prev.filter(p => p.id !== (payload.old as any).id));
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
