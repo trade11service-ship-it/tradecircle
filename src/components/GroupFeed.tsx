@@ -404,7 +404,7 @@ export function GroupFeed({ groupId, advisorId, advisorName, advisorPhoto, isSub
                           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-card border-2 border-primary/30 shadow-md">
                             <Lock className="h-5 w-5 text-primary" />
                           </div>
-                          <p className="mt-2 text-[14px] font-bold text-foreground">Premium signal</p>
+                          <p className="mt-2 text-[14px] font-bold text-foreground">{post.post_type === 'signal' ? 'Premium signal' : 'Premium update'}</p>
                           {onSubscribe ? (
                             <button onClick={onSubscribe} className="mt-2 rounded-xl bg-primary px-5 py-2 text-[12px] font-bold text-primary-foreground shadow-md hover:bg-primary/90">
                               🔒 Subscribe to Unlock{subscribePrice ? ` — ₹${subscribePrice}/mo` : ''}
