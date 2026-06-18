@@ -123,10 +123,11 @@ export function getPostVisibility(
     return { showFully: true, blurNumbers: false, hideCompletely: false, showLockOverlay: false, freeBadge: badge };
   }
 
-  // All premium signals: visible but blurred. Analysis posts: visible.
+  // Premium signals: visible but blurred with a lock overlay + CTA.
   if (post.post_type === 'signal') {
-    return { showFully: false, blurNumbers: true, hideCompletely: false, showLockOverlay: false, freeBadge: null };
+    return { showFully: false, blurNumbers: true, hideCompletely: false, showLockOverlay: true, freeBadge: null };
   }
+  // Other premium posts (text/update): show fully (analysis is free per shouldShowFree above).
   return { showFully: true, blurNumbers: false, hideCompletely: false, showLockOverlay: false, freeBadge: null };
 }
 

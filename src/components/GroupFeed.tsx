@@ -287,12 +287,14 @@ export function GroupFeed({ groupId, advisorId, advisorName, advisorPhoto, isSub
     return () => container.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Realtime
+  // Realtime — instantly append new posts (signals/text/updates) and reflect updates
   useEffect(() => {
+    if (!groupId) return;
     const channel = supabase
       .channel(`feed-${groupId}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'signals', filter: `group_id=eq.${groupId}` }, (payload) => {
-        setPosts(prev => [...prev, payload.new as FeedPost]);
+        const row = payload.new as FeedPost;
+        setPosts(prev => (prev.some(p => p.id === row.id) ? prev : [...prev, row]));
         if (isNearBottom.current) {
           setTimeout(() => scrollFeedToBottom(true), 80);
         } else {
@@ -301,6 +303,9 @@ export function GroupFeed({ groupId, advisorId, advisorName, advisorPhoto, isSub
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'signals', filter: `group_id=eq.${groupId}` }, (payload) => {
         setPosts(prev => prev.map(p => p.id === (payload.new as FeedPost).id ? payload.new as FeedPost : p));
+      })
+      .on('postgres_changes', { event: 'DELETE', schema: 'public', table: 'signals', filter: `group_id=eq.${groupId}` }, (payload) => {
+        setPosts(prev => prev.filter(p => p.id !== (payload.old as any).id));
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -370,23 +375,22 @@ export function GroupFeed({ groupId, advisorId, advisorName, advisorPhoto, isSub
                   if (vis.showLockOverlay) {
                     return (
                       <div key={post.id} className="relative">
-                        <div className="pointer-events-none blur-[6px] opacity-60 space-y-3">
-                          {group.posts.slice(group.posts.indexOf(post), group.posts.indexOf(post) + 2).map(p => (
-                            p.post_type === 'signal'
-                              ? <SignalBubble key={p.id} post={p} advisorName={advisorName} advisorPhoto={advisorPhoto} blurred />
-                              : <MessageBubble key={p.id} post={p} advisorName={advisorName} advisorPhoto={advisorPhoto} />
-                          ))}
+                        <div aria-hidden className="pointer-events-none select-none blur-[7px] opacity-70">
+                          {post.post_type === 'signal'
+                            ? <SignalBubble post={post} advisorName={advisorName} advisorPhoto={advisorPhoto} blurred />
+                            : <MessageBubble post={post} advisorName={advisorName} advisorPhoto={advisorPhoto} />}
                         </div>
-                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/60 backdrop-blur-[3px] rounded-2xl">
-                          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-card border-2 border-border shadow-lg">
-                            <Lock className="h-6 w-6 text-primary" />
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/55 backdrop-blur-[2px] rounded-2xl">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-card border-2 border-primary/30 shadow-md">
+                            <Lock className="h-5 w-5 text-primary" />
                           </div>
-                          <p className="mt-3 text-[15px] font-bold text-foreground">Subscribe to see all signals</p>
-                          <p className="mt-1 text-[12px] text-muted-foreground text-center px-4">Get real-time access to every trade signal & analysis</p>
-                          {onSubscribe && subscribePrice && (
-                            <button onClick={onSubscribe} className="mt-3 rounded-xl bg-primary px-6 py-2.5 text-[13px] font-bold text-primary-foreground shadow-md">
-                              Subscribe — ₹{subscribePrice}/month
+                          <p className="mt-2 text-[14px] font-bold text-foreground">Premium signal</p>
+                          {onSubscribe ? (
+                            <button onClick={onSubscribe} className="mt-2 rounded-xl bg-primary px-5 py-2 text-[12px] font-bold text-primary-foreground shadow-md hover:bg-primary/90">
+                              🔒 Subscribe to Unlock{subscribePrice ? ` — ₹${subscribePrice}/mo` : ''}
                             </button>
+                          ) : (
+                            <p className="mt-1 text-[11px] text-muted-foreground">Subscribe to unlock</p>
                           )}
                         </div>
                       </div>
