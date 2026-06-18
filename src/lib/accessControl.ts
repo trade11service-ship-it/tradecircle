@@ -127,8 +127,8 @@ export function getPostVisibility(
   if (post.post_type === 'signal') {
     return { showFully: false, blurNumbers: true, hideCompletely: false, showLockOverlay: true, freeBadge: null };
   }
-  // Premium text/update posts: also blurred with overlay so free users see a teaser.
-  return { showFully: false, blurNumbers: true, hideCompletely: false, showLockOverlay: true, freeBadge: null };
+  // Other premium posts (text/update): show fully (analysis is free per shouldShowFree above).
+  return { showFully: true, blurNumbers: false, hideCompletely: false, showLockOverlay: false, freeBadge: null };
 }
 
 /**
