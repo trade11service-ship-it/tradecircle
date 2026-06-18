@@ -667,15 +667,28 @@ export default function AdvisorDashboard() {
                     )}
                     {uploadProgress > 0 && uploadProgress < 100 && <Progress value={uploadProgress} className="mt-2 h-2" />}
                   </div>
-                  <div className="flex items-center justify-between rounded-xl border-[1.5px] border-border p-3.5 bg-muted">
-                    <div className="flex items-center gap-2">
-                      {messageForm.isPublic ? <Globe className="h-4 w-4 text-primary" /> : <Lock className="h-4 w-4 text-muted-foreground" />}
-                      <div>
-                        <p className="text-sm font-medium">{messageForm.isPublic ? 'Public' : 'Subscribers Only'}</p>
-                        <p className="text-[11px] text-muted-foreground">{messageForm.isPublic ? 'Visible to followers in their feed' : 'Only paid subscribers can see this'}</p>
-                      </div>
+                  <div>
+                    <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Visibility</Label>
+                    <div className="mt-1.5 grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setMessageForm({ ...messageForm, isPublic: true })}
+                        aria-pressed={messageForm.isPublic}
+                        className={`rounded-xl border-[1.5px] p-3 text-left transition-all ${messageForm.isPublic ? 'border-primary bg-primary/5 ring-2 ring-primary/20' : 'border-border bg-card hover:border-primary/40'}`}
+                      >
+                        <div className="flex items-center gap-2"><Globe className="h-4 w-4 text-primary" /><span className="text-sm font-bold">🔓 Public</span></div>
+                        <p className="mt-0.5 text-[11px] text-muted-foreground">Visible to followers in their feed</p>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMessageForm({ ...messageForm, isPublic: false })}
+                        aria-pressed={!messageForm.isPublic}
+                        className={`rounded-xl border-[1.5px] p-3 text-left transition-all ${!messageForm.isPublic ? 'border-primary bg-primary/5 ring-2 ring-primary/20' : 'border-border bg-card hover:border-primary/40'}`}
+                      >
+                        <div className="flex items-center gap-2"><Lock className="h-4 w-4 text-primary" /><span className="text-sm font-bold">🔒 Subscribers Only</span></div>
+                        <p className="mt-0.5 text-[11px] text-muted-foreground">Only paid subscribers can see this</p>
+                      </button>
                     </div>
-                    <Switch checked={messageForm.isPublic} onCheckedChange={v => setMessageForm({ ...messageForm, isPublic: v })} />
                   </div>
                   <button
                     className="flex h-[42px] w-full items-center justify-center rounded-lg bg-secondary text-sm font-semibold text-secondary-foreground disabled:opacity-50"
