@@ -73,9 +73,9 @@ export const SEO_CONFIG = {
       'trading signals, SEBI verified advisor, stock advisory, F&O trading, intraday signals, swing trading, SEBI registered analyst',
   },
   landing: {
-    title: 'RA Circle | Secure Workspace for SEBI RAs',
+    title: 'RA Circle | India’s Secure Network for SEBI Advisors & Smart Traders',
     description:
-      "India's Secure Platform for SEBI Analysts & Smart Traders. Stop trusting random tips. Follow SEBI-registered experts with transparent, verifiable win-rates and live alerts.",
+      "India's Secure Network for Certified Advisors & Smart Traders. SEBI-verified Research Analysts, tamper-proof signals, masked subscriber data — all in one secure workspace.",
     keywords:
       'SEBI registered advisor, trading signals India, verified stock advisor, F&O signals, intraday trading, research analyst INH, RA Circle',
   },
