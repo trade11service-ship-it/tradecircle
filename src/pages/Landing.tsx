@@ -118,12 +118,12 @@ export default function Landing() {
               <Shield className="h-3.5 w-3.5" /> SEBI Verified Advisors Only
             </div>
             <h1 className="text-3xl md:text-5xl font-extrabold text-foreground tracking-tight leading-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>
-              Real Trading Signals.<br />
-              <span className="tc-gradient-text">Tamper-Proof Records.</span>
+              India’s Secure Platform for SEBI Analysts & Smart Traders.
             </h1>
             <p className="mt-3 text-muted-foreground text-sm md:text-base max-w-2xl mx-auto">
-              Stop trusting random Telegram tips. Follow SEBI-registered experts with transparent, verifiable win-rates and live alerts.
+              Stop trusting random tips. Follow SEBI-registered experts with transparent, verifiable win-rates and live alerts.
             </p>
+
             <div className="mt-6 flex justify-center gap-3">
               <Link to="/discover">
                 <Button className="h-11 rounded-full px-8 font-bold text-[14px] bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 hover:-translate-y-0.5 transition-all">
