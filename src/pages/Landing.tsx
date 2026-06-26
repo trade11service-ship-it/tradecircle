@@ -111,28 +111,28 @@ export default function Landing() {
       <Navbar />
 
       {/* ===== TWO-SIDED HERO ===== */}
-      <section className="relative overflow-hidden bg-primary text-white">
+      <section className="relative overflow-hidden bg-gradient-to-b from-background via-background to-muted/30 border-b border-border">
         <div
-          className="absolute inset-0 opacity-[0.07] pointer-events-none"
+          className="absolute inset-0 opacity-[0.08] pointer-events-none"
           style={{
             backgroundImage:
-              'radial-gradient(circle at 20% 20%, hsl(var(--emerald)) 0, transparent 40%), radial-gradient(circle at 80% 80%, hsl(var(--sky)) 0, transparent 40%)',
+              'radial-gradient(circle at 15% 20%, hsl(var(--emerald)) 0, transparent 35%), radial-gradient(circle at 85% 80%, hsl(var(--sky)) 0, transparent 35%)',
           }}
         />
         <div className="relative mx-auto w-full max-w-5xl px-4 sm:px-6 pt-12 pb-14">
           <div className="text-center animate-slide-up">
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald/40 bg-emerald/10 px-3 py-1 text-[11px] font-bold text-emerald mb-5">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald/30 bg-emerald/10 px-3 py-1 text-[11px] font-bold text-emerald mb-5">
               <ShieldCheck className="h-3.5 w-3.5" /> 100% SEBI Verified · Tamper-proof Track Records
             </div>
             <h1
-              className="text-3xl md:text-5xl font-extrabold tracking-tight leading-[1.1]"
+              className="text-3xl md:text-5xl font-extrabold tracking-tight leading-[1.1] text-foreground"
               style={{ fontFamily: 'Inter, sans-serif' }}
             >
               India’s Secure Network for{' '}
               <span className="text-emerald">Certified Advisors</span>{' '}
               & <span className="text-sky">Smart Traders</span>.
             </h1>
-            <p className="mt-4 text-white/70 text-sm md:text-base max-w-2xl mx-auto">
+            <p className="mt-4 text-muted-foreground text-sm md:text-base max-w-2xl mx-auto">
               Stop trusting random tips on Telegram. Follow SEBI-registered Research Analysts with
               verifiable win-rates, real accountability, and live alerts — all in one secure workspace.
             </p>
@@ -146,14 +146,14 @@ export default function Landing() {
               <Link to="/advisor-register">
                 <Button
                   variant="outline"
-                  className="h-12 w-full sm:w-auto rounded-full px-7 font-bold text-[14px] bg-transparent border-white/30 text-white hover:bg-white/10 hover:text-white"
+                  className="h-12 w-full sm:w-auto rounded-full px-7 font-bold text-[14px] border-primary/30 text-primary hover:bg-primary/5"
                 >
                   Join as Research Analyst
                 </Button>
               </Link>
             </div>
 
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[11px] text-white/60">
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[11px] text-muted-foreground">
               <span className="inline-flex items-center gap-1"><Lock className="h-3 w-3" /> Tamper-proof signals</span>
               <span className="inline-flex items-center gap-1"><Eye className="h-3 w-3" /> Public win/loss history</span>
               <span className="inline-flex items-center gap-1"><BarChart3 className="h-3 w-3" /> SEBI SCORES accountable</span>
