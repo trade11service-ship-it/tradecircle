@@ -99,7 +99,7 @@ export function Footer() {
               RA <span className="text-emerald">Circle</span>
             </span>
             <span className="text-white/20">·</span>
-            <span className="text-[11px] text-white/30">© {currentYear} STREZONIC PVT LTD</span>
+            <span className="text-[11px] text-white/30">© {currentYear} RA Circle · STREZONIC PVT LTD</span>
           </div>
           <span className="text-[11px] text-white/30">Built for Indian Traders 🇮🇳</span>
         </div>
