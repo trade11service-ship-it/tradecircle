@@ -22,7 +22,7 @@ export default function Explore() {
       
 
       {/* Hero Header — dark gradient */}
-      <div className="bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] text-white py-8 md:py-12 px-4">
+      <div className="tc-gradient-hero text-white py-8 md:py-12 px-4">
         <div className="container mx-auto max-w-2xl text-center">
           <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight mb-2">
             Live Trading Feed

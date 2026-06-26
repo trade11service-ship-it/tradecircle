@@ -59,7 +59,7 @@ export function BottomNavigation() {
                 <div>
                   <p className="text-sm font-semibold text-foreground">{profile?.full_name || 'User'}</p>
                   <p className="text-xs text-muted-foreground">{profile?.email}</p>
-                  <p className="text-[10px] text-primary font-bold mt-0.5">RA <span className="text-emerald">Circle</span></p>
+                  <p className="text-[10px] text-primary font-bold mt-0.5">RA <span className="text-sky">Circle</span></p>
                 </div>
               </div>
               <button onClick={() => setShowProfileMenu(false)} className="p-1 text-muted-foreground">

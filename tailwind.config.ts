@@ -62,7 +62,10 @@ export default {
         "off-white": "hsl(var(--off-white))",
         warning: "hsl(var(--warning))",
         navy: "hsl(var(--navy))",
+        slate: "hsl(var(--slate))",
+        sky: "hsl(var(--sky))",
         emerald: "hsl(var(--emerald))",
+        success: "hsl(var(--success))",
         crimson: "hsl(var(--crimson))",
       },
       fontFamily: {
