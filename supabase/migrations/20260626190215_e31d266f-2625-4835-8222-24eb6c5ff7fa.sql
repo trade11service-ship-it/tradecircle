@@ -1,0 +1,1 @@
+REVOKE SELECT (pan_no, aadhaar_no, phone, email, address, pan_photo_url, aadhaar_photo_url) ON public.advisors FROM anon, authenticated;

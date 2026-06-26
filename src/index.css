@@ -6,103 +6,106 @@
 
 @layer base {
   :root {
-    /* Institutional FinTech — Audit Slate canvas */
-    --background: 210 40% 98%;        /* #f8fafc */
-    --foreground: 222 47% 11%;        /* #0f172a Midnight Navy */
+    /* Slate / Sky / Emerald — modern fintech palette */
+    --background: 0 0% 100%;          /* #ffffff */
+    --foreground: 215 28% 17%;        /* #1f2937 Dark Slate Grey */
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 215 28% 17%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 222 47% 11%;
+    --popover-foreground: 215 28% 17%;
 
-    /* Midnight Navy = primary authority */
-    --primary: 222 47% 11%;           /* #0f172a */
-    --primary-foreground: 210 40% 98%;
+    /* Dark Slate Grey = primary authority (headers, nav, footer) */
+    --primary: 215 28% 17%;           /* #1f2937 */
+    --primary-foreground: 0 0% 100%;
 
-    /* RA Circle Emerald = action / wealth growth */
-    --secondary: 160 84% 39%;         /* #10b981 */
+    /* Sky Blue = secondary / CTAs / links */
+    --secondary: 199 89% 48%;         /* #0ea5e9 */
     --secondary-foreground: 0 0% 100%;
 
-    --muted: 210 40% 96%;             /* #f1f5f9 */
-    --muted-foreground: 215 16% 47%;  /* #64748b Audit Slate */
+    --muted: 210 20% 96%;             /* slate-100 */
+    --muted-foreground: 215 16% 47%;  /* slate-500 */
 
-    --accent: 160 84% 39%;            /* emerald accent */
+    --accent: 199 89% 48%;            /* sky accent */
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 60%;         /* #ef4444 Error Crimson */
+    --destructive: 0 84% 60%;         /* #ef4444 */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 215 28% 90%;
-    --input: 215 28% 90%;
-    --ring: 160 84% 39%;
+    --border: 214 32% 91%;            /* slate-200 */
+    --input: 214 32% 91%;
+    --ring: 199 89% 48%;              /* sky focus ring */
 
     --radius: 1rem;
 
-    --sidebar-background: 222 47% 11%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 160 84% 39%;
+    --sidebar-background: 215 28% 17%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 199 89% 48%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 222 47% 18%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 222 47% 18%;
-    --sidebar-ring: 160 84% 39%;
+    --sidebar-accent: 215 25% 23%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 215 25% 27%;
+    --sidebar-ring: 199 89% 48%;
 
     --light-green: 152 76% 92%;
-    --light-blue: 215 100% 95%;
-    --off-white: 210 40% 98%;
+    --light-blue: 199 89% 95%;
+    --off-white: 210 20% 98%;
     --grey-text: 215 16% 47%;
     --small-text: 215 14% 60%;
     --warning: 38 92% 50%;
-    --warning-foreground: 222 47% 11%;
+    --warning-foreground: 215 28% 17%;
 
-    --admin-dark: 222 47% 11%;
-    --admin-accent: 160 84% 39%;
+    --admin-dark: 215 28% 17%;
+    --admin-accent: 199 89% 48%;
 
-    --chat-bg: 210 40% 96%;
+    --chat-bg: 210 20% 96%;
 
-    /* Institutional aliases */
-    --navy: 222 47% 11%;
-    --emerald: 160 84% 39%;
+    /* Semantic aliases */
+    --navy: 215 28% 17%;        /* slate (kept alias) */
+    --slate: 215 28% 17%;
+    --sky: 199 89% 48%;
+    --emerald: 160 84% 39%;     /* #10b981 — reserved for verified/success */
+    --success: 160 84% 39%;
     --crimson: 0 84% 60%;
-    --slate-50: 210 40% 98%;
+    --slate-50: 210 20% 98%;
     --slate-500: 215 16% 47%;
   }
 
   .dark {
-    --background: 222 47% 6%;
-    --foreground: 210 40% 98%;
-    --card: 222 47% 10%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222 47% 10%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222 47% 11%;
-    --secondary: 160 84% 42%;
-    --secondary-foreground: 222 47% 6%;
-    --muted: 222 47% 14%;
-    --muted-foreground: 215 20% 65%;
-    --accent: 160 84% 42%;
-    --accent-foreground: 222 47% 6%;
+    --background: 215 28% 9%;
+    --foreground: 0 0% 100%;
+    --card: 215 28% 13%;
+    --card-foreground: 0 0% 100%;
+    --popover: 215 28% 13%;
+    --popover-foreground: 0 0% 100%;
+    --primary: 0 0% 100%;
+    --primary-foreground: 215 28% 17%;
+    --secondary: 199 89% 52%;
+    --secondary-foreground: 215 28% 9%;
+    --muted: 215 25% 18%;
+    --muted-foreground: 215 20% 70%;
+    --accent: 199 89% 52%;
+    --accent-foreground: 215 28% 9%;
     --destructive: 0 84% 60%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 222 47% 16%;
-    --input: 222 47% 16%;
-    --ring: 160 84% 42%;
-    --sidebar-background: 222 47% 6%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 160 84% 42%;
-    --sidebar-primary-foreground: 222 47% 6%;
-    --sidebar-accent: 222 47% 14%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 222 47% 16%;
-    --sidebar-ring: 160 84% 42%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 215 25% 22%;
+    --input: 215 25% 22%;
+    --ring: 199 89% 52%;
+    --sidebar-background: 215 28% 9%;
+    --sidebar-foreground: 0 0% 100%;
+    --sidebar-primary: 199 89% 52%;
+    --sidebar-primary-foreground: 215 28% 9%;
+    --sidebar-accent: 215 25% 18%;
+    --sidebar-accent-foreground: 0 0% 100%;
+    --sidebar-border: 215 25% 22%;
+    --sidebar-ring: 199 89% 52%;
     --light-green: 160 84% 18%;
-    --light-blue: 215 50% 18%;
-    --off-white: 222 47% 10%;
-    --grey-text: 215 20% 65%;
+    --light-blue: 199 50% 20%;
+    --off-white: 215 28% 13%;
+    --grey-text: 215 20% 70%;
     --small-text: 215 14% 55%;
-    --chat-bg: 222 47% 8%;
+    --chat-bg: 215 28% 11%;
   }
 }
 
@@ -183,13 +186,13 @@
     @apply shadow-lg shadow-primary/20;
   }
   .tc-badge-sebi {
-    @apply inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 text-[12px] font-bold text-primary;
+    @apply inline-flex items-center gap-1.5 rounded-full border border-emerald/30 bg-emerald/10 px-3 py-1.5 text-[12px] font-bold text-emerald;
   }
   .tc-badge-strategy {
     @apply inline-flex items-center rounded-full bg-secondary/10 px-3 py-1.5 text-[12px] font-bold text-secondary;
   }
   .tc-badge-active {
-    @apply inline-flex items-center rounded-full bg-primary/10 px-3 py-1.5 text-[12px] font-bold text-primary;
+    @apply inline-flex items-center rounded-full bg-emerald/10 px-3 py-1.5 text-[12px] font-bold text-emerald;
   }
   .tc-badge-pending {
     @apply inline-flex items-center rounded-full bg-warning/10 px-3 py-1.5 text-[12px] font-bold text-warning;
@@ -204,47 +207,42 @@
     @apply h-11 rounded-lg border border-input bg-background px-4 py-2 text-foreground placeholder-muted-foreground transition-all duration-200;
   }
   .tc-input:focus {
-    @apply border-primary outline-none ring-2 ring-primary/20;
+    @apply border-secondary outline-none ring-2 ring-secondary/20;
   }
   .tc-input-focus:focus {
-    @apply border-primary ring-1 ring-primary;
+    @apply border-secondary ring-1 ring-secondary;
   }
-  
-  /* Glass morphism effect */
+
   .tc-glass {
     @apply bg-white/[0.04] backdrop-blur-xl border border-white/[0.08];
   }
-  
-  /* Gradient text */
+
   .tc-gradient-text {
     @apply bg-clip-text text-transparent;
-    background-image: linear-gradient(135deg, hsl(160, 84%, 39%), hsl(243, 75%, 59%));
+    background-image: linear-gradient(135deg, hsl(199, 89%, 48%), hsl(215, 28%, 17%));
   }
-  
-  /* Button variants */
+
   .tc-btn-primary {
-    @apply h-11 rounded-lg bg-gradient-to-r from-primary to-primary/90 text-white font-bold shadow-lg shadow-primary/30 hover:shadow-primary/50 transition-all duration-300 active:scale-95;
+    @apply h-11 rounded-lg bg-gradient-to-r from-secondary to-secondary/90 text-white font-bold shadow-lg shadow-secondary/30 hover:shadow-secondary/50 transition-all duration-300 active:scale-95;
   }
-  
+
   .tc-btn-secondary {
     @apply h-11 rounded-lg border-2 border-primary text-primary font-bold hover:bg-primary/5 transition-all duration-300 active:scale-95;
   }
-  
-  /* Card elevation */
+
   .tc-card-elevated {
     @apply rounded-xl border border-border bg-card shadow-[0_10px_40px_rgba(0,0,0,0.08)] backdrop-blur-sm;
   }
 
-  /* Premium gradient backgrounds */
+  /* Slate → Sky hero gradients */
   .tc-gradient-hero {
-    background: linear-gradient(135deg, hsl(224, 32%, 6%) 0%, hsl(224, 40%, 12%) 40%, hsl(243, 40%, 15%) 70%, hsl(160, 40%, 12%) 100%);
-  }
-  
-  .tc-gradient-cta {
-    background: linear-gradient(135deg, hsl(160, 84%, 30%) 0%, hsl(200, 80%, 35%) 50%, hsl(243, 75%, 45%) 100%);
+    background: linear-gradient(135deg, hsl(215, 28%, 12%) 0%, hsl(215, 28%, 17%) 45%, hsl(210, 40%, 22%) 75%, hsl(199, 70%, 28%) 100%);
   }
 
-  /* Animated gradient border */
+  .tc-gradient-cta {
+    background: linear-gradient(135deg, hsl(199, 89%, 48%) 0%, hsl(199, 89%, 42%) 50%, hsl(215, 28%, 25%) 100%);
+  }
+
   .tc-border-glow {
     position: relative;
     border: 1px solid transparent;
@@ -255,7 +253,7 @@
     position: absolute;
     inset: -1px;
     border-radius: inherit;
-    background: linear-gradient(135deg, hsl(160, 84%, 39%), hsl(243, 75%, 59%), hsl(160, 84%, 39%));
+    background: linear-gradient(135deg, hsl(199, 89%, 48%), hsl(215, 28%, 25%), hsl(199, 89%, 48%));
     background-size: 300% 300%;
     animation: gradient-shift 4s ease infinite;
     z-index: -1;
@@ -274,8 +272,7 @@
   .safe-area-top {
     @apply pt-[env(safe-area-inset-top)];
   }
-  
-  /* Text truncation utilities */
+
   .line-clamp-1 {
     @apply overflow-hidden text-ellipsis whitespace-nowrap;
   }
@@ -291,14 +288,13 @@
     -webkit-box-orient: vertical;
     overflow: hidden;
   }
-  
-  /* Responsive utilities */
+
   @media (max-width: 640px) {
     .hide-on-mobile {
       @apply hidden;
     }
   }
-  
+
   @media (min-width: 641px) {
     .show-on-mobile {
       @apply hidden;
@@ -306,39 +302,30 @@
   }
 }
 
-/* Keyframe animations */
 @keyframes shake {
   0%, 100% { transform: translateX(0); }
   10%, 30%, 50%, 70%, 90% { transform: translateX(-4px); }
   20%, 40%, 60%, 80% { transform: translateX(4px); }
 }
-.animate-shake {
-  animation: shake 0.5s ease-in-out;
-}
+.animate-shake { animation: shake 0.5s ease-in-out; }
 
 @keyframes green-flash {
   0% { background-color: hsl(160 84% 39% / 0.2); }
   100% { background-color: transparent; }
 }
-.animate-green-flash {
-  animation: green-flash 0.6s ease-out;
-}
+.animate-green-flash { animation: green-flash 0.6s ease-out; }
 
 @keyframes marquee {
   0% { transform: translateX(0); }
   100% { transform: translateX(-33.33%); }
 }
-.animate-marquee {
-  animation: marquee 20s linear infinite;
-}
+.animate-marquee { animation: marquee 20s linear infinite; }
 
 @keyframes hero-underline {
   0% { width: 0; }
   100% { width: 100%; }
 }
-.animate-hero-underline {
-  animation: hero-underline 0.8s ease-out forwards;
-}
+.animate-hero-underline { animation: hero-underline 0.8s ease-out forwards; }
 
 @keyframes gradient-shift {
   0%, 100% { background-position: 0% 50%; }
@@ -353,38 +340,28 @@
   0%, 100% { transform: translateY(0px) rotate(0deg); }
   50% { transform: translateY(-20px) rotate(2deg); }
 }
-.animate-float-slow {
-  animation: float-slow 6s ease-in-out infinite;
-}
+.animate-float-slow { animation: float-slow 6s ease-in-out infinite; }
 
 @keyframes count-up {
   0% { opacity: 0; transform: translateY(10px); }
   100% { opacity: 1; transform: translateY(0); }
 }
-.animate-count-up {
-  animation: count-up 0.6s ease-out forwards;
-}
+.animate-count-up { animation: count-up 0.6s ease-out forwards; }
 
 @keyframes pulse-ring {
   0% { transform: scale(1); opacity: 0.6; }
   100% { transform: scale(1.5); opacity: 0; }
 }
-.animate-pulse-ring {
-  animation: pulse-ring 2s ease-out infinite;
-}
+.animate-pulse-ring { animation: pulse-ring 2s ease-out infinite; }
 
 @keyframes slide-up {
   0% { opacity: 0; transform: translateY(30px); }
   100% { opacity: 1; transform: translateY(0); }
 }
-.animate-slide-up {
-  animation: slide-up 0.7s ease-out forwards;
-}
+.animate-slide-up { animation: slide-up 0.7s ease-out forwards; }
 
 @keyframes glow {
-  0%, 100% { box-shadow: 0 0 20px hsl(160 84% 39% / 0.15); }
-  50% { box-shadow: 0 0 40px hsl(160 84% 39% / 0.3); }
+  0%, 100% { box-shadow: 0 0 20px hsl(199 89% 48% / 0.15); }
+  50% { box-shadow: 0 0 40px hsl(199 89% 48% / 0.3); }
 }
-.animate-glow {
-  animation: glow 3s ease-in-out infinite;
-}
+.animate-glow { animation: glow 3s ease-in-out infinite; }

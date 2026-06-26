@@ -56,7 +56,7 @@ export function Navbar() {
             <span className={`text-lg font-extrabold tracking-tight transition-colors ${
               !scrolled && isHeroPage ? 'text-white' : 'text-foreground'
             }`}>
-              RA <span className="text-emerald">Circle</span>
+              RA <span className="text-sky">Circle</span>
             </span>
           </Link>
 

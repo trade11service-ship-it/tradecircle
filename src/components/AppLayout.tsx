@@ -57,7 +57,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               R
             </div>
             <span className="text-xl font-extrabold tracking-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>
-              RA <span className="text-emerald">Circle</span>
+              RA <span className="text-sky">Circle</span>
             </span>
           </Link>
         </div>
@@ -138,7 +138,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 R
               </div>
               <span className="text-lg font-extrabold tracking-tight text-foreground" style={{ fontFamily: 'Outfit, sans-serif' }}>
-                RA <span className="text-emerald">Circle</span>
+                RA <span className="text-sky">Circle</span>
               </span>
             </Link>
             <div className="flex items-center gap-2">

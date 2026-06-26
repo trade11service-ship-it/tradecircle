@@ -22,7 +22,7 @@ export function Footer() {
                 R
               </div>
               <span className="text-lg font-extrabold tracking-tight">
-                RA <span className="text-emerald">Circle</span>
+                RA <span className="text-sky">Circle</span>
               </span>
             </div>
             <p className="text-sm text-white/50 leading-relaxed max-w-xs">
@@ -96,7 +96,7 @@ export function Footer() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-t border-white/8 pt-5">
           <div className="flex items-center gap-2">
             <span className="text-[13px] font-bold text-white">
-              RA <span className="text-emerald">Circle</span>
+              RA <span className="text-sky">Circle</span>
             </span>
             <span className="text-white/20">·</span>
             <span className="text-[11px] text-white/30">© {currentYear} RA Circle · STREZONIC PVT LTD</span>
