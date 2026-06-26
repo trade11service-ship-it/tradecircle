@@ -1,7 +1,7 @@
 # Phase 4 Implementation Complete: Public Feed & Follow System
 
 ## Overview
-Implemented Instagram-style public feed for TradeCircle with follow system, separating free public content from premium subscriber-only signals.
+Implemented Instagram-style public feed for RA Circle with follow system, separating free public content from premium subscriber-only signals.
 
 ## Changes Made
 
@@ -67,7 +67,7 @@ Implemented Instagram-style public feed for TradeCircle with follow system, sepa
 Added SEO configuration for Explore page:
 ```typescript
 explore: {
-  title: 'Free Trading Insights from SEBI Verified Advisors | TradeCircle',
+  title: 'Free Trading Insights from SEBI Verified Advisors | RA Circle',
   description: 'Discover free analysis and public posts from SEBI verified trading advisors...',
   keywords: 'free trading insights, SEBI advisor posts, free stock analysis...'
 }

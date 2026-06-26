@@ -982,7 +982,7 @@ export default function AdvisorDashboard() {
                   <span className="text-xl font-bold text-foreground">₹{Math.round(totalRevenue).toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b border-border">
-                  <span className="text-muted-foreground">TradeCircle Platform Fee</span>
+                  <span className="text-muted-foreground">RA Circle Platform Fee</span>
                   <span className="text-muted-foreground font-semibold">- ₹{Math.round(totalPlatformFee).toLocaleString('en-IN')}</span>
                 </div>
                 <div className="flex justify-between items-center py-3 rounded-xl bg-light-green px-4 -mx-1">

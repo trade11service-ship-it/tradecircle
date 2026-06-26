@@ -8,7 +8,7 @@
 
 ## 📊 PROJECT SUMMARY
 
-TradeCircle is now a **fully functional, beautifully designed SEBI-verified trading advisor marketplace** with:
+RA Circle is now a **fully functional, beautifully designed SEBI-verified trading advisor marketplace** with:
 
 - ✅ Phase 1: Subscription flow with PAN + consent
 - ✅ Phase 2: Admin pending approvals system  

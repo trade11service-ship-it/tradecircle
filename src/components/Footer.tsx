@@ -64,8 +64,8 @@ export function Footer() {
           <div>
             <h3 className="text-[11px] font-bold uppercase tracking-[1.5px] text-white/30 mb-3">Support</h3>
             <nav className="space-y-2">
-              <a href="mailto:support@TradeCircle.in" className="flex items-center gap-1.5 text-[13px] text-white/50 hover:text-primary transition-colors">
-                <Mail className="h-3.5 w-3.5" /> support@TradeCircle.in
+              <a href="mailto:support@racircle.in" className="flex items-center gap-1.5 text-[13px] text-white/50 hover:text-primary transition-colors">
+                <Mail className="h-3.5 w-3.5" /> support@racircle.in
               </a>
               <a href="https://scores.gov.in" target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-[13px] text-white/50 hover:text-primary transition-colors">
                 SEBI SCORES <ExternalLink className="h-3 w-3" />
@@ -80,12 +80,12 @@ export function Footer() {
             <Shield className="h-5 w-5 text-primary shrink-0 mt-0.5" />
             <div>
               <p className="text-[12px] leading-relaxed text-white/50">
-                TradeCircle is operated by <strong className="text-white/70">STREZONIC PRIVATE LIMITED</strong> (CIN: U62099MH2025PTC453360). 
+                RA Circle is operated by <strong className="text-white/70">STREZONIC PRIVATE LIMITED</strong> (CIN: U62099MH2025PTC453360). 
                 We are <strong className="text-white/70">not a SEBI-registered investment advisor</strong>. All advisors listed are independently 
                 SEBI-registered Research Analysts (INH holders). Investment in securities carries market risk. Past performance ≠ future results.
               </p>
               <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-white/35 mt-2">
-                <span>📧 <a href="mailto:grievance@TradeCircle.in" className="text-primary hover:underline">grievance@TradeCircle.in</a></span>
+                <span>📧 <a href="mailto:grievance@racircle.in" className="text-primary hover:underline">grievance@racircle.in</a></span>
                 <span>📋 <a href="https://scores.gov.in" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">SEBI SCORES</a></span>
               </div>
             </div>

@@ -168,7 +168,7 @@ export default function PaymentSuccess() {
                 <ul className="text-[12px] text-muted-foreground space-y-1 list-disc pl-4">
                   <li>If money was deducted, it will auto-refund within 5–7 working days.</li>
                   <li>Check your bank/UPI app for the payment status before retrying.</li>
-                  <li>Email <strong className="text-foreground">support@tradecircle.in</strong> with your payment reference.</li>
+                  <li>Email <strong className="text-foreground">support@racircle.in</strong> with your payment reference.</li>
                 </ul>
               </div>
               <div className="mt-4 flex gap-2">

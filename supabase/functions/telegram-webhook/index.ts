@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 chat_id: chatId,
-                text: `⚠️ <b>Setup Incomplete</b>\n\nPlease go to your TradeCircle dashboard first, enter your Telegram username, and then click the bot link again.\n\nYour Telegram: @${tgUsername || 'unknown'}`,
+                text: `⚠️ <b>Setup Incomplete</b>\n\nPlease go to your RA Circle dashboard first, enter your Telegram username, and then click the bot link again.\n\nYour Telegram: @${tgUsername || 'unknown'}`,
                 parse_mode: 'HTML',
               }),
             });
@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 chat_id: chatId,
-                text: `❌ <b>Username Mismatch</b>\n\nYou saved <b>@${savedUsername}</b> on TradeCircle but opened this bot as <b>@${tgUsername}</b>.\n\nPlease go back to the dashboard, update your username to <b>@${tgUsername}</b>, then click the bot link again.`,
+                text: `❌ <b>Username Mismatch</b>\n\nYou saved <b>@${savedUsername}</b> on RA Circle but opened this bot as <b>@${tgUsername}</b>.\n\nPlease go back to the dashboard, update your username to <b>@${tgUsername}</b>, then click the bot link again.`,
                 parse_mode: 'HTML',
               }),
             });
@@ -103,7 +103,7 @@ Deno.serve(async (req) => {
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
                 chat_id: chatId,
-                text: `⚠️ <b>Already Linked</b>\n\nThis Telegram account is already linked to another TradeCircle user. Each Telegram account can only be linked to one TradeCircle account.\n\nIf this is a mistake, contact support.`,
+                text: `⚠️ <b>Already Linked</b>\n\nThis Telegram account is already linked to another RA Circle user. Each Telegram account can only be linked to one RA Circle account.\n\nIf this is a mistake, contact support.`,
                 parse_mode: 'HTML',
               }),
             });
@@ -152,7 +152,7 @@ Deno.serve(async (req) => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             chat_id: chatId,
-            text: `👋 <b>Welcome to TradeCircle Alerts!</b>\n\nYou're all set! You'll now receive trading signals directly here when your subscribed advisors post.\n\n🛡️ <i>TradeCircle — SEBI Verified Advisors</i>`,
+            text: `👋 <b>Welcome to RA Circle Alerts!</b>\n\nYou're all set! You'll now receive trading signals directly here when your subscribed advisors post.\n\n🛡️ <i>RA Circle — SEBI Verified Advisors</i>`,
             parse_mode: 'HTML',
           }),
         });
@@ -162,7 +162,7 @@ Deno.serve(async (req) => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             chat_id: chatId,
-            text: `⚠️ <b>Account not found</b>\n\nPlease go to your TradeCircle dashboard first, enter your Telegram username, save it, and then click the bot link from the dashboard.\n\nYour Telegram: @${tgUsername || 'unknown'}`,
+            text: `⚠️ <b>Account not found</b>\n\nPlease go to your RA Circle dashboard first, enter your Telegram username, save it, and then click the bot link from the dashboard.\n\nYour Telegram: @${tgUsername || 'unknown'}`,
             parse_mode: 'HTML',
           }),
         });

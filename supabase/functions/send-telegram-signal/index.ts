@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
       (signal.notes ? `\n📝 ${signal.notes}\n` : '') +
       `━━━━━━━━━━━━━━━\n` +
       `👤 <i>${advisorName}</i>\n` +
-      `🔗 View on TradeCircle`;
+      `🔗 View on RA Circle`;
 
     let sentCount = 0;
     const deliveries: any[] = [];

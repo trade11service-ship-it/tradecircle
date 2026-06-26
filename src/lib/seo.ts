@@ -66,37 +66,37 @@ function updateMeta(name: string, content: string) {
 
 export const SEO_CONFIG = {
   home: {
-    title: 'Home — TradeCircle | SEBI-Verified Trading Advisors',
+    title: 'Home — RA Circle | SEBI-Verified Trading Advisors',
     description:
       'Get verified trading signals from SEBI-registered advisors. Tamper-proof track records. Cancel anytime. No lock-in.',
     keywords:
       'trading signals, SEBI verified advisor, stock advisory, F&O trading, intraday signals, swing trading, SEBI registered analyst',
   },
   landing: {
-    title: 'TradeCircle — India\'s Trusted SEBI-Verified Advisory Marketplace',
+    title: 'RA Circle — India\'s Trusted SEBI-Verified Advisory Marketplace',
     description:
       'Find SEBI-verified trading advisors with tamper-proof track records. Subscribe to signal groups. Real accountability, real transparency.',
     keywords:
       'SEBI registered advisor, trading signals India, verified stock advisor, F&O signals, intraday trading, research analyst INH',
   },
   discover: {
-    title: 'Browse SEBI Verified Trading Advisors | TradeCircle',
+    title: 'Browse SEBI Verified Trading Advisors | RA Circle',
     description:
       'Browse SEBI-verified advisors with transparent track records. Filter by strategy (Intraday, Swing, F&O) and accuracy.',
     keywords:
       'SEBI verified trading advisors, best intraday signals, swing trading advisors, F&O trading signals, stock market advisory',
   },
   explore: {
-    title: 'Free Trading Insights from SEBI Verified Advisors | TradeCircle',
+    title: 'Free Trading Insights from SEBI Verified Advisors | RA Circle',
     description:
       'Discover free analysis and public posts from SEBI verified trading advisors. Follow advisors to get free insights in your feed.',
     keywords:
       'free trading insights, SEBI advisor posts, free stock analysis, trading advisor insights, free trading signals',
   },
   about: {
-    title: 'About TradeCircle — How We Verify Trading Advisors',
+    title: 'About RA Circle — How We Verify Trading Advisors',
     description:
-      'Learn how TradeCircle verifies SEBI registered advisors. Our verification process ensures regulatory compliance and transparency.',
+      'Learn how RA Circle verifies SEBI registered advisors. Our verification process ensures regulatory compliance and transparency.',
     keywords:
       'SEBI verified advisors, trading advisor verification, how to find verified stock advisor, SEBI registered analyst',
   },
@@ -108,27 +108,27 @@ export const SEO_CONFIG = {
       'subscription trading signals, cancel anytime advisory, premium trading signals, advisor subscription plans',
   },
   contact: {
-    title: 'Contact TradeCircle — Get Help & Support',
+    title: 'Contact RA Circle — Get Help & Support',
     description:
-      'Have questions? Contact TradeCircle support team. We\'re here to help with SEBI compliance and trading advisory queries.',
+      'Have questions? Contact RA Circle support team. We\'re here to help with SEBI compliance and trading advisory queries.',
     keywords: 'contact support, trading advisor support, SEBI compliance help, trading signals support',
   },
   disclaimer: {
-    title: 'Disclaimer — TradeCircle Trading Advisory Platform',
+    title: 'Disclaimer — RA Circle Trading Advisory Platform',
     description:
-      'Legal disclaimer for TradeCircle. All trading involves risk. Past performance does not guarantee future results.',
+      'Legal disclaimer for RA Circle. All trading involves risk. Past performance does not guarantee future results.',
     keywords: 'trading disclaimer, investment disclaimer, risk disclosure, trading risks',
   },
   privacy: {
-    title: 'Privacy Policy — TradeCircle',
+    title: 'Privacy Policy — RA Circle',
     description:
-      'TradeCircle privacy policy. We respect your data and comply with Indian privacy regulations.',
+      'RA Circle privacy policy. We respect your data and comply with Indian privacy regulations.',
     keywords: 'privacy policy, data protection, user data security',
   },
   terms: {
-    title: 'Terms of Service — TradeCircle',
+    title: 'Terms of Service — RA Circle',
     description:
-      'Terms and conditions for using TradeCircle trading advisory platform.',
+      'Terms and conditions for using RA Circle trading advisory platform.',
     keywords: 'terms of service, user agreement, trading platform terms',
   },
 };

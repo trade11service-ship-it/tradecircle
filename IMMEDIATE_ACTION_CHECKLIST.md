@@ -14,7 +14,7 @@
 - [ ] Login to SendGrid
 - [ ] Go to Settings → API Keys
 - [ ] Click "Create API Key"
-- [ ] Give it a name like "TradeCircle"
+- [ ] Give it a name like "RA Circle"
 - [ ] Copy the key (save it somewhere safe)
 - [ ] ✅ DONE
 
@@ -24,7 +24,7 @@
 
 **Method A: Via Supabase Dashboard** (Easiest)
 1. [ ] Open Supabase Dashboard
-2. [ ] Select your TradeCircle project
+2. [ ] Select your RA Circle project
 3. [ ] Go to: **Settings** → **Secrets**
 4. [ ] Click **New Secret**
 5. [ ] Fill in:
@@ -98,7 +98,7 @@ supabase functions deploy send-advisor-rejection-email
 
 ## TODO #6: Test Approval Email (3 min)
 
-1. [ ] Open TradeCircle app in browser: `http://localhost:5173`
+1. [ ] Open RA Circle app in browser: `http://localhost:5173`
 2. [ ] Login as admin
 3. [ ] Go to: **Admin Dashboard** → **Pending Approvals** tab
 4. [ ] Find a pending advisor application
@@ -106,7 +106,7 @@ supabase functions deploy send-advisor-rejection-email
 6. [ ] Click **Approve** button
 7. [ ] Should see toast: "Admin approved successfully! Email sent."
 8. [ ] Go to that advisor's email inbox (or spam folder)
-9. [ ] Should see email: "Your TradeCircle Advisor Account Has Been Approved!"
+9. [ ] Should see email: "Your RA Circle Advisor Account Has Been Approved!"
 10. [ ] ✅ DONE
 
 **If no email arrives**:

@@ -199,14 +199,14 @@ marquee           30s        linear             Scrolling text
 │ - Sign In │ - Refund │ - Scores  │      │
 ├─────────────────────────────────────┤
 │ SEBI COMPLIANCE BOX                 │ Gold accent
-│ "TradeCircle is a technology        │
+│ "RA Circle is a technology        │
 │  marketplace, not a SEBI advisor..."│
 ├─────────────────────────────────────┤
 │ COMPANY INFO (3 COLUMNS)            │
 │ Registered  │  Details   │ Quick    │
 │ Office      │  (CIN/PAN) │ Facts    │
 ├─────────────────────────────────────┤
-│ © 2026 TradeCircle · Made with ❤️   │ Dark bar
+│ © 2026 RA Circle · Made with ❤️   │ Dark bar
 └─────────────────────────────────────┘
 ```
 
@@ -423,6 +423,6 @@ Static experience           → Dynamic, alive experience
 
 ---
 
-**The TradeCircle project is now a modern, professional, user-friendly platform!** ✨
+**The RA Circle project is now a modern, professional, user-friendly platform!** ✨
 
 All phases complete. All quality checks passing. Ready for production. 🚀
