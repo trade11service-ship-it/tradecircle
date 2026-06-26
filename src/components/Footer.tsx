@@ -19,10 +19,10 @@ export function Footer() {
           <div className="md:col-span-2">
             <div className="flex items-center gap-2 mb-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-black text-primary-foreground">
-                S
+                R
               </div>
               <span className="text-lg font-extrabold tracking-tight">
-                Trade<span className="text-primary">Circle</span>
+                RA <span className="text-emerald">Circle</span>
               </span>
             </div>
             <p className="text-sm text-white/50 leading-relaxed max-w-xs">
@@ -96,7 +96,7 @@ export function Footer() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-t border-white/8 pt-5">
           <div className="flex items-center gap-2">
             <span className="text-[13px] font-bold text-white">
-              Trade<span className="text-primary">Circle</span>
+              RA <span className="text-emerald">Circle</span>
             </span>
             <span className="text-white/20">·</span>
             <span className="text-[11px] text-white/30">© {currentYear} STREZONIC PVT LTD</span>
