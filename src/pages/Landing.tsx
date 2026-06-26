@@ -116,7 +116,7 @@ export default function Landing() {
           className="absolute inset-0 opacity-[0.08] pointer-events-none"
           style={{
             backgroundImage:
-              'radial-gradient(circle at 15% 20%, hsl(var(--emerald)) 0, transparent 35%), radial-gradient(circle at 85% 80%, hsl(var(--sky)) 0, transparent 35%)',
+              'radial-gradient(circle at 50% 0%, hsl(var(--sky)) 0, transparent 45%)',
           }}
         />
         <div className="relative mx-auto w-full max-w-5xl px-4 sm:px-6 pt-12 pb-14">
@@ -129,8 +129,8 @@ export default function Landing() {
               style={{ fontFamily: 'Inter, sans-serif' }}
             >
               India’s Secure Network for{' '}
-              <span className="text-emerald">Certified Advisors</span>{' '}
-              & <span className="text-sky">Smart Traders</span>.
+              <span className="text-sky">Certified Advisors</span>{' '}
+              & <span className="text-primary">Smart Traders</span>.
             </h1>
             <p className="mt-4 text-muted-foreground text-sm md:text-base max-w-2xl mx-auto">
               Stop trusting random tips on Telegram. Follow SEBI-registered Research Analysts with
@@ -139,19 +139,20 @@ export default function Landing() {
 
             <div className="mt-7 flex flex-col sm:flex-row justify-center gap-3">
               <Link to="/discover">
-                <Button className="h-12 w-full sm:w-auto rounded-full px-7 font-bold text-[14px] bg-emerald hover:bg-emerald/90 text-white shadow-lg shadow-emerald/20">
+                <Button className="h-12 w-full sm:w-auto rounded-full px-7 font-bold text-[14px] bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20">
                   Browse Verified Advisors
                 </Button>
               </Link>
               <Link to="/advisor-register">
                 <Button
                   variant="outline"
-                  className="h-12 w-full sm:w-auto rounded-full px-7 font-bold text-[14px] border-primary/30 text-primary hover:bg-primary/5"
+                  className="h-12 w-full sm:w-auto rounded-full px-7 font-bold text-[14px] border-sky/40 text-sky hover:bg-sky/5 hover:text-sky"
                 >
                   Join as Research Analyst
                 </Button>
               </Link>
             </div>
+
 
             <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[11px] text-muted-foreground">
               <span className="inline-flex items-center gap-1"><Lock className="h-3 w-3" /> Tamper-proof signals</span>
@@ -184,7 +185,7 @@ export default function Landing() {
 
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {(publicSignals.length > 0
-              ? publicSignals.slice(0, 6).map((s: any) => ({
+              ? publicSignals.slice(0, 3).map((s: any) => ({
                   advisor: s.advisors?.full_name || 'Verified Advisor',
                   photo: s.advisors?.profile_photo_url || null,
                   instrument: s.instrument || 'UPDATE',

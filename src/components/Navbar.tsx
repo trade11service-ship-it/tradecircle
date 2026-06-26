@@ -44,7 +44,7 @@ export function Navbar() {
               R
             </div>
             <span className="text-lg font-extrabold tracking-tight text-foreground">
-              RA <span className="text-emerald">Circle</span>
+              RA <span className="text-sky">Circle</span>
             </span>
           </Link>
 
