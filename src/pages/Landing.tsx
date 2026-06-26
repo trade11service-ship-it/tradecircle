@@ -275,7 +275,7 @@ export default function Landing() {
 
 
       {/* ===== POPULAR GROUPS ===== */}
-      <section className="border-y border-border bg-muted/30">
+      <section id="pricing" className="border-y border-border bg-muted/30 scroll-mt-20">
         <div className="mx-auto w-full max-w-6xl px-4 py-14 sm:px-6">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-8">
             <div>
