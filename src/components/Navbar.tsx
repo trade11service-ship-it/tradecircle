@@ -40,10 +40,10 @@ export function Navbar() {
         <div className="container mx-auto flex h-full items-center justify-between px-4">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald text-sm font-black text-white transition-transform group-hover:scale-105">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-black text-white transition-transform group-hover:scale-105">
               R
             </div>
-            <span className="text-lg font-extrabold tracking-tight text-white">
+            <span className="text-lg font-extrabold tracking-tight text-foreground">
               RA <span className="text-emerald">Circle</span>
             </span>
           </Link>
@@ -56,30 +56,30 @@ export function Navbar() {
                 to={l.to}
                 className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                   l.highlight
-                    ? 'text-emerald hover:bg-white/5'
+                    ? 'text-emerald hover:bg-emerald/5'
                     : isActive(l.to)
-                      ? 'text-white bg-white/10'
-                      : 'text-white/80 hover:text-white hover:bg-white/5'
+                      ? 'text-primary bg-primary/10'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                 }`}
               >
                 {l.label}
               </Link>
             ))}
 
-            <div className="mx-2 h-6 w-px bg-white/15" />
+            <div className="mx-2 h-6 w-px bg-border" />
 
             {user ? (
               <>
                 <Link
                   to={getDashboardLink()}
-                  className="px-3 py-2 rounded-md text-sm font-medium text-white/80 hover:text-white hover:bg-white/5"
+                  className="px-3 py-2 rounded-md text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
                 >
                   Dashboard
                 </Link>
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="sm" className="gap-2 h-9 text-white/90 hover:text-white hover:bg-white/10">
-                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-emerald text-xs font-bold text-white">
+                    <Button variant="ghost" size="sm" className="gap-2 h-9">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
                         {(profile?.full_name || 'U').charAt(0).toUpperCase()}
                       </div>
                       <span className="text-sm font-medium">{profile?.full_name?.split(' ')[0] || 'Account'}</span>
@@ -100,7 +100,7 @@ export function Navbar() {
             ) : (
               <div className="flex items-center gap-2">
                 <Link to="/login">
-                  <Button variant="ghost" size="sm" className="text-white/90 hover:text-white hover:bg-white/10">
+                  <Button variant="ghost" size="sm">
                     Login
                   </Button>
                 </Link>
@@ -116,7 +116,7 @@ export function Navbar() {
           {/* Mobile hamburger */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="lg:hidden p-2 rounded-lg text-white"
+            className="lg:hidden p-2 rounded-lg text-foreground"
             aria-label="Toggle menu"
           >
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -127,8 +127,8 @@ export function Navbar() {
       {/* Mobile menu overlay */}
       {mobileOpen && (
         <div className="fixed inset-0 z-40 lg:hidden">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
-          <div className="absolute top-14 left-0 right-0 bg-primary border-b border-white/10 shadow-xl animate-slide-up">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setMobileOpen(false)} />
+          <div className="absolute top-14 left-0 right-0 bg-background border-b border-border shadow-xl animate-slide-up">
             <div className="container mx-auto px-4 py-4 space-y-1">
               {navLinks.map((l) => (
                 <Link
@@ -136,18 +136,18 @@ export function Navbar() {
                   to={l.to}
                   className={`block px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                     l.highlight
-                      ? 'text-emerald hover:bg-white/5'
-                      : 'text-white hover:bg-white/10'
+                      ? 'text-emerald hover:bg-emerald/5'
+                      : 'text-foreground hover:bg-muted'
                   }`}
                 >
                   {l.label}
                 </Link>
               ))}
-              <div className="my-2 border-t border-white/10" />
+              <div className="my-2 border-t border-border" />
               {user ? (
                 <>
-                  <Link to={getDashboardLink()} className="block px-4 py-3 rounded-lg text-sm font-medium text-white hover:bg-white/10">Dashboard</Link>
-                  <Link to="/profile" className="block px-4 py-3 rounded-lg text-sm font-medium text-white hover:bg-white/10">Profile</Link>
+                  <Link to={getDashboardLink()} className="block px-4 py-3 rounded-lg text-sm font-medium text-foreground hover:bg-muted">Dashboard</Link>
+                  <Link to="/profile" className="block px-4 py-3 rounded-lg text-sm font-medium text-foreground hover:bg-muted">Profile</Link>
                   <button onClick={async () => { setMobileOpen(false); await signOut(); }} className="w-full text-left px-4 py-3 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors">
                     Logout
                   </button>
@@ -155,19 +155,18 @@ export function Navbar() {
               ) : (
                 <div className="flex gap-2 px-4 pt-2">
                   <Link to="/login" className="flex-1">
-                    <Button variant="outline" className="w-full border-white/30 text-white bg-transparent hover:bg-white/10 hover:text-white">Login</Button>
+                    <Button variant="outline" className="w-full">Login</Button>
                   </Link>
                   <Link to="/register" className="flex-1">
                     <Button className="w-full bg-emerald hover:bg-emerald/90 text-white">Get Started</Button>
                   </Link>
                 </div>
               )}
-              <div className="px-4 pt-3 flex items-center gap-1.5 text-[11px] text-white/60">
+              <div className="px-4 pt-3 flex items-center gap-1.5 text-[11px] text-muted-foreground">
                 <ShieldCheck className="h-3 w-3 text-emerald" /> SEBI verified analysts only
               </div>
             </div>
           </div>
-        </div>
       )}
     </>
   );
