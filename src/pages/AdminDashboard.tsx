@@ -558,7 +558,7 @@ export default function AdminDashboard() {
         <div className="flex items-center justify-between px-5 py-6 border-b border-white/[0.08]">
           <div>
             <div className="text-[20px] font-extrabold text-white">
-              Trade<span style={{ color: '#69F0AE' }}>Circle</span>
+              RA <span style={{ color: '#10b981' }}>Circle</span>
             </div>
             <div className="text-[10px] text-white/40 tracking-[3px] uppercase mt-1">Admin Console</div>
           </div>
@@ -634,7 +634,7 @@ export default function AdminDashboard() {
               <Menu size={24} />
             </button>
             <div className="text-[18px] font-extrabold text-foreground">
-              Trade<span style={{ color: '#1B5E20' }}>Circle</span>
+              RA <span style={{ color: '#10b981' }}>Circle</span>
             </div>
           </div>
           <AdminAvatar name={profile?.full_name || 'A'} size={32} />

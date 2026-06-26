@@ -80,7 +80,7 @@ export default function Login() {
               </div>
               <h1 className="text-2xl font-extrabold text-foreground" style={{ fontFamily: 'Outfit, sans-serif' }}>Welcome Back</h1>
               <p className="mt-2 text-sm text-muted-foreground">
-                Sign in to your <span className="font-bold text-foreground">Trade<span className="text-primary">Circle</span></span> account
+                Sign in to your <span className="font-bold text-foreground">RA <span className="text-emerald">Circle</span></span> account
               </p>
             </div>
 
