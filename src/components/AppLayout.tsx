@@ -54,10 +54,10 @@ export function AppLayout({ children }: AppLayoutProps) {
         <div className="h-16 flex items-center px-6 border-b border-border">
           <Link to="/" className="flex items-center gap-2 text-foreground">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold">
-              T
+              R
             </div>
             <span className="text-xl font-extrabold tracking-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>
-              Trade<span className="text-primary">Circle</span>
+              RA <span className="text-emerald">Circle</span>
             </span>
           </Link>
         </div>
@@ -135,10 +135,10 @@ export function AppLayout({ children }: AppLayoutProps) {
           <header className="md:hidden h-14 flex items-center justify-between px-4 bg-card border-b border-border shrink-0 z-30">
             <Link to="/" className="flex items-center gap-2">
               <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground font-bold text-sm">
-                T
+                R
               </div>
               <span className="text-lg font-extrabold tracking-tight text-foreground" style={{ fontFamily: 'Outfit, sans-serif' }}>
-                Trade<span className="text-primary">Circle</span>
+                RA <span className="text-emerald">Circle</span>
               </span>
             </Link>
             <div className="flex items-center gap-2">
