@@ -118,12 +118,12 @@ export default function Landing() {
               <Shield className="h-3.5 w-3.5" /> SEBI Verified Advisors Only
             </div>
             <h1 className="text-3xl md:text-5xl font-extrabold text-foreground tracking-tight leading-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>
-              Real Trading Signals.<br />
-              <span className="tc-gradient-text">Tamper-Proof Records.</span>
+              India’s Secure Platform for SEBI Analysts & Smart Traders.
             </h1>
             <p className="mt-3 text-muted-foreground text-sm md:text-base max-w-2xl mx-auto">
-              Stop trusting random Telegram tips. Follow SEBI-registered experts with transparent, verifiable win-rates and live alerts.
+              Stop trusting random tips. Follow SEBI-registered experts with transparent, verifiable win-rates and live alerts.
             </p>
+
             <div className="mt-6 flex justify-center gap-3">
               <Link to="/discover">
                 <Button className="h-11 rounded-full px-8 font-bold text-[14px] bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 hover:-translate-y-0.5 transition-all">
@@ -262,10 +262,10 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ===== WHY TradeCircle ===== */}
+      {/* ===== WHY RA Circle ===== */}
       <section className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6">
         <div className="text-center mb-10">
-          <p className="text-[11px] font-bold text-primary uppercase tracking-[2px]">WHY TradeCircle</p>
+          <p className="text-[11px] font-bold text-primary uppercase tracking-[2px]">WHY RA Circle</p>
           <h2 className="mt-2 text-3xl font-extrabold text-foreground tracking-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>
             Built for trust. Designed for traders.
           </h2>
@@ -352,11 +352,11 @@ export default function Landing() {
         <div className="rounded-xl border border-border bg-card overflow-hidden">
           <Accordion type="single" collapsible defaultValue="faq-0">
             {[
-              { q: 'Is TradeCircle a SEBI registered advisor?', a: "No. TradeCircle is a technology marketplace operated by STREZONIC PRIVATE LIMITED. We verify SEBI-registered advisors (INH holders) but do not give investment advice ourselves." },
+              { q: 'Is RA Circle a SEBI registered advisor?', a: "No. RA Circle is a technology marketplace operated by STREZONIC PRIVATE LIMITED. We verify SEBI-registered advisors (INH holders) but do not give investment advice ourselves." },
               { q: 'How do you verify advisors?', a: "We manually check each advisor's SEBI registration number (INH number) on sebi.gov.in before approval. Unverified advisors are never listed." },
               { q: 'Can I cancel my subscription?', a: 'Yes. Cancel anytime from your profile. Monthly billing, no lock-in, no questions asked.' },
               { q: 'How do I receive signals?', a: 'After subscribing, you will be added to the advisor\'s private Telegram group. All signals arrive instantly with entry, target, and stop loss.' },
-              { q: 'What makes this different from Telegram channels?', a: 'TradeCircle only allows SEBI-registered advisors. Every signal is permanently timestamped — advisors cannot delete bad calls. You can see full win/loss history before subscribing.' },
+              { q: 'What makes this different from Telegram channels?', a: 'RA Circle only allows SEBI-registered advisors. Every signal is permanently timestamped — advisors cannot delete bad calls. You can see full win/loss history before subscribing.' },
             ].map((faq, i) => (
               <AccordionItem key={i} value={`faq-${i}`} className="border-b border-border last:border-0">
                 <AccordionTrigger className="px-5 py-4 text-[14px] font-semibold text-foreground hover:text-primary transition-colors">{faq.q}</AccordionTrigger>
@@ -399,7 +399,7 @@ export default function Landing() {
           <div className="rounded-lg border border-border bg-muted/50 px-4 py-3">
             <p className="text-[11px] text-muted-foreground">
               <Shield className="inline h-3 w-3 text-primary mr-1" />
-              All advisors on TradeCircle are SEBI registered (INH holders). TradeCircle is not a SEBI registered entity. Investment in securities involves market risk.
+              All advisors on RA Circle are SEBI registered (INH holders). RA Circle is not a SEBI registered entity. Investment in securities involves market risk.
             </p>
           </div>
         </div>

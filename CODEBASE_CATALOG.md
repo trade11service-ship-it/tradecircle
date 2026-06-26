@@ -1,4 +1,4 @@
-# TradeCircle Codebase Catalog
+# RA Circle Codebase Catalog
 
 **Generated**: March 25, 2026  
 **Project**: Trading signals & advisor marketplace platform  
@@ -150,7 +150,7 @@
   - `created_at` TIMESTAMP WITH TIME ZONE
   - **UNIQUE**: (user_id, group_id)
 - **RLS**: Enabled (users manage own settings)
-- **Bot**: tradecircle_alerts_bot
+- **Bot**: racircle_alerts_bot
 
 ### Referral System Tables
 

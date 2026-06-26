@@ -34,7 +34,7 @@
 ### Option A: Using Command Line (Recommended)
 ```bash
 # In terminal, navigate to project root
-cd c:\Users\Checkmate\tradecircle
+cd c:\Users\Checkmate\racircle
 
 # Make sure you're logged in to Supabase
 supabase login
@@ -72,13 +72,13 @@ supabase functions deploy send-advisor-rejection-email
 ## STEP 5: Test Everything (5 minutes)
 
 ### Test Approval Email:
-1. Go to your TradeCircle app → Admin Dashboard
+1. Go to your RA Circle app → Admin Dashboard
 2. Go to **Pending Approvals** tab
 3. Find a pending advisor application
 4. Click **View Application**
 5. Click **Approve**
 6. Check that advisor's email inbox
-7. Should receive: "Your TradeCircle Advisor Account Has Been Approved!"
+7. Should receive: "Your RA Circle Advisor Account Has Been Approved!"
 
 ### Test Rejection Email:
 1. Same steps, but click **Reject**

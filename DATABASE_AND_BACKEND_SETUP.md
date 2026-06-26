@@ -1,4 +1,4 @@
-# TradeCircle Backend & Database Implementation Guide
+# RA Circle Backend & Database Implementation Guide
 
 **Document Date**: March 25, 2026  
 **Scope**: Complete setup for all 3 phases + email functions + missing migrations
@@ -119,13 +119,13 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         personalizations: [{ to: [{ email }] }],
-        from: { email: 'noreply@tradecircle.in', name: 'TradeCircle Team' },
-        subject: 'Your TradeCircle Advisor Account Has Been Approved! 🎉',
+        from: { email: 'noreply@racircle.in', name: 'RA Circle Team' },
+        subject: 'Your RA Circle Advisor Account Has Been Approved! 🎉',
         html: `
           <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px;">
             <h1 style="color: #1B5E20;">Congratulations!</h1>
             <p>Hi <strong>${full_name}</strong>,</p>
-            <p>Your TradeCircle advisor application has been <strong>approved</strong>!</p>
+            <p>Your RA Circle advisor application has been <strong>approved</strong>!</p>
             <p>You can now:</p>
             <ul>
               <li>Login to your advisor dashboard</li>
@@ -134,7 +134,7 @@ serve(async (req) => {
               <li>Start earning from subscribers</li>
             </ul>
             <p style="margin-top: 30px;">
-              <a href="https://tradecircle.in/advisor/dashboard" 
+              <a href="https://racircle.in/advisor/dashboard" 
                  style="background-color: #1B5E20; color: white; padding: 12px 24px; 
                         text-decoration: none; border-radius: 6px; display: inline-block;">
                 Go to Dashboard
@@ -215,27 +215,27 @@ serve(async (req) => {
       },
       body: JSON.stringify({
         personalizations: [{ to: [{ email }] }],
-        from: { email: 'noreply@tradecircle.in', name: 'TradeCircle Team' },
-        subject: 'TradeCircle Application - Action Required',
+        from: { email: 'noreply@racircle.in', name: 'RA Circle Team' },
+        subject: 'RA Circle Application - Action Required',
         html: `
           <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px;">
             <h1 style="color: #D32F2F;">Application Under Review</h1>
             <p>Hi <strong>${full_name}</strong>,</p>
-            <p>We've reviewed your TradeCircle advisor application. To proceed, please address the following:</p>
+            <p>We've reviewed your RA Circle advisor application. To proceed, please address the following:</p>
             <div style="background-color: #FFF3E0; border-left: 4px solid #FF9800; padding: 16px; margin: 20px 0;">
               <p style="color: #E65100; margin: 0;"><strong>Reason:</strong></p>
               <p style="color: #E65100; margin: 8px 0 0 0;">${rejection_reason}</p>
             </div>
             <p style="margin-top: 20px;">You can reapply once you've addressed these points.</p>
             <p style="margin-top: 30px;">
-              <a href="https://tradecircle.in/advisor/register" 
+              <a href="https://racircle.in/advisor/register" 
                  style="background-color: #1B5E20; color: white; padding: 12px 24px; 
                         text-decoration: none; border-radius: 6px; display: inline-block;">
                 Reapply Now
               </a>
             </p>
             <p style="color: #999; font-size: 12px; margin-top: 40px; border-top: 1px solid #ddd; padding-top: 20px;">
-              Questions? Email us: support@tradecircle.in
+              Questions? Email us: support@racircle.in
             </p>
           </div>
         `,
@@ -280,7 +280,7 @@ After setting up SendGrid account, add these secrets to Supabase:
 | Variable | Value | Where to get |
 |----------|-------|--------------|
 | `SENDGRID_API_KEY` | Your SendGrid API key | https://app.sendgrid.com/settings/api_keys |
-| `SENDGRID_FROM_EMAIL` | noreply@tradecircle.in | Your domain / SendGrid verified sender |
+| `SENDGRID_FROM_EMAIL` | noreply@racircle.in | Your domain / SendGrid verified sender |
 
 **If you don't have a verified domain yet**:
 - Use SendGrid's default: `hello@[your-sendgrid-subdomain].com`
@@ -402,7 +402,7 @@ LIMIT 10;
    - Go to Admin Dashboard → Pending
    - Click Approve on any pending advisor
    - Check advisor's email inbox (and spam folder)
-   - Should receive: "Your TradeCircle Advisor Account Has Been Approved"
+   - Should receive: "Your RA Circle Advisor Account Has Been Approved"
 
 2. **Test Rejection Email**:
    - Go to Admin Dashboard → Pending

@@ -51,12 +51,12 @@ export function Navbar() {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-black text-primary-foreground transition-transform group-hover:scale-105">
-              T
+              R
             </div>
             <span className={`text-lg font-extrabold tracking-tight transition-colors ${
               !scrolled && isHeroPage ? 'text-white' : 'text-foreground'
             }`}>
-              Trade<span className="text-primary">Circle</span>
+              RA <span className="text-emerald">Circle</span>
             </span>
           </Link>
 

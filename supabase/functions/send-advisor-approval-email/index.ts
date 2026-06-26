@@ -36,13 +36,13 @@ serve(async (req: Request) => {
       },
       body: JSON.stringify({
         personalizations: [{ to: [{ email }] }],
-        from: { email: 'noreply@tradecircle.in', name: 'TradeCircle Team' },
-        subject: 'Your TradeCircle Advisor Account Has Been Approved! 🎉',
+        from: { email: 'noreply@racircle.in', name: 'RA Circle Team' },
+        subject: 'Your RA Circle Advisor Account Has Been Approved! 🎉',
         html: `
           <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px;">
             <h1 style="color: #1B5E20;">Congratulations!</h1>
             <p>Hi <strong>${full_name}</strong>,</p>
-            <p>Your TradeCircle advisor application has been <strong>approved</strong>!</p>
+            <p>Your RA Circle advisor application has been <strong>approved</strong>!</p>
             <p>You can now:</p>
             <ul>
               <li>Login to your advisor dashboard</li>
@@ -51,7 +51,7 @@ serve(async (req: Request) => {
               <li>Start earning from subscribers</li>
             </ul>
             <p style="margin-top: 30px;">
-              <a href="https://tradecircle.in/advisor/dashboard" 
+              <a href="https://racircle.in/advisor/dashboard" 
                  style="background-color: #1B5E20; color: white; padding: 12px 24px; 
                         text-decoration: none; border-radius: 6px; display: inline-block;">
                 Go to Dashboard

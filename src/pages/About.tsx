@@ -18,7 +18,7 @@ export default function About() {
 
       {/* Hero Section */}
       <HeroSection
-        title="How TradeCircle Verifies Trading Advisors"
+        title="How RA Circle Verifies Trading Advisors"
         subtitle="We manually verify every SEBI registered advisor to ensure transparency, compliance, and legitimate trading signals delivered to your inbox."
       />
 
@@ -31,11 +31,11 @@ export default function About() {
                 Our Mission: Trust in Trading
               </h2>
               <p className="text-lg text-muted-foreground leading-relaxed mb-4">
-                TradeCircle was built to solve a critical problem in Indian trading communities: 
+                RA Circle was built to solve a critical problem in Indian trading communities: 
                 how do you find <strong>verified, legitimate trading advisors</strong> when fake tips and unregistered channels flood Telegram?
               </p>
               <p className="text-lg text-muted-foreground leading-relaxed mb-4">
-                Every advisor on TradeCircle is <strong>SEBI verified</strong>, with public track records, 
+                Every advisor on RA Circle is <strong>SEBI verified</strong>, with public track records, 
                 and transparent signal delivery. No hidden fees. No unverified promises.
               </p>
               <p className="text-lg text-muted-foreground leading-relaxed">
@@ -43,7 +43,7 @@ export default function About() {
               </p>
             </div>
             <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
-              <h3 className="text-lg font-bold text-foreground mb-4">Why TradeCircle?</h3>
+              <h3 className="text-lg font-bold text-foreground mb-4">Why RA Circle?</h3>
               <ul className="space-y-3">
                 <li className="flex gap-3 items-start">
                   <Shield className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
@@ -97,14 +97,14 @@ export default function About() {
           </h2>
           <div className="bg-blue-50 border-l-4 border-blue-600 p-6 rounded">
             <p className="text-foreground leading-relaxed mb-4">
-              <strong>SEBI Disclaimer:</strong> All TradeCircle advisors are SEBI registered (category: Investment Advisor or Research Analyst). 
+              <strong>SEBI Disclaimer:</strong> All RA Circle advisors are SEBI registered (category: Investment Advisor or Research Analyst). 
               However, trading involves risk, and past performance does not guarantee future results. Each advisor is solely responsible for maintaining 
               regulatory compliance, and all users trade at their own risk.
             </p>
             <p className="text-foreground leading-relaxed">
               <strong>How to Verify an Advisor:</strong> Visit the SEBI-IORD database 
               (<a href="https://www.iord.sebi.gov.in/" target="_blank" rel="noopener noreferrer" className="text-blue-600 underline">www.iord.sebi.gov.in</a>) 
-              and search the SEBI registration number (shown on every advisor's profile on TradeCircle).
+              and search the SEBI registration number (shown on every advisor's profile on RA Circle).
             </p>
           </div>
         </section>
@@ -121,19 +121,19 @@ export default function About() {
             {[
               {
                 q: "How do I know if a trading advisor is SEBI verified?",
-                a: "All advisors on TradeCircle are SEBI verified. Look for the green SEBI verification badge on their profile. You can also visit SEBI's official IORD database to double-check their registration status."
+                a: "All advisors on RA Circle are SEBI verified. Look for the green SEBI verification badge on their profile. You can also visit SEBI's official IORD database to double-check their registration status."
               },
               {
-                q: "Is TradeCircle regulated?",
-                a: "TradeCircle itself is a technology platform. All advisors using TradeCircle are SEBI registered and comply with SEBI regulations. We do not provide investment advice; we only facilitate connections between verified advisors and traders."
+                q: "Is RA Circle regulated?",
+                a: "RA Circle itself is a technology platform. All advisors using RA Circle are SEBI registered and comply with SEBI regulations. We do not provide investment advice; we only facilitate connections between verified advisors and traders."
               },
               {
                 q: "Can I get my money back if a signal goes wrong?",
-                a: "TradeCircle is a signal delivery platform. Trades are executed through your existing broker account. Each advisor clearly discloses risk parameters (entry, target, stop-loss). You maintain full control over your account and trades."
+                a: "RA Circle is a signal delivery platform. Trades are executed through your existing broker account. Each advisor clearly discloses risk parameters (entry, target, stop-loss). You maintain full control over your account and trades."
               },
               {
                 q: "How do I report a suspicious advisor?",
-                a: "If you believe an advisor is violating regulations or providing false information, you can report them directly to SEBI or contact our support team at support@tradecircle.in."
+                a: "If you believe an advisor is violating regulations or providing false information, you can report them directly to SEBI or contact our support team at support@racircle.in."
               },
               {
                 q: "What happens if I cancel my subscription?",

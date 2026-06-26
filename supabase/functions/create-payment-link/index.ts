@@ -62,7 +62,7 @@ Deno.serve(async (req) => {
 
     if (sandboxMode) {
       const fakePaymentId = `sandbox_${crypto.randomUUID()}`;
-      const base = (origin || '').replace(/\/$/, '') || 'https://tradecircle.app';
+      const base = (origin || '').replace(/\/$/, '') || 'https://racircle.in';
       const link = `${base}/payment-success?group_id=${encodeURIComponent(group_id)}&payment_id=${fakePaymentId}&status=paid&sandbox=1`;
       return new Response(JSON.stringify({ payment_link: link, sandbox: true }), {
         status: 200,

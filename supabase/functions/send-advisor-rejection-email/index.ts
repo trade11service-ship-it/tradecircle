@@ -34,27 +34,27 @@ serve(async (req: Request) => {
       },
       body: JSON.stringify({
         personalizations: [{ to: [{ email }] }],
-        from: { email: 'noreply@tradecircle.in', name: 'TradeCircle Team' },
-        subject: 'TradeCircle Application - Action Required',
+        from: { email: 'noreply@racircle.in', name: 'RA Circle Team' },
+        subject: 'RA Circle Application - Action Required',
         html: `
           <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px;">
             <h1 style="color: #D32F2F;">Application Under Review</h1>
             <p>Hi <strong>${full_name}</strong>,</p>
-            <p>We've reviewed your TradeCircle advisor application. To proceed, please address the following:</p>
+            <p>We've reviewed your RA Circle advisor application. To proceed, please address the following:</p>
             <div style="background-color: #FFF3E0; border-left: 4px solid #FF9800; padding: 16px; margin: 20px 0;">
               <p style="color: #E65100; margin: 0;"><strong>Reason:</strong></p>
               <p style="color: #E65100; margin: 8px 0 0 0;">${rejection_reason}</p>
             </div>
             <p style="margin-top: 20px;">You can reapply once you've addressed these points.</p>
             <p style="margin-top: 30px;">
-              <a href="https://tradecircle.in/advisor/register" 
+              <a href="https://racircle.in/advisor/register" 
                  style="background-color: #1B5E20; color: white; padding: 12px 24px; 
                         text-decoration: none; border-radius: 6px; display: inline-block;">
                 Reapply Now
               </a>
             </p>
             <p style="color: #999; font-size: 12px; margin-top: 40px; border-top: 1px solid #ddd; padding-top: 20px;">
-              Questions? Email us: support@tradecircle.in
+              Questions? Email us: support@racircle.in
             </p>
           </div>
         `,
