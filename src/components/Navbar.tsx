@@ -56,7 +56,7 @@ export function Navbar() {
                 to={l.to}
                 className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                   l.highlight
-                    ? 'text-emerald hover:bg-emerald/5'
+                    ? 'text-sky hover:bg-sky/5'
                     : isActive(l.to)
                       ? 'text-primary bg-primary/10'
                       : 'text-muted-foreground hover:text-foreground hover:bg-muted'
@@ -105,7 +105,7 @@ export function Navbar() {
                   </Button>
                 </Link>
                 <Link to="/register">
-                  <Button size="sm" className="rounded-lg h-9 px-4 font-semibold bg-emerald hover:bg-emerald/90 text-white">
+                  <Button size="sm" className="rounded-lg h-9 px-4 font-semibold bg-sky hover:bg-sky/90 text-white">
                     Get Started
                   </Button>
                 </Link>
@@ -136,7 +136,7 @@ export function Navbar() {
                   to={l.to}
                   className={`block px-4 py-3 rounded-lg text-sm font-medium transition-colors ${
                     l.highlight
-                      ? 'text-emerald hover:bg-emerald/5'
+                      ? 'text-sky hover:bg-sky/5'
                       : 'text-foreground hover:bg-muted'
                   }`}
                 >
@@ -158,7 +158,7 @@ export function Navbar() {
                     <Button variant="outline" className="w-full">Login</Button>
                   </Link>
                   <Link to="/register" className="flex-1">
-                    <Button className="w-full bg-emerald hover:bg-emerald/90 text-white">Get Started</Button>
+                    <Button className="w-full bg-sky hover:bg-sky/90 text-white">Get Started</Button>
                   </Link>
                 </div>
               )}
