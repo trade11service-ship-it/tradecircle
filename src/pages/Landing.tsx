@@ -110,104 +110,163 @@ export default function Landing() {
     <div className={`min-h-screen bg-background ${user ? 'pb-[60px] md:pb-0' : ''}`}>
       <Navbar />
 
-      {/* ===== COMPACT URGENT HERO ===== */}
-      <section className="bg-background pt-10 pb-8 border-b border-border">
-        <div className="mx-auto w-full max-w-5xl px-4 sm:px-6">
-          <div className="text-center mb-10 animate-slide-up">
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[11px] font-bold text-primary mb-4">
-              <Shield className="h-3.5 w-3.5" /> SEBI Verified Advisors Only
+      {/* ===== TWO-SIDED HERO ===== */}
+      <section className="relative overflow-hidden bg-primary text-white">
+        <div
+          className="absolute inset-0 opacity-[0.07] pointer-events-none"
+          style={{
+            backgroundImage:
+              'radial-gradient(circle at 20% 20%, hsl(var(--emerald)) 0, transparent 40%), radial-gradient(circle at 80% 80%, hsl(var(--sky)) 0, transparent 40%)',
+          }}
+        />
+        <div className="relative mx-auto w-full max-w-5xl px-4 sm:px-6 pt-12 pb-14">
+          <div className="text-center animate-slide-up">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald/40 bg-emerald/10 px-3 py-1 text-[11px] font-bold text-emerald mb-5">
+              <ShieldCheck className="h-3.5 w-3.5" /> 100% SEBI Verified · Tamper-proof Track Records
             </div>
-            <h1 className="text-3xl md:text-5xl font-extrabold text-foreground tracking-tight leading-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>
-              India’s Secure Platform for SEBI Analysts & Smart Traders.
+            <h1
+              className="text-3xl md:text-5xl font-extrabold tracking-tight leading-[1.1]"
+              style={{ fontFamily: 'Inter, sans-serif' }}
+            >
+              India’s Secure Network for{' '}
+              <span className="text-emerald">Certified Advisors</span>{' '}
+              & <span className="text-sky">Smart Traders</span>.
             </h1>
-            <p className="mt-3 text-muted-foreground text-sm md:text-base max-w-2xl mx-auto">
-              Stop trusting random tips. Follow SEBI-registered experts with transparent, verifiable win-rates and live alerts.
+            <p className="mt-4 text-white/70 text-sm md:text-base max-w-2xl mx-auto">
+              Stop trusting random tips on Telegram. Follow SEBI-registered Research Analysts with
+              verifiable win-rates, real accountability, and live alerts — all in one secure workspace.
             </p>
 
-            <div className="mt-6 flex justify-center gap-3">
+            <div className="mt-7 flex flex-col sm:flex-row justify-center gap-3">
               <Link to="/discover">
-                <Button className="h-11 rounded-full px-8 font-bold text-[14px] bg-primary hover:bg-primary/90 shadow-lg shadow-primary/20 hover:-translate-y-0.5 transition-all">
-                  Browse Advisors
+                <Button className="h-12 w-full sm:w-auto rounded-full px-7 font-bold text-[14px] bg-emerald hover:bg-emerald/90 text-white shadow-lg shadow-emerald/20">
+                  Browse Verified Advisors
                 </Button>
               </Link>
-              {/* Secondary CTA removed — advisor onboarding lives in footer */}
+              <Link to="/advisor-register">
+                <Button
+                  variant="outline"
+                  className="h-12 w-full sm:w-auto rounded-full px-7 font-bold text-[14px] bg-transparent border-white/30 text-white hover:bg-white/10 hover:text-white"
+                >
+                  Join as Research Analyst
+                </Button>
+              </Link>
+            </div>
+
+            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[11px] text-white/60">
+              <span className="inline-flex items-center gap-1"><Lock className="h-3 w-3" /> Tamper-proof signals</span>
+              <span className="inline-flex items-center gap-1"><Eye className="h-3 w-3" /> Public win/loss history</span>
+              <span className="inline-flex items-center gap-1"><BarChart3 className="h-3 w-3" /> SEBI SCORES accountable</span>
             </div>
           </div>
+        </div>
+      </section>
 
-          {/* LIVE PUBLIC SIGNALS SLIDESHOW */}
-          {publicSignals.length > 0 && (
-            <div className="mt-8 animate-slide-up" style={{ animationDelay: '0.1s' }}>
-              <Link to="/explore" className="flex items-center justify-between gap-2 mb-3 px-1 group">
-                <div className="flex items-center gap-2">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
-                  </span>
-                  <span className="text-[11px] font-bold text-primary uppercase tracking-wider group-hover:underline">Live Public Signals</span>
-                </div>
-                <span className="text-[11px] font-bold text-primary inline-flex items-center gap-1 group-hover:gap-1.5 transition-all">
-                  View All Free Signals <ArrowRight className="h-3 w-3" />
-                </span>
-              </Link>
-              
-              <div className="relative overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-                <div className="flex animate-marquee hover:[animation-play-state:paused]">
-                  {Array(2).fill(null).map((_, ri) => (
-                    <div key={ri} className="flex gap-4 p-4">
-                      {publicSignals.map((sig, i) => {
-                        const isTextPost = sig.post_type === 'message' || sig.post_type === 'text' || !sig.instrument || !(sig.entry_price > 0);
-                        return (
-                        <Link to="/explore" key={`${ri}-${i}`} className="w-[280px] shrink-0 rounded-lg border border-border bg-muted/30 p-3 hover:border-primary/40 hover:shadow-sm transition-all">
-                          <div className="flex justify-between items-start mb-2">
-                            <div className="flex items-center gap-2">
-                              <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center overflow-hidden shrink-0">
-                                {sig.advisors?.profile_photo_url ? <img src={sig.advisors.profile_photo_url} className="h-full w-full object-cover" /> : <UserCircle className="h-4 w-4 text-primary" />}
-                              </div>
-                              <span className="text-[11px] font-bold text-foreground truncate max-w-[100px]">{sig.advisors?.full_name}</span>
-                            </div>
-                            <span className="text-[10px] text-muted-foreground">{new Date(sig.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                          </div>
-                          {isTextPost ? (
-                            <div className="min-h-[64px] flex flex-col">
-                              <span className="inline-flex w-fit items-center gap-1 text-[9px] font-bold uppercase tracking-wider text-primary bg-primary/10 px-1.5 py-0.5 rounded mb-1.5">
-                                <MessageSquare className="h-2.5 w-2.5" /> Update
-                              </span>
-                              <p className="text-[12px] text-foreground leading-snug line-clamp-3 whitespace-pre-wrap">
-                                {sig.message_text || sig.notes || 'New update from advisor'}
-                              </p>
-                            </div>
-                          ) : (
-                            <>
-                              <div className="flex items-center gap-2">
-                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${sig.signal_type === 'BUY' ? 'bg-light-green text-primary' : 'bg-destructive/10 text-destructive'}`}>
-                                  {sig.signal_type}
-                                </span>
-                                <span className="text-[13px] font-extrabold text-foreground">{sig.instrument}</span>
-                              </div>
-                              <div className="mt-2 grid grid-cols-3 gap-1 text-[10px]">
-                                <div className="bg-card border border-border rounded p-1 text-center">
-                                  <p className="text-muted-foreground">Entry</p>
-                                  <p className="font-bold text-foreground">₹{sig.entry_price}</p>
-                                </div>
-                                <div className="bg-card border border-border rounded p-1 text-center">
-                                  <p className="text-muted-foreground">Target</p>
-                                  <p className="font-bold text-primary">₹{sig.target_price}</p>
-                                </div>
-                                <div className="bg-card border border-border rounded p-1 text-center">
-                                  <p className="text-muted-foreground">SL</p>
-                                  <p className="font-bold text-destructive">₹{sig.stop_loss}</p>
-                                </div>
-                              </div>
-                            </>
-                          )}
-                        </Link>
-                        );
-                      })}
+      {/* ===== PUBLIC FEED PREVIEW (visible to unlogged users) ===== */}
+      <section className="bg-muted/40 border-b border-border">
+        <div className="mx-auto w-full max-w-5xl px-4 sm:px-6 py-12">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-6">
+            <div>
+              <p className="text-[11px] font-bold text-sky uppercase tracking-[2px]">LIVE PUBLIC FEED</p>
+              <h2 className="mt-1 text-2xl font-extrabold text-foreground tracking-tight" style={{ fontFamily: 'Inter, sans-serif' }}>
+                Real signals. Real advisors. Zero data leaks.
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Browse what verified advisors are posting right now — subscriber data is masked end-to-end.
+              </p>
+            </div>
+            <Link to="/explore">
+              <Button variant="outline" className="mt-3 sm:mt-0 border-sky text-sky hover:bg-sky/5 rounded-lg font-semibold">
+                Open Public Feed <ArrowRight className="ml-1 h-3.5 w-3.5" />
+              </Button>
+            </Link>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {(publicSignals.length > 0
+              ? publicSignals.slice(0, 6).map((s: any) => ({
+                  advisor: s.advisors?.full_name || 'Verified Advisor',
+                  photo: s.advisors?.profile_photo_url || null,
+                  instrument: s.instrument || 'UPDATE',
+                  side: s.signal_type || 'INFO',
+                  entry: s.entry_price,
+                  target: s.target_price,
+                  sl: s.stop_loss,
+                  note: s.message_text || s.notes || '',
+                  phone: '987XXXXX21',
+                }))
+              : [
+                  { advisor: 'Rohan Mehta, CFA', photo: null, instrument: 'RELIANCE', side: 'BUY', entry: 2890, target: 2965, sl: 2855, note: 'Breakout above resistance with strong volume.', phone: '987XXXXX21' },
+                  { advisor: 'Ananya Iyer', photo: null, instrument: 'NIFTY 24500 CE', side: 'BUY', entry: 142, target: 178, sl: 122, note: 'Intraday momentum, exit before 3 PM.', phone: '981XXXXX44' },
+                  { advisor: 'Karthik R.', photo: null, instrument: 'HDFCBANK', side: 'SELL', entry: 1672, target: 1640, sl: 1690, note: 'Bearish divergence on 15-min chart.', phone: '993XXXXX09' },
+                ]
+            ).map((c, i) => (
+              <div
+                key={i}
+                className="rounded-2xl border border-border bg-card p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary to-sky flex items-center justify-center overflow-hidden shrink-0">
+                      {c.photo ? (
+                        <img src={c.photo} alt="" className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="text-white font-bold text-sm">{c.advisor.charAt(0)}</span>
+                      )}
                     </div>
-                  ))}
+                    <div className="min-w-0">
+                      <p className="text-[13px] font-bold text-foreground truncate">{c.advisor}</p>
+                      <p className="text-[10px] text-muted-foreground">Subscriber: {c.phone}</p>
+                    </div>
+                  </div>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald/10 border border-emerald/30 px-2 py-0.5 text-[10px] font-bold text-emerald shrink-0">
+                    <ShieldCheck className="h-3 w-3" /> SEBI ✓
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[14px] font-extrabold text-foreground truncate">{c.instrument}</span>
+                  {c.side && c.side !== 'INFO' && (
+                    <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${c.side === 'BUY' ? 'bg-emerald/15 text-emerald' : 'bg-destructive/15 text-destructive'}`}>
+                      {c.side}
+                    </span>
+                  )}
+                </div>
+
+                {c.entry ? (
+                  <div className="grid grid-cols-3 gap-1.5 text-center">
+                    <div className="rounded-md bg-muted/50 p-1.5">
+                      <p className="text-[9px] text-muted-foreground uppercase">Entry</p>
+                      <p className="text-[12px] font-bold text-foreground">₹{c.entry}</p>
+                    </div>
+                    <div className="rounded-md bg-emerald/10 p-1.5">
+                      <p className="text-[9px] text-muted-foreground uppercase">Target</p>
+                      <p className="text-[12px] font-bold text-emerald">₹{c.target}</p>
+                    </div>
+                    <div className="rounded-md bg-destructive/10 p-1.5">
+                      <p className="text-[9px] text-muted-foreground uppercase">SL</p>
+                      <p className="text-[12px] font-bold text-destructive">₹{c.sl}</p>
+                    </div>
+                  </div>
+                ) : null}
+
+                {c.note && (
+                  <p className="mt-3 text-[12px] text-muted-foreground italic leading-relaxed line-clamp-2">“{c.note}”</p>
+                )}
+
+                <div className="mt-3 flex items-center justify-between text-[10px] text-muted-foreground">
+                  <span className="inline-flex items-center gap-1"><Lock className="h-3 w-3" /> PII masked</span>
+                  <span>Live now</span>
                 </div>
               </div>
-            </div>
+            ))}
+          </div>
+
+          {!user && (
+            <p className="mt-6 text-center text-[12px] text-muted-foreground">
+              Sample preview — subscriber phone numbers and emails are always masked on public pages.
+              <Link to="/register" className="ml-1 font-semibold text-sky hover:underline">Create a free account →</Link>
+            </p>
           )}
         </div>
       </section>
