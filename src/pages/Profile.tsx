@@ -752,7 +752,7 @@ export default function Profile() {
               {deleteType === 'group' ? 'Request Group Removal' : 'Request Account Deletion'}
             </DialogTitle>
             <DialogDescription>
-              This request will be sent to the Trade<span className="text-primary font-semibold">Circle</span> team for manual review. Your {deleteType === 'group' ? 'group' : 'account'} will not be deleted immediately.
+              This request will be sent to the RA <span className="text-emerald font-semibold">Circle</span> team for manual review. Your {deleteType === 'group' ? 'group' : 'account'} will not be deleted immediately.
             </DialogDescription>
           </DialogHeader>
 
