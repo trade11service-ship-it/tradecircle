@@ -134,6 +134,29 @@ Deno.serve(async (req) => {
           return new Response(JSON.stringify({ error: insErr.message }), { status: 500, headers: corsHeaders });
         }
 
+        // Real-time archive snapshot — immutable financial compliance record.
+        try {
+          const { data: subRow } = await adminClient.from('subscriptions')
+            .select('id, pan_number, consent_timestamp, consent_ip')
+            .eq('razorpay_payment_id', payment.id).maybeSingle();
+          const { data: profile } = await adminClient.from('profiles')
+            .select('full_name, email, phone').eq('id', userId).maybeSingle();
+          await adminClient.from('financial_compliance_archive').insert({
+            user_id: userId,
+            subscription_id: subRow?.id ?? null,
+            full_name: profile?.full_name ?? null,
+            email: profile?.email ?? null,
+            phone: (profile as any)?.phone ?? null,
+            pan_number: subRow?.pan_number ?? paymentLink.notes?.pan_number ?? null,
+            amount_paid: group.monthly_price,
+            razorpay_payment_id: payment.id,
+            consent_timestamp: subRow?.consent_timestamp ?? new Date().toISOString(),
+            consent_ip: subRow?.consent_ip ?? null,
+          });
+        } catch (archiveErr) {
+          console.error('Archive insert failed (non-fatal):', archiveErr);
+        }
+
         if (fromReferral && referralCode) {
           try {
             await adminClient.rpc('increment_referral_conversions', { _code: referralCode, _revenue: group.monthly_price });
