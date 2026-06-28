@@ -96,6 +96,24 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: insErr.message }), { status: 500, headers: corsHeaders });
     }
 
+    // Immutable financial compliance archive snapshot
+    try {
+      const { data: profile } = await admin.from('profiles')
+        .select('full_name, email, phone').eq('id', userId).maybeSingle();
+      await admin.from('financial_compliance_archive').insert({
+        user_id: userId,
+        subscription_id: inserted?.id ?? null,
+        full_name: profile?.full_name ?? null,
+        email: profile?.email ?? null,
+        phone: (profile as any)?.phone ?? null,
+        pan_number,
+        amount_paid: group.monthly_price,
+        razorpay_payment_id: payment_id,
+        consent_timestamp,
+        consent_ip: req.headers.get('x-forwarded-for') || null,
+      });
+    } catch (e) { console.error('archive insert failed', e); }
+
     return new Response(JSON.stringify({ ok: true, id: inserted?.id, sandbox: true }), {
       status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
