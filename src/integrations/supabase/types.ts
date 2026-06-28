@@ -266,6 +266,59 @@ export type Database = {
         }
         Relationships: []
       }
+      financial_compliance_archive: {
+        Row: {
+          amount_paid: number | null
+          archived_at: string
+          consent_ip: string | null
+          consent_timestamp: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          pan_number: string | null
+          phone: string | null
+          razorpay_payment_id: string | null
+          subscription_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          amount_paid?: number | null
+          archived_at?: string
+          consent_ip?: string | null
+          consent_timestamp?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          pan_number?: string | null
+          phone?: string | null
+          razorpay_payment_id?: string | null
+          subscription_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          amount_paid?: number | null
+          archived_at?: string
+          consent_ip?: string | null
+          consent_timestamp?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          pan_number?: string | null
+          phone?: string | null
+          razorpay_payment_id?: string | null
+          subscription_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "financial_compliance_archive_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_feed_events: {
         Row: {
           created_at: string
@@ -315,6 +368,13 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "group_follows_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -767,7 +827,7 @@ export type Database = {
           referral_code: string | null
           start_date: string | null
           status: string | null
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           advisor_id: string
@@ -787,7 +847,7 @@ export type Database = {
           referral_code?: string | null
           start_date?: string | null
           status?: string | null
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           advisor_id?: string
@@ -807,7 +867,7 @@ export type Database = {
           referral_code?: string | null
           start_date?: string | null
           status?: string | null
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -895,7 +955,7 @@ export type Database = {
           ip_address: string | null
           page_url: string | null
           user_agent: string | null
-          user_id: string
+          user_id: string | null
         }
         Insert: {
           acceptance_type: string
@@ -910,7 +970,7 @@ export type Database = {
           ip_address?: string | null
           page_url?: string | null
           user_agent?: string | null
-          user_id: string
+          user_id?: string | null
         }
         Update: {
           acceptance_type?: string
@@ -925,7 +985,7 @@ export type Database = {
           ip_address?: string | null
           page_url?: string | null
           user_agent?: string | null
-          user_id?: string
+          user_id?: string | null
         }
         Relationships: [
           {
@@ -942,6 +1002,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_anonymize_profile: {
+        Args: { _user_id: string }
+        Returns: undefined
+      }
       admin_list_advisors: {
         Args: { _status?: string }
         Returns: {
