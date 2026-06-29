@@ -35,6 +35,7 @@ export default function Landing() {
   const [groups, setGroups] = useState<GroupData[]>([]);
   const [featuredAdvisors, setFeaturedAdvisors] = useState<FeaturedAdvisor[]>([]);
   const [publicSignals, setPublicSignals] = useState<any[]>([]);
+  const [signalsLoading, setSignalsLoading] = useState(true);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { setMetaTags(SEO_CONFIG.landing); }, []);
@@ -86,6 +87,7 @@ export default function Landing() {
   };
 
   const fetchPublicSignals = async () => {
+    setSignalsLoading(true);
     const { data } = await supabase
       .from('signals')
       .select('*, advisors!inner(full_name, profile_photo_url)')
@@ -93,6 +95,7 @@ export default function Landing() {
       .order('created_at', { ascending: false })
       .limit(8);
     setPublicSignals(data || []);
+    setSignalsLoading(false);
   };
 
   const getValidBio = (tagline: string | null, description: string | null): string => {
@@ -183,85 +186,105 @@ export default function Landing() {
             </Link>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {(publicSignals.length > 0
-              ? publicSignals.slice(0, 3).map((s: any) => ({
-                  advisor: s.advisors?.full_name || 'Verified Advisor',
-                  photo: s.advisors?.profile_photo_url || null,
-                  instrument: s.instrument || 'UPDATE',
-                  side: s.signal_type || 'INFO',
-                  entry: s.entry_price,
-                  target: s.target_price,
-                  sl: s.stop_loss,
-                  note: s.message_text || s.notes || '',
-                  phone: '987XXXXX21',
-                }))
-              : [
-                  { advisor: 'Rohan Mehta, CFA', photo: null, instrument: 'RELIANCE', side: 'BUY', entry: 2890, target: 2965, sl: 2855, note: 'Breakout above resistance with strong volume.', phone: '987XXXXX21' },
-                  { advisor: 'Ananya Iyer', photo: null, instrument: 'NIFTY 24500 CE', side: 'BUY', entry: 142, target: 178, sl: 122, note: 'Intraday momentum, exit before 3 PM.', phone: '981XXXXX44' },
-                  { advisor: 'Karthik R.', photo: null, instrument: 'HDFCBANK', side: 'SELL', entry: 1672, target: 1640, sl: 1690, note: 'Bearish divergence on 15-min chart.', phone: '993XXXXX09' },
-                ]
-            ).map((c, i) => (
-              <div
-                key={i}
-                className="rounded-2xl border border-border bg-card p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary to-sky flex items-center justify-center overflow-hidden shrink-0">
-                      {c.photo ? (
-                        <img src={c.photo} alt="" className="h-full w-full object-cover" />
-                      ) : (
-                        <span className="text-white font-bold text-sm">{c.advisor.charAt(0)}</span>
-                      )}
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[13px] font-bold text-foreground truncate">{c.advisor}</p>
-                      <p className="text-[10px] text-muted-foreground">Subscriber: {c.phone}</p>
+          {signalsLoading ? (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="rounded-2xl border border-border bg-card p-4 shadow-sm animate-pulse">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="h-9 w-9 rounded-full bg-muted" />
+                    <div className="flex-1 space-y-2">
+                      <div className="h-3 w-2/3 bg-muted rounded" />
+                      <div className="h-2 w-1/2 bg-muted rounded" />
                     </div>
                   </div>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald/10 border border-emerald/30 px-2 py-0.5 text-[10px] font-bold text-emerald shrink-0">
-                    <ShieldCheck className="h-3 w-3" /> SEBI ✓
-                  </span>
+                  <div className="h-4 w-1/2 bg-muted rounded mb-3" />
+                  <div className="grid grid-cols-3 gap-1.5">
+                    <div className="h-10 bg-muted rounded" />
+                    <div className="h-10 bg-muted rounded" />
+                    <div className="h-10 bg-muted rounded" />
+                  </div>
                 </div>
-
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-[14px] font-extrabold text-foreground truncate">{c.instrument}</span>
-                  {c.side && c.side !== 'INFO' && (
-                    <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${c.side === 'BUY' ? 'bg-emerald/15 text-emerald' : 'bg-destructive/15 text-destructive'}`}>
-                      {c.side}
+              ))}
+            </div>
+          ) : publicSignals.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-border bg-card/50 py-12 px-6 text-center">
+              <Lock className="mx-auto h-8 w-8 text-muted-foreground/40 mb-3" />
+              <p className="text-sm font-semibold text-foreground">No active signals available at the moment.</p>
+              <p className="mt-1 text-xs text-muted-foreground">Check back shortly — verified advisors post throughout market hours.</p>
+            </div>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {publicSignals.slice(0, 3).map((s: any) => ({
+                advisor: s.advisors?.full_name || 'Verified Advisor',
+                photo: s.advisors?.profile_photo_url || null,
+                instrument: s.instrument || 'UPDATE',
+                side: s.signal_type || 'INFO',
+                entry: s.entry_price,
+                target: s.target_price,
+                sl: s.stop_loss,
+                note: s.message_text || s.notes || '',
+              })).map((c, i) => (
+                <div
+                  key={i}
+                  className="rounded-2xl border border-border bg-card p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary to-sky flex items-center justify-center overflow-hidden shrink-0">
+                        {c.photo ? (
+                          <img src={c.photo} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <span className="text-white font-bold text-sm">{c.advisor.charAt(0)}</span>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[13px] font-bold text-foreground truncate">{c.advisor}</p>
+                        <p className="text-[10px] text-muted-foreground">SEBI verified advisor</p>
+                      </div>
+                    </div>
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald/10 border border-emerald/30 px-2 py-0.5 text-[10px] font-bold text-emerald shrink-0">
+                      <ShieldCheck className="h-3 w-3" /> SEBI ✓
                     </span>
-                  )}
-                </div>
-
-                {c.entry ? (
-                  <div className="grid grid-cols-3 gap-1.5 text-center">
-                    <div className="rounded-md bg-muted/50 p-1.5">
-                      <p className="text-[9px] text-muted-foreground uppercase">Entry</p>
-                      <p className="text-[12px] font-bold text-foreground">₹{c.entry}</p>
-                    </div>
-                    <div className="rounded-md bg-emerald/10 p-1.5">
-                      <p className="text-[9px] text-muted-foreground uppercase">Target</p>
-                      <p className="text-[12px] font-bold text-emerald">₹{c.target}</p>
-                    </div>
-                    <div className="rounded-md bg-destructive/10 p-1.5">
-                      <p className="text-[9px] text-muted-foreground uppercase">SL</p>
-                      <p className="text-[12px] font-bold text-destructive">₹{c.sl}</p>
-                    </div>
                   </div>
-                ) : null}
 
-                {c.note && (
-                  <p className="mt-3 text-[12px] text-muted-foreground italic leading-relaxed line-clamp-2">“{c.note}”</p>
-                )}
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-[14px] font-extrabold text-foreground truncate">{c.instrument}</span>
+                    {c.side && c.side !== 'INFO' && (
+                      <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${c.side === 'BUY' ? 'bg-emerald/15 text-emerald' : 'bg-destructive/15 text-destructive'}`}>
+                        {c.side}
+                      </span>
+                    )}
+                  </div>
 
-                <div className="mt-3 flex items-center justify-between text-[10px] text-muted-foreground">
-                  <span className="inline-flex items-center gap-1"><Lock className="h-3 w-3" /> PII masked</span>
-                  <span>Live now</span>
+                  {c.entry ? (
+                    <div className="grid grid-cols-3 gap-1.5 text-center">
+                      <div className="rounded-md bg-muted/50 p-1.5">
+                        <p className="text-[9px] text-muted-foreground uppercase">Entry</p>
+                        <p className="text-[12px] font-bold text-foreground">₹{c.entry}</p>
+                      </div>
+                      <div className="rounded-md bg-emerald/10 p-1.5">
+                        <p className="text-[9px] text-muted-foreground uppercase">Target</p>
+                        <p className="text-[12px] font-bold text-emerald">₹{c.target}</p>
+                      </div>
+                      <div className="rounded-md bg-destructive/10 p-1.5">
+                        <p className="text-[9px] text-muted-foreground uppercase">SL</p>
+                        <p className="text-[12px] font-bold text-destructive">₹{c.sl}</p>
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {c.note && (
+                    <p className="mt-3 text-[12px] text-muted-foreground italic leading-relaxed line-clamp-2">“{c.note}”</p>
+                  )}
+
+                  <div className="mt-3 flex items-center justify-between text-[10px] text-muted-foreground">
+                    <span className="inline-flex items-center gap-1"><Lock className="h-3 w-3" /> PII masked</span>
+                    <span>Live now</span>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
 
           {!user && (
             <p className="mt-6 text-center text-[12px] text-muted-foreground">
