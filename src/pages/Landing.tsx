@@ -35,6 +35,7 @@ export default function Landing() {
   const [groups, setGroups] = useState<GroupData[]>([]);
   const [featuredAdvisors, setFeaturedAdvisors] = useState<FeaturedAdvisor[]>([]);
   const [publicSignals, setPublicSignals] = useState<any[]>([]);
+  const [signalsLoading, setSignalsLoading] = useState(true);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { setMetaTags(SEO_CONFIG.landing); }, []);
