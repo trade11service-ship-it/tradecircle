@@ -87,6 +87,7 @@ export default function Landing() {
   };
 
   const fetchPublicSignals = async () => {
+    setSignalsLoading(true);
     const { data } = await supabase
       .from('signals')
       .select('*, advisors!inner(full_name, profile_photo_url)')
@@ -94,6 +95,7 @@ export default function Landing() {
       .order('created_at', { ascending: false })
       .limit(8);
     setPublicSignals(data || []);
+    setSignalsLoading(false);
   };
 
   const getValidBio = (tagline: string | null, description: string | null): string => {
