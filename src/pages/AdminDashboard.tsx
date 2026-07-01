@@ -218,8 +218,12 @@ export default function AdminDashboard() {
 
     const { data: delReqs } = await supabase.from('deletion_requests').select('*').order('created_at', { ascending: false });
     setDeletionRequests(delReqs || []);
+
+    const { data: rejected } = await (supabase as any).rpc('admin_list_rejected_applications');
+    setRejectedApplications(rejected || []);
     setLoading(false);
   };
+
 
   const approveAdvisor = async (advisor: Advisor) => {
     setApprovingAdvisorId(advisor.id);
