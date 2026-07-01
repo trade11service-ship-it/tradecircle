@@ -907,8 +907,45 @@ export default function AdminDashboard() {
                 )}
               </div>
             ))}
+
+            {/* Rejected Applications Archive */}
+            {rejectedApplications.length > 0 && (
+              <div className="bg-card rounded-2xl border border-border shadow-sm mt-8">
+                <div className="p-5 border-b border-border flex items-center justify-between">
+                  <div>
+                    <h3 className="text-[15px] font-bold text-foreground">Rejected Applications ({rejectedApplications.length})</h3>
+                    <p className="text-[12px] text-muted-foreground mt-0.5">Kept for audit only — no longer visible in the main advisor list.</p>
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm min-w-[700px]">
+                    <thead>
+                      <tr className="bg-muted border-b border-border text-left">
+                        <th className="p-3 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Name</th>
+                        <th className="p-3 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Email</th>
+                        <th className="p-3 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">SEBI No</th>
+                        <th className="p-3 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Reason</th>
+                        <th className="p-3 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Rejected On</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rejectedApplications.map((r: any, i: number) => (
+                        <tr key={r.id} className={`border-b border-muted ${i % 2 === 1 ? 'bg-muted/50' : ''}`}>
+                          <td className="p-3 font-semibold text-foreground capitalize">{r.full_name}</td>
+                          <td className="p-3 text-muted-foreground">{r.email}</td>
+                          <td className="p-3 font-mono text-[12px] text-muted-foreground">{r.sebi_reg_no}</td>
+                          <td className="p-3 text-[13px] text-muted-foreground max-w-[280px]">{r.rejection_reason}</td>
+                          <td className="p-3 text-[12px] text-muted-foreground">{formatDate(r.rejected_at)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         )}
+
 
         {/* ===== ADVISORS TAB ===== */}
         {tab === 'advisors' && !loading && (
