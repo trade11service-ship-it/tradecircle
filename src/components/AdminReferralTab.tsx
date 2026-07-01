@@ -59,7 +59,7 @@ export function AdminReferralTab() {
           { icon: Link2, label: 'Referral Links', value: links.length },
           { icon: Eye, label: 'Total Clicks', value: totalClicks },
           { icon: Users, label: 'Total Conversions', value: totalConversions },
-          { icon: IndianRupee, label: 'Program Cost', value: `₹${revenueDiff.toLocaleString('en-IN')}`, sub: '15% vs 30% difference' },
+          { icon: IndianRupee, label: 'Program Cost', value: `₹${programCost.toLocaleString('en-IN')}`, sub: '15% fee delta on referral revenue' },
         ].map((s, i) => (
           <div key={i} className="tc-card-static p-5">
             <s.icon className="h-4 w-4 text-muted-foreground mb-1" />
