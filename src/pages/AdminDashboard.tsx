@@ -86,7 +86,9 @@ export default function AdminDashboard() {
   const [tab, setTab] = useState<TabKey>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pendingAdvisors, setPendingAdvisors] = useState<Advisor[]>([]);
+  const [rejectedApplications, setRejectedApplications] = useState<any[]>([]);
   const [allAdvisors, setAllAdvisors] = useState<Advisor[]>([]);
+
   const [users, setUsers] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
   const [expandedAdvisor, setExpandedAdvisor] = useState<string | null>(null);
