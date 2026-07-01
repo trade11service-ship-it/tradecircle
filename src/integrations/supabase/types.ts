@@ -814,7 +814,9 @@ export type Database = {
           amount_paid: number | null
           consent_given: boolean | null
           consent_ip: string | null
+          consent_text_version: string | null
           consent_timestamp: string | null
+          consent_user_agent: string | null
           created_at: string | null
           end_date: string | null
           from_referral: boolean | null
@@ -834,7 +836,9 @@ export type Database = {
           amount_paid?: number | null
           consent_given?: boolean | null
           consent_ip?: string | null
+          consent_text_version?: string | null
           consent_timestamp?: string | null
+          consent_user_agent?: string | null
           created_at?: string | null
           end_date?: string | null
           from_referral?: boolean | null
@@ -854,7 +858,9 @@ export type Database = {
           amount_paid?: number | null
           consent_given?: boolean | null
           consent_ip?: string | null
+          consent_text_version?: string | null
           consent_timestamp?: string | null
+          consent_user_agent?: string | null
           created_at?: string | null
           end_date?: string | null
           from_referral?: boolean | null
