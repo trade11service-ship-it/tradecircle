@@ -30,9 +30,10 @@ export function AdminReferralTab() {
 
   const fetchData = async () => {
     const { data } = await supabase.from('referral_links')
-      .select('*, advisors!inner(full_name), groups!inner(name)')
+      .select('*, advisors!inner(full_name, status)')
       .order('created_at', { ascending: false });
-    setLinks(data || []);
+    // Only show links for approved advisors (rejected ones are archived elsewhere)
+    setLinks((data || []).filter((l: any) => l.advisors?.status === 'approved'));
     setLoading(false);
   };
 
@@ -47,8 +48,9 @@ export function AdminReferralTab() {
   const totalClicks = links.reduce((s, l) => s + (l.total_clicks || 0), 0);
   const totalConversions = links.reduce((s, l) => s + (l.total_conversions || 0), 0);
   const totalRevenue = links.reduce((s, l) => s + (l.total_revenue_generated || 0), 0);
-  // Revenue difference: what platform loses from 15% vs 30%
-  const revenueDiff = Math.round(totalRevenue * 0.15);
+  // Actual program cost = 15% fee delta × (revenue - 18% GST)
+  const programCost = Math.round(totalRevenue * 0.82 * 0.15);
+
 
   return (
     <div className="space-y-6">
@@ -57,7 +59,7 @@ export function AdminReferralTab() {
           { icon: Link2, label: 'Referral Links', value: links.length },
           { icon: Eye, label: 'Total Clicks', value: totalClicks },
           { icon: Users, label: 'Total Conversions', value: totalConversions },
-          { icon: IndianRupee, label: 'Program Cost', value: `₹${revenueDiff.toLocaleString('en-IN')}`, sub: '15% vs 30% difference' },
+          { icon: IndianRupee, label: 'Program Cost', value: `₹${programCost.toLocaleString('en-IN')}`, sub: '15% fee delta on referral revenue' },
         ].map((s, i) => (
           <div key={i} className="tc-card-static p-5">
             <s.icon className="h-4 w-4 text-muted-foreground mb-1" />
@@ -73,7 +75,6 @@ export function AdminReferralTab() {
           <thead>
             <tr className="border-b bg-[hsl(var(--off-white))] text-left">
               <th className="p-3 font-medium text-muted-foreground">Advisor</th>
-              <th className="p-3 font-medium text-muted-foreground">Group</th>
               <th className="p-3 font-medium text-muted-foreground">Code</th>
               <th className="p-3 font-medium text-muted-foreground">Clicks</th>
               <th className="p-3 font-medium text-muted-foreground">Conv.</th>
@@ -83,11 +84,11 @@ export function AdminReferralTab() {
             </tr>
           </thead>
           <tbody>
-            {links.length === 0 && <tr><td colSpan={8} className="p-12 text-center text-muted-foreground">No referral links yet</td></tr>}
+            {links.length === 0 && <tr><td colSpan={7} className="p-12 text-center text-muted-foreground">No referral links yet</td></tr>}
             {links.map((l: any, i: number) => (
               <tr key={l.id} className={`border-b last:border-0 ${i % 2 === 1 ? 'bg-[hsl(var(--off-white))]' : ''}`}>
                 <td className="p-3 font-medium">{l.advisors?.full_name}</td>
-                <td className="p-3">{l.groups?.name}</td>
+
                 <td className="p-3 font-mono text-xs">{l.referral_code}</td>
                 <td className="p-3">{l.total_clicks}</td>
                 <td className="p-3">{l.total_conversions}</td>

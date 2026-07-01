@@ -86,7 +86,9 @@ export default function AdminDashboard() {
   const [tab, setTab] = useState<TabKey>('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pendingAdvisors, setPendingAdvisors] = useState<Advisor[]>([]);
+  const [rejectedApplications, setRejectedApplications] = useState<any[]>([]);
   const [allAdvisors, setAllAdvisors] = useState<Advisor[]>([]);
+
   const [users, setUsers] = useState<any[]>([]);
   const [payments, setPayments] = useState<any[]>([]);
   const [expandedAdvisor, setExpandedAdvisor] = useState<string | null>(null);
@@ -216,8 +218,12 @@ export default function AdminDashboard() {
 
     const { data: delReqs } = await supabase.from('deletion_requests').select('*').order('created_at', { ascending: false });
     setDeletionRequests(delReqs || []);
+
+    const { data: rejected } = await (supabase as any).rpc('admin_list_rejected_applications');
+    setRejectedApplications(rejected || []);
     setLoading(false);
   };
+
 
   const approveAdvisor = async (advisor: Advisor) => {
     setApprovingAdvisorId(advisor.id);
@@ -277,18 +283,7 @@ export default function AdminDashboard() {
   const rejectAdvisor = async (advisor: Advisor, reason: string) => {
     setRejectingAdvisorId(advisor.id);
     try {
-      // Update advisor status with rejection reason
-      const { error: advisorError } = await supabase
-        .from('advisors')
-        .update({ 
-          status: 'rejected',
-          rejection_reason: reason,
-        })
-        .eq('id', advisor.id);
-
-      if (advisorError) throw advisorError;
-
-      // Send rejection email via edge function
+      // Send rejection email BEFORE deleting the advisor row so we still have their email
       try {
         const { data: session } = await supabase.auth.getSession();
         await fetch(
@@ -311,7 +306,14 @@ export default function AdminDashboard() {
         console.warn('Could not send rejection email:', emailErr);
       }
 
-      toast.success(`${advisor.full_name} rejected. Email sent with reason.`);
+      // Move to rejected_advisor_applications archive + remove from advisors + revert role
+      const { error: rpcErr } = await supabase.rpc('admin_reject_advisor', {
+        _advisor_id: advisor.id,
+        _reason: reason,
+      });
+      if (rpcErr) throw rpcErr;
+
+      toast.success(`${advisor.full_name} rejected and archived.`);
       fetchData();
     } catch (err) {
       toast.error((err as Error).message || 'Failed to reject advisor');
@@ -320,6 +322,7 @@ export default function AdminDashboard() {
       setRejectingAdvisorId(null);
     }
   };
+
 
   const suspendAdvisor = async (advisor: Advisor) => {
     try {
@@ -904,8 +907,45 @@ export default function AdminDashboard() {
                 )}
               </div>
             ))}
+
+            {/* Rejected Applications Archive */}
+            {rejectedApplications.length > 0 && (
+              <div className="bg-card rounded-2xl border border-border shadow-sm mt-8">
+                <div className="p-5 border-b border-border flex items-center justify-between">
+                  <div>
+                    <h3 className="text-[15px] font-bold text-foreground">Rejected Applications ({rejectedApplications.length})</h3>
+                    <p className="text-[12px] text-muted-foreground mt-0.5">Kept for audit only — no longer visible in the main advisor list.</p>
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm min-w-[700px]">
+                    <thead>
+                      <tr className="bg-muted border-b border-border text-left">
+                        <th className="p-3 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Name</th>
+                        <th className="p-3 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Email</th>
+                        <th className="p-3 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">SEBI No</th>
+                        <th className="p-3 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Reason</th>
+                        <th className="p-3 text-[12px] font-semibold text-muted-foreground uppercase tracking-wide">Rejected On</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rejectedApplications.map((r: any, i: number) => (
+                        <tr key={r.id} className={`border-b border-muted ${i % 2 === 1 ? 'bg-muted/50' : ''}`}>
+                          <td className="p-3 font-semibold text-foreground capitalize">{r.full_name}</td>
+                          <td className="p-3 text-muted-foreground">{r.email}</td>
+                          <td className="p-3 font-mono text-[12px] text-muted-foreground">{r.sebi_reg_no}</td>
+                          <td className="p-3 text-[13px] text-muted-foreground max-w-[280px]">{r.rejection_reason}</td>
+                          <td className="p-3 text-[12px] text-muted-foreground">{formatDate(r.rejected_at)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
           </div>
         )}
+
 
         {/* ===== ADVISORS TAB ===== */}
         {tab === 'advisors' && !loading && (

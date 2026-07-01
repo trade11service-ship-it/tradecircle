@@ -30,12 +30,11 @@ export function ReferralLinkCard({ groupId, groupName, advisorId, advisorName }:
   const getReferralLink = async () => {
     if (fetched) return;
     setLoading(true);
-    // Check if referral link already exists
+    // One permanent link per advisor (not per group)
     const { data: existing } = await supabase
       .from('referral_links')
       .select('*')
       .eq('advisor_id', advisorId)
-      .eq('group_id', groupId)
       .maybeSingle();
 
     if (existing) {
@@ -47,11 +46,11 @@ export function ReferralLinkCard({ groupId, groupName, advisorId, advisorName }:
         revenue: existing.total_revenue_generated || 0,
       });
     } else {
-      // Auto-create the single permanent code (one per group, locked after creation)
+      // Fallback: trigger auto-creates on approval, but insert one here if missing
       const code = generateCode();
       const { error } = await supabase.from('referral_links').insert({
         advisor_id: advisorId,
-        group_id: groupId,
+        group_id: null,
         referral_code: code,
       });
       if (error) {
@@ -64,6 +63,7 @@ export function ReferralLinkCard({ groupId, groupName, advisorId, advisorName }:
     setFetched(true);
     setLoading(false);
   };
+
 
   const referralUrl = referralCode ? `${window.location.origin}/join/${referralCode}` : '';
 

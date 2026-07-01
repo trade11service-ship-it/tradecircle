@@ -24,6 +24,9 @@ export type Database = {
           id: string
           net_earning: number
           platform_fee: number
+          referral_gross: number
+          referral_subs_count: number
+          standard_gross: number
           subscription_count: number
         }
         Insert: {
@@ -35,6 +38,9 @@ export type Database = {
           id?: string
           net_earning?: number
           platform_fee?: number
+          referral_gross?: number
+          referral_subs_count?: number
+          standard_gross?: number
           subscription_count?: number
         }
         Update: {
@@ -46,6 +52,9 @@ export type Database = {
           id?: string
           net_earning?: number
           platform_fee?: number
+          referral_gross?: number
+          referral_subs_count?: number
+          standard_gross?: number
           subscription_count?: number
         }
         Relationships: [
@@ -60,7 +69,7 @@ export type Database = {
       }
       advisor_legal_acceptances: {
         Row: {
-          advisor_id: string
+          advisor_id: string | null
           checkbox_1_accepted_at: string
           checkbox_1_sebi_responsibility: boolean
           checkbox_1_text: string
@@ -79,7 +88,7 @@ export type Database = {
           user_agent: string | null
         }
         Insert: {
-          advisor_id: string
+          advisor_id?: string | null
           checkbox_1_accepted_at?: string
           checkbox_1_sebi_responsibility?: boolean
           checkbox_1_text: string
@@ -98,7 +107,7 @@ export type Database = {
           user_agent?: string | null
         }
         Update: {
-          advisor_id?: string
+          advisor_id?: string | null
           checkbox_1_accepted_at?: string
           checkbox_1_sebi_responsibility?: boolean
           checkbox_1_text?: string
@@ -492,7 +501,7 @@ export type Database = {
         Row: {
           advisor_id: string
           created_at: string | null
-          group_id: string
+          group_id: string | null
           id: string
           is_active: boolean | null
           referral_code: string
@@ -504,7 +513,7 @@ export type Database = {
         Insert: {
           advisor_id: string
           created_at?: string | null
-          group_id: string
+          group_id?: string | null
           id?: string
           is_active?: boolean | null
           referral_code: string
@@ -516,7 +525,7 @@ export type Database = {
         Update: {
           advisor_id?: string
           created_at?: string | null
-          group_id?: string
+          group_id?: string | null
           id?: string
           is_active?: boolean | null
           referral_code?: string
@@ -670,6 +679,60 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      rejected_advisor_applications: {
+        Row: {
+          aadhaar_no: string | null
+          bio: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          original_advisor_id: string | null
+          original_created_at: string | null
+          pan_no: string | null
+          phone: string | null
+          rejected_at: string
+          rejected_by: string | null
+          rejection_reason: string | null
+          sebi_reg_no: string | null
+          strategy_type: string | null
+          user_id: string | null
+        }
+        Insert: {
+          aadhaar_no?: string | null
+          bio?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          original_advisor_id?: string | null
+          original_created_at?: string | null
+          pan_no?: string | null
+          phone?: string | null
+          rejected_at?: string
+          rejected_by?: string | null
+          rejection_reason?: string | null
+          sebi_reg_no?: string | null
+          strategy_type?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          aadhaar_no?: string | null
+          bio?: string | null
+          email?: string | null
+          full_name?: string | null
+          id?: string
+          original_advisor_id?: string | null
+          original_created_at?: string | null
+          pan_no?: string | null
+          phone?: string | null
+          rejected_at?: string
+          rejected_by?: string | null
+          rejection_reason?: string | null
+          sebi_reg_no?: string | null
+          strategy_type?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       signal_deliveries: {
         Row: {
@@ -1048,6 +1111,36 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      admin_list_rejected_applications: {
+        Args: never
+        Returns: {
+          aadhaar_no: string | null
+          bio: string | null
+          email: string | null
+          full_name: string | null
+          id: string
+          original_advisor_id: string | null
+          original_created_at: string | null
+          pan_no: string | null
+          phone: string | null
+          rejected_at: string
+          rejected_by: string | null
+          rejection_reason: string | null
+          sebi_reg_no: string | null
+          strategy_type: string | null
+          user_id: string | null
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "rejected_advisor_applications"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      admin_reject_advisor: {
+        Args: { _advisor_id: string; _reason: string }
+        Returns: undefined
+      }
       get_advisor_earnings: {
         Args: { _advisor_id: string; _month?: string }
         Returns: Json
@@ -1125,6 +1218,10 @@ export type Database = {
         }
       }
       get_advisor_live_stats: { Args: { _advisor_id: string }; Returns: Json }
+      get_advisor_referral_dashboard: {
+        Args: { _advisor_id: string }
+        Returns: Json
+      }
       get_advisor_signal_stats: { Args: { _advisor_id: string }; Returns: Json }
       get_advisor_subscriber_count: {
         Args: { _advisor_id: string }

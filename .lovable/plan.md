@@ -1,78 +1,95 @@
-## Goal
-Fix subscription expiration bug, enforce advisor↔group integrity, ensure consent metadata (PAN, timestamp, IP) is captured & visible, and split consent into two stages (signup vs. subscription) per DPDP + SEBI.
+## Goals
+
+Make earnings, advisor listings, and referrals **clear, correct, and enforced** — no rejected advisors polluting main lists, referrals fully wired end-to-end, one permanent referral link per advisor, and 15% fee applied automatically when a subscription came via that link.
 
 ---
 
-## Part 1 — Subscription Expiration (auto-flip status)
+## 1. `advisor_daily_earnings` — clarity + trust
 
-**Problem:** `subscriptions.status` stays `'active'` even after `end_date < now()`.
+Problems: 20-decimal noise (`3690.0000000000000000000000`), no clear naming, no per-referral vs standard breakdown, no easy read for the dashboard.
 
-**Fix (two layers, defense in depth):**
-
-1. **Scheduled job (pg_cron + pg_net):** enable `pg_cron`, schedule daily job at 00:15 IST:
-   ```sql
-   UPDATE public.subscriptions
-   SET status = 'expired'
-   WHERE status = 'active' AND end_date < now();
-   ```
-2. **Dynamic validation in reads:** update RPCs / frontend queries that gate access (group feed, paywall, `Subscriptions.tsx`, `GroupDetails.tsx`, `has_active_subscription` checks) to treat a sub as active only when `status='active' AND end_date > now()`. This closes the gap between cron runs.
-3. **Immediate one-time backfill** flipping already-expired rows.
+Changes:
+- Round all money columns to `NUMERIC(12,2)` so values render as `3690.00`.
+- Add columns: `referral_gross`, `standard_gross`, `referral_subs_count` — so an advisor sees "of ₹15,000, ₹5,000 came from referral links".
+- Update `record_subscription_earning()` trigger to split values by `subscriptions.from_referral`.
+- Backfill existing 3 rows to `NUMERIC(12,2)` and split totals using the linked subscriptions.
+- Add a `get_advisor_earnings_breakdown(_advisor_id, _from, _to)` RPC returning daily + monthly + referral vs standard for the dashboard chart.
 
 ---
 
-## Part 2 — Advisor ↔ Group ↔ Subscription integrity
+## 2. Advisor lists — hide rejected, isolate them
 
-**Rules to enforce at the DB level:**
+Problems: rejected advisors (`surya` x2) sit in the same `advisors` table and can leak into admin lists / stats.
 
-- Every `groups.advisor_id` must reference exactly one advisor (already FK; verify `NOT NULL`).
-- Every `subscriptions` row must have a `group_id` whose `advisor_id` matches `subscriptions.advisor_id` — prevent drift.
-- One active subscription per (user_id, group_id).
-
-**Migration:**
-- Add trigger `enforce_subscription_group_advisor_match` on `subscriptions` INSERT/UPDATE: raises if `NEW.advisor_id <> (SELECT advisor_id FROM groups WHERE id = NEW.group_id)`.
-- Add partial unique index: `UNIQUE (user_id, group_id) WHERE status = 'active'`.
-- Backfill: correct any mismatched `advisor_id` rows using the group's true `advisor_id`.
+Changes:
+- Create new table `rejected_advisor_applications` (mirrors `advisors` shape, minus public fields) with strict admin-only RLS.
+- On admin reject: move the row into `rejected_advisor_applications` with `rejected_at`, `rejected_by`, `rejection_reason`, then delete from `advisors`. This is done via a new `admin_reject_advisor(_advisor_id, _reason)` SECURITY DEFINER RPC.
+- Update `admin_list_advisors()` default filter to exclude `rejected` (already status-scoped, but we also drop the row now).
+- Add `admin_list_rejected_applications()` RPC + a "Rejected Applications" sub-tab in Admin Dashboard so history is preserved but out of the main flow.
+- Ensure `FeaturedAdvisors`, `Discover`, `ListedAdvisors`, and public RPCs already filter `status = 'approved'` — audit and fix any that don't.
 
 ---
 
-## Part 3 — Consent metadata (PAN, consent_timestamp, consent_ip) actually captured
+## 3. Referral system — make it real, permanent, and tracked
 
-**Current gap:** `SubscriptionModal.tsx` collects PAN + consent but the sandbox/live payment flow doesn't always persist `pan_number`, `consent_timestamp`, `consent_ip` to `subscriptions`, so they show empty in the table.
+Current state: `referral_links` row exists with 1 click, 1 signup, 0 conversions. `referral_signups` and `referral_visits` tables exist but nothing is showing in the Advisor Dashboard.
 
-**Fix:**
-1. `SubscriptionModal` → pass `{ pan_number, consent_ip, consent_timestamp, consent_text_version }` when calling `initiate-payment` / `sandbox-confirm-subscription`.
-2. `initiate-payment` edge fn: stash these in Razorpay `notes` (already partially there) so webhook can persist.
-3. `razorpay-webhook` + `sandbox-confirm-subscription`: write these columns on `subscriptions` insert and mirror into `financial_compliance_archive` (already partially wired — verify PAN path).
-4. Add columns if missing: `consent_text_version text`, `consent_user_agent text`.
+Rules to enforce:
+1. **Exactly one referral link per advisor** (not per group). Auto-created on advisor approval; code is permanent and non-editable by the advisor (admin-only override remains).
+2. Link works for **any** group the advisor owns — `/join/<CODE>` lands on the advisor's public profile with a group picker, or on the specific group if `?g=<groupId>` is passed.
+3. Every visit → `referral_visits` row (via `ReferralLanding.tsx` + `increment_referral_clicks`).
+4. Every signup coming from a referral cookie → `referral_signups` row + `increment_referral_signups`.
+5. Every paid subscription where `from_referral = true` → sets `subscriptions.platform_fee_percent = 15` (default is 30), marks the matching `referral_signups.converted_to_paid = true`, links `subscription_id`, and `increment_referral_conversions`.
+6. Earnings trigger already reads `platform_fee_percent` → automatically applies the lower fee.
 
----
+Schema changes:
+- Drop the `advisor_id + group_id` uniqueness on `referral_links`; add unique constraint on `advisor_id` alone. Migrate the existing per-group row to be the advisor's single link (keep the same code `TC-VIN-4B4D-D4A5O4` so shared URLs don't break).
+- Add `referral_links.total_active_subscribers` (computed via view or maintained by trigger).
+- Trigger `on_subscription_insert_link_referral`: if `from_referral` and `referral_code` present, backfill `referral_signups.subscription_id` + `converted_to_paid` and bump counters.
 
-## Part 4 — Two-stage consent (DPDP + SEBI)
+UI wiring (Advisor Dashboard → new "Referrals" tab, replacing the current partially-working panel):
+- Big card: **Your permanent referral link** + copy / share / QR.
+- Stats row: Clicks · Signups · Paid Conversions · Fee saved (₹ delta between 30% and 15%).
+- Table: **Users who signed up via your link** — masked name, signup date, converted Yes/No, active subscription Yes/No, current group, monthly revenue.
+- Table: **Active referred subscriptions** — group, plan, start/end, amount, 15% badge.
+- Realtime: subscribe to `referral_signups` inserts and `subscriptions` updates for this advisor so counts refresh instantly.
 
-**Stage A — Signup (`Register.tsx`, `AdvisorRegister.tsx`):**
-- Single **unchecked** checkbox: *"I agree to the Terms of Service and consent to RA Circle processing my profile data per the Privacy Policy."*
-- Persist to `user_legal_acceptances` with `acceptance_type='account_signup'`, version, IP, UA, timestamp. Block submit until checked.
-
-**Stage B — Subscription (`SubscriptionModal.tsx`):**
-- Replace current single line with **two unchecked** checkboxes:
-  1. SEBI Risk Disclosure — *"I acknowledge stock-market signals carry risk; all trading decisions are mine."*
-  2. PAN/Data-sharing consent — *"I explicitly consent to sharing my PAN and contact details with {advisorName} for SEBI compliance and subscription mapping."*
-- Both must be checked to enable "Pay". Persist both acceptances (with IP + timestamp + advisor_id + group_id) to `user_legal_acceptances` before invoking payment.
-
----
-
-## Part 5 — Verification
-
-- Run backfill; confirm no active-but-expired rows remain.
-- Create test subscription in sandbox → verify `pan_number`, `consent_timestamp`, `consent_ip` populated in both `subscriptions` and `financial_compliance_archive`.
-- Attempt to insert a subscription with mismatched advisor_id → trigger rejects.
-- Wait past `end_date` (or run cron manually) → status flips to `expired`, paywall re-engages.
+Admin side (`AdminReferralTab`):
+- Show one row per advisor (not per group) with combined stats.
+- "Program cost" = actual 15% × revenue from referral subs (accurate, not an estimate).
+- Ability to reset/regenerate an advisor's code (admin only).
 
 ---
 
-### Technical file touch-list
-- **Migration:** cron job, trigger, unique index, new consent columns, backfill.
-- **Edge functions:** `initiate-payment`, `sandbox-confirm-subscription`, `razorpay-webhook`.
-- **Frontend:** `SubscriptionModal.tsx`, `Register.tsx`, `AdvisorRegister.tsx`, `Subscriptions.tsx` (dynamic expiry check), `GroupDetails.tsx` / access gate helpers in `src/lib/accessControl.ts`.
+## 4. Data integrity fixes discovered during review
 
-No UI redesign — only the consent checkboxes on the two pages change visually.
+- Backfill existing `subscriptions` rows: set `platform_fee_percent = 30` where NULL, `= 15` where `from_referral = true`.
+- Recompute `advisor_daily_earnings` for those rows so historical numbers align with the new split columns.
+- Add a nightly cron (already have the expiry cron pattern) to reconcile `referral_signups.converted_to_paid` in case a webhook is missed.
+
+---
+
+## Technical section
+
+**Migrations (single file):**
+1. `ALTER TABLE advisor_daily_earnings` — cast money cols to `NUMERIC(12,2)`, add `referral_gross`, `standard_gross`, `referral_subs_count`.
+2. Rewrite `record_subscription_earning()` to split by `from_referral`.
+3. `CREATE TABLE rejected_advisor_applications` + GRANTs + admin-only RLS.
+4. `admin_reject_advisor()` RPC — moves row, deletes from `advisors`, logs `rejection_reason`.
+5. `admin_list_rejected_applications()` RPC.
+6. `ALTER TABLE referral_links` — drop `(advisor_id, group_id)` unique, make `group_id` nullable, add unique on `advisor_id`. Migrate existing row: set `group_id = NULL` (advisor-wide).
+7. New trigger `link_subscription_to_referral` on `subscriptions` INSERT.
+8. Backfill: subs `platform_fee_percent`, earnings rounding, split totals.
+
+**Edge functions touched:**
+- `sandbox-confirm-subscription` and `razorpay-webhook`: already read referral cookie → confirm they set `from_referral`, `referral_code`, `referral_advisor_id`, `platform_fee_percent = 15`.
+
+**Frontend files touched:**
+- `src/pages/AdvisorDashboard.tsx` — new Referrals tab wiring.
+- `src/components/ReferralStatsTab.tsx` — replace mock/derived data with real joins on `referral_signups` + `subscriptions`.
+- `src/components/ReferralLinkCard.tsx` — remove per-group creation, fetch advisor-wide link.
+- `src/components/AdminReferralTab.tsx` — group by advisor, accurate program cost, add rejected-advisors sub-tab.
+- `src/pages/ReferralLanding.tsx` — accept optional `?g=` query for group deep-link.
+- `src/pages/AdminDashboard.tsx` — new "Rejected Applications" panel.
+
+**No changes to:** auth flow, KYC flow, signal visibility rules, payment webhook signatures.
