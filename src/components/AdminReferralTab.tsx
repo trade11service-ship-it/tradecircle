@@ -75,7 +75,6 @@ export function AdminReferralTab() {
           <thead>
             <tr className="border-b bg-[hsl(var(--off-white))] text-left">
               <th className="p-3 font-medium text-muted-foreground">Advisor</th>
-              <th className="p-3 font-medium text-muted-foreground">Group</th>
               <th className="p-3 font-medium text-muted-foreground">Code</th>
               <th className="p-3 font-medium text-muted-foreground">Clicks</th>
               <th className="p-3 font-medium text-muted-foreground">Conv.</th>
@@ -85,11 +84,11 @@ export function AdminReferralTab() {
             </tr>
           </thead>
           <tbody>
-            {links.length === 0 && <tr><td colSpan={8} className="p-12 text-center text-muted-foreground">No referral links yet</td></tr>}
+            {links.length === 0 && <tr><td colSpan={7} className="p-12 text-center text-muted-foreground">No referral links yet</td></tr>}
             {links.map((l: any, i: number) => (
               <tr key={l.id} className={`border-b last:border-0 ${i % 2 === 1 ? 'bg-[hsl(var(--off-white))]' : ''}`}>
                 <td className="p-3 font-medium">{l.advisors?.full_name}</td>
-                <td className="p-3">{l.groups?.name}</td>
+
                 <td className="p-3 font-mono text-xs">{l.referral_code}</td>
                 <td className="p-3">{l.total_clicks}</td>
                 <td className="p-3">{l.total_conversions}</td>
