@@ -15,9 +15,10 @@ interface SubscriptionModalProps {
   onOpenChange: (open: boolean) => void;
   group: Group & { advisor?: Advisor };
   advisorName: string;
-  onConfirm: (panNumber: string) => Promise<void>;
+  onConfirm: (data: { panNumber: string; riskConsentText: string; dataConsentText: string; consentVersion: string }) => Promise<void>;
   isLoading?: boolean;
 }
+
 
 export function SubscriptionModal({
   open,
