@@ -30,9 +30,10 @@ export function AdminReferralTab() {
 
   const fetchData = async () => {
     const { data } = await supabase.from('referral_links')
-      .select('*, advisors!inner(full_name), groups!inner(name)')
+      .select('*, advisors!inner(full_name, status)')
       .order('created_at', { ascending: false });
-    setLinks(data || []);
+    // Only show links for approved advisors (rejected ones are archived elsewhere)
+    setLinks((data || []).filter((l: any) => l.advisors?.status === 'approved'));
     setLoading(false);
   };
 
@@ -47,8 +48,9 @@ export function AdminReferralTab() {
   const totalClicks = links.reduce((s, l) => s + (l.total_clicks || 0), 0);
   const totalConversions = links.reduce((s, l) => s + (l.total_conversions || 0), 0);
   const totalRevenue = links.reduce((s, l) => s + (l.total_revenue_generated || 0), 0);
-  // Revenue difference: what platform loses from 15% vs 30%
-  const revenueDiff = Math.round(totalRevenue * 0.15);
+  // Actual program cost = 15% fee delta × (revenue - 18% GST)
+  const programCost = Math.round(totalRevenue * 0.82 * 0.15);
+
 
   return (
     <div className="space-y-6">
