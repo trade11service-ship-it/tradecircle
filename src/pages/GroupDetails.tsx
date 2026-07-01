@@ -98,7 +98,7 @@ export default function GroupDetails() {
     setLoading(false);
   };
 
-  const handleSubscribe = async (panNumber: string) => {
+  const handleSubscribe = async (data: { panNumber: string; riskConsentText: string; dataConsentText: string; consentVersion: string }) => {
     if (!group) return;
     if (!user) {
       navigate("/login");
@@ -107,9 +107,12 @@ export default function GroupDetails() {
 
     setSubscribing(true);
     try {
-      sessionStorage.setItem("subscription_pan", panNumber);
+      sessionStorage.setItem("subscription_pan", data.panNumber);
       sessionStorage.setItem("subscription_consent", "true");
       sessionStorage.setItem("subscription_consent_timestamp", new Date().toISOString());
+      sessionStorage.setItem("subscription_consent_version", data.consentVersion);
+      sessionStorage.setItem("subscription_risk_text", data.riskConsentText);
+      sessionStorage.setItem("subscription_data_text", data.dataConsentText);
 
       const { data: session } = await supabase.auth.getSession();
       const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/initiate-payment`, {
@@ -129,6 +132,7 @@ export default function GroupDetails() {
       setSubscribing(false);
     }
   };
+
 
   const advisorName = useMemo(() => group?.advisor?.full_name || "Advisor", [group]);
 
