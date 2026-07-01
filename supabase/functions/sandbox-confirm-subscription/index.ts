@@ -43,13 +43,15 @@ Deno.serve(async (req) => {
     const pan_number = body.pan_number ? String(body.pan_number) : null;
     const consent_given = !!body.consent_given;
     const consent_timestamp = body.consent_timestamp ? String(body.consent_timestamp) : new Date().toISOString();
+    const consent_text_version = body.consent_version ? String(body.consent_version) : null;
+    const consent_user_agent = body.consent_user_agent ? String(body.consent_user_agent) : req.headers.get('user-agent');
     if (!group_id || !payment_id.startsWith('sandbox_')) {
       return new Response(JSON.stringify({ error: 'Invalid sandbox payment' }), { status: 400, headers: corsHeaders });
     }
 
     const admin = createClient(supabaseUrl, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
-    // Server-side price + advisor_id lookup
+    // Server-side price + advisor_id lookup (advisor_id is enforced by trigger too)
     const { data: group } = await admin
       .from('groups')
       .select('id, advisor_id, monthly_price, is_active')
@@ -66,7 +68,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: true, id: existing.id, dedup: true }), { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // Skip if already active
+    // Skip if already active (unique index also protects this)
     const { data: active } = await admin
       .from('subscriptions').select('id')
       .eq('user_id', userId).eq('group_id', group_id).eq('status', 'active')
@@ -77,6 +79,7 @@ Deno.serve(async (req) => {
 
     const end = new Date();
     end.setDate(end.getDate() + 30);
+    const consent_ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || null;
 
     const { data: inserted, error: insErr } = await admin.from('subscriptions').insert({
       user_id: userId,
@@ -89,7 +92,9 @@ Deno.serve(async (req) => {
       pan_number,
       consent_given,
       consent_timestamp,
-      consent_ip: req.headers.get('x-forwarded-for') || null,
+      consent_ip,
+      consent_text_version,
+      consent_user_agent,
     }).select('id').single();
 
     if (insErr) {
@@ -110,9 +115,10 @@ Deno.serve(async (req) => {
         amount_paid: group.monthly_price,
         razorpay_payment_id: payment_id,
         consent_timestamp,
-        consent_ip: req.headers.get('x-forwarded-for') || null,
+        consent_ip,
       });
     } catch (e) { console.error('archive insert failed', e); }
+
 
     return new Response(JSON.stringify({ ok: true, id: inserted?.id, sandbox: true }), {
       status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
