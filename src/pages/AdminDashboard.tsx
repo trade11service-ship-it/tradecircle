@@ -277,18 +277,7 @@ export default function AdminDashboard() {
   const rejectAdvisor = async (advisor: Advisor, reason: string) => {
     setRejectingAdvisorId(advisor.id);
     try {
-      // Update advisor status with rejection reason
-      const { error: advisorError } = await supabase
-        .from('advisors')
-        .update({ 
-          status: 'rejected',
-          rejection_reason: reason,
-        })
-        .eq('id', advisor.id);
-
-      if (advisorError) throw advisorError;
-
-      // Send rejection email via edge function
+      // Send rejection email BEFORE deleting the advisor row so we still have their email
       try {
         const { data: session } = await supabase.auth.getSession();
         await fetch(
@@ -311,7 +300,14 @@ export default function AdminDashboard() {
         console.warn('Could not send rejection email:', emailErr);
       }
 
-      toast.success(`${advisor.full_name} rejected. Email sent with reason.`);
+      // Move to rejected_advisor_applications archive + remove from advisors + revert role
+      const { error: rpcErr } = await supabase.rpc('admin_reject_advisor', {
+        _advisor_id: advisor.id,
+        _reason: reason,
+      });
+      if (rpcErr) throw rpcErr;
+
+      toast.success(`${advisor.full_name} rejected and archived.`);
       fetchData();
     } catch (err) {
       toast.error((err as Error).message || 'Failed to reject advisor');
@@ -320,6 +316,7 @@ export default function AdminDashboard() {
       setRejectingAdvisorId(null);
     }
   };
+
 
   const suspendAdvisor = async (advisor: Advisor) => {
     try {
