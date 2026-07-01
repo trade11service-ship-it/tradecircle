@@ -47,6 +47,9 @@ export default function PaymentSuccess() {
     const panNumber = sessionStorage.getItem('subscription_pan');
     const consentGiven = sessionStorage.getItem('subscription_consent') === 'true';
     const consentTimestamp = sessionStorage.getItem('subscription_consent_timestamp');
+    const consentVersion = sessionStorage.getItem('subscription_consent_version');
+    const riskText = sessionStorage.getItem('subscription_risk_text');
+    const dataText = sessionStorage.getItem('subscription_data_text');
 
     // Sandbox: ask the server (service role) to materialize the subscription.
     if (isSandbox) {
@@ -58,6 +61,10 @@ export default function PaymentSuccess() {
             pan_number: panNumber,
             consent_given: consentGiven,
             consent_timestamp: consentTimestamp,
+            consent_version: consentVersion,
+            consent_user_agent: navigator.userAgent,
+            risk_consent_text: riskText,
+            data_consent_text: dataText,
           },
         });
       } catch (e) {
@@ -78,6 +85,36 @@ export default function PaymentSuccess() {
         setGroupName(group?.name || '');
         setAdvisorName(group?.advisors?.full_name || '');
         setStatus('success');
+        // Persist both consent acceptances (idempotent per subscription)
+        if (user && panNumber && consentGiven && riskText && dataText) {
+          const base = {
+            user_id: user.id,
+            email: user.email || null,
+            accepted: true,
+            page_url: window.location.href,
+            user_agent: navigator.userAgent,
+            device_info: navigator.platform,
+          };
+          await Promise.all([
+            supabase.from('user_legal_acceptances').insert({
+              ...base,
+              acceptance_type: 'subscription_risk_disclosure',
+              checkbox_text: riskText,
+            }),
+            supabase.from('user_legal_acceptances').insert({
+              ...base,
+              acceptance_type: 'subscription_data_sharing',
+              checkbox_text: `${dataText} [PAN: ${panNumber}] [group: ${groupId}]`,
+            }),
+          ]);
+        }
+        // Cleanup
+        sessionStorage.removeItem('subscription_pan');
+        sessionStorage.removeItem('subscription_consent');
+        sessionStorage.removeItem('subscription_consent_timestamp');
+        sessionStorage.removeItem('subscription_consent_version');
+        sessionStorage.removeItem('subscription_risk_text');
+        sessionStorage.removeItem('subscription_data_text');
         return;
       }
       await new Promise(r => setTimeout(r, 1000));
@@ -101,29 +138,17 @@ export default function PaymentSuccess() {
       return;
     }
 
-    // Persist PAN acceptance regardless (legal compliance)
-    if (panNumber && consentGiven) {
-      await supabase.from('user_legal_acceptances').insert({
-        user_id: user!.id,
-        acceptance_type: 'subscription_pan',
-        checkbox_text: `PAN: ${panNumber} — Subscription consent for group ${groupId}`,
-        accepted: true,
-        full_name: null,
-        email: user!.email || null,
-        page_url: window.location.href,
-        user_agent: navigator.userAgent,
-        device_info: navigator.platform,
-      }).then(() => {});
-    }
-
     setErrorReason('Your payment is being processed. If this persists, contact support — your payment is safe.');
     setStatus('error');
 
-    // Clear sessionStorage either way
     sessionStorage.removeItem('subscription_pan');
     sessionStorage.removeItem('subscription_consent');
     sessionStorage.removeItem('subscription_consent_timestamp');
+    sessionStorage.removeItem('subscription_consent_version');
+    sessionStorage.removeItem('subscription_risk_text');
+    sessionStorage.removeItem('subscription_data_text');
   };
+
 
   return (
     <div className="min-h-full h-full flex flex-col bg-muted">
