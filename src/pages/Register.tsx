@@ -63,7 +63,7 @@ export default function Register() {
       password: form.password,
       options: {
         data: { full_name: cleanName, phone: cleanPhone, role: 'trader' },
-        emailRedirectTo: `${window.location.origin}/login`,
+        emailRedirectTo: `${getCanonicalOrigin()}/login`,
       },
     });
     if (error) { toast.error(error.message); setLoading(false); return; }
