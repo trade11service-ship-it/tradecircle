@@ -1,60 +1,44 @@
 /// <reference types="npm:@types/react@18.3.1" />
 
 import * as React from 'npm:react@18.3.1'
-
 import {
-  Body,
-  Container,
-  Head,
-  Heading,
-  Html,
-  Preview,
-  Text,
+  Body, Container, Head, Heading, Html, Link, Preview, Section, Text,
 } from 'npm:@react-email/components@0.0.22'
+import {
+  main, container, header, brandText, brandAccent, body, h1, text,
+  codeStyle, divider, footer, footerBar,
+} from './_shared-styles.ts'
 
 interface ReauthenticationEmailProps {
   token: string
+  siteUrl?: string
 }
 
-export const ReauthenticationEmail = ({ token }: ReauthenticationEmailProps) => (
+export const ReauthenticationEmail = ({ token, siteUrl }: ReauthenticationEmailProps) => (
   <Html lang="en" dir="ltr">
     <Head />
-    <Preview>Your verification code</Preview>
+    <Preview>Your RA Circle verification code</Preview>
     <Body style={main}>
       <Container style={container}>
-        <Heading style={h1}>Confirm reauthentication</Heading>
-        <Text style={text}>Use the code below to confirm your identity:</Text>
-        <Text style={codeStyle}>{token}</Text>
-        <Text style={footer}>
-          This code will expire shortly. If you didn't request this, you can
-          safely ignore this email.
-        </Text>
+        <Section style={header}>
+          <Text style={brandText}>RA <span style={brandAccent}>Circle</span></Text>
+        </Section>
+        <Section style={body}>
+          <Heading style={h1}>Confirm your identity</Heading>
+          <Text style={text}>Use the code below to complete your action on RA Circle:</Text>
+          <Text style={codeStyle}>{token}</Text>
+          <div style={divider} />
+          <Text style={footer}>
+            This code expires shortly. If you didn't request it, you can safely ignore this email — no changes will be made to your account.
+          </Text>
+        </Section>
+        <Section style={footerBar}>
+          RA Circle · Operated by STREZONIC PVT LTD<br />
+          <Link href={siteUrl || 'https://racircle.in'} style={{ color: '#64748B', textDecoration: 'underline' }}>racircle.in</Link>
+        </Section>
       </Container>
     </Body>
   </Html>
 )
 
 export default ReauthenticationEmail
-
-const main = { backgroundColor: '#ffffff', fontFamily: 'Arial, sans-serif' }
-const container = { padding: '20px 25px' }
-const h1 = {
-  fontSize: '22px',
-  fontWeight: 'bold' as const,
-  color: '#000000',
-  margin: '0 0 20px',
-}
-const text = {
-  fontSize: '14px',
-  color: '#55575d',
-  lineHeight: '1.5',
-  margin: '0 0 25px',
-}
-const codeStyle = {
-  fontFamily: 'Courier, monospace',
-  fontSize: '22px',
-  fontWeight: 'bold' as const,
-  color: '#000000',
-  margin: '0 0 30px',
-}
-const footer = { fontSize: '12px', color: '#999999', margin: '30px 0 0' }
