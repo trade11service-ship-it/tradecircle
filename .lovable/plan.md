@@ -1,75 +1,90 @@
-## What I found
+# Advisor Applications Intake Table + DPDP Retention
 
-The biggest issue is backend auth is currently auto-confirming email/password signups. The latest auth logs show `immediate_login_after_signup: true`, and the newest test user already has `email_confirmed_at` populated immediately. That means the backend is treating signup as verified instantly, so no verification email is sent and the profile trigger correctly creates the profile because the user already appears verified.
+## Goal
+Add a dedicated `advisor_applications` intake table for SEBI verification with strict DPDP-compliant retention: 60-day auto-expiry, PAN/Aadhaar scrubbing on reject/expire, KYC file deletion from storage, and a third mandatory consent checkbox in the registration UI.
 
-A second issue is the custom auth email pipeline is not logging any email sends. The sender domain is verified and auth emails are enabled, but `email_send_log` is empty and the auth email hook has no recent send/error logs, which matches “no email ever came”.
+## Architecture
 
-A third issue is frontend auth state still trusts cached sessions too much in `src/lib/auth.tsx`; it uses `getSession()` and accepts `currentUser` without re-validating with the auth server via `getUser()`. That can make old/cached sessions look logged in.
+```text
+Register.tsx → advisor_applications (holds PAN + Aadhaar)
+                    │
+        ┌───────────┼────────────┐
+     Approve     Reject       60d Expiry
+        │           │              │
+   copy to      hard-delete    scrub PAN+Aadhaar
+   advisors     row entirely   + delete KYC files
+   (no Aadhaar) + delete KYC   + status='expired'
+   scrub app    files
+```
 
-## Implementation plan
+`advisor_applications` is the intake buffer holding sensitive identifiers only during review. On approval, minimal non-sensitive data is copied to the existing `advisors` table (which powers groups/payments/referrals) and Aadhaar is scrubbed from the application row. Rejection hard-deletes everything (per user's earlier choice). The existing `advisors` table stays as-is for approved advisors.
 
-1. **Disable automatic email confirmation at the backend**
-   - Configure auth so email/password signup requires verification.
-   - Keep signup enabled.
-   - Keep leaked-password protection enabled.
-   - Disable anonymous users.
+## 1. Database migration
 
-2. **Make phone number optional in registration**
-   - Update `Register.tsx` so phone can be blank.
-   - If phone is provided, still sanitize and validate it.
-   - Pass `phone: null` or omit it when blank.
-   - Keep name, email, password, and consent required.
+New table `public.advisor_applications`:
+- `id` uuid PK, `user_id` uuid unique **REFERENCES auth.users(id) ON DELETE CASCADE**
+- `full_name`, `email`, `phone`, `sebi_number`, `pan_number`, `aadhaar_number`, `address`, `bio`, `strategy_type`
+- `status` text default `'pending'` — `pending | approved | rejected | expired`
+- `rejection_reason`, `reviewed_at`, `reviewed_by`, `created_at`, `updated_at`
+- `updated_at` trigger
 
-3. **Harden signup session cleanup**
-   - After `signUp()`, if a session exists but the user is not confirmed, immediately sign out locally.
-   - Clear auth tokens from local storage and session storage.
-   - Keep the user on a “Check your email” screen, but change the CTA text so it does not imply they are already verified.
-   - Do not save legal acceptance or referral signup until a verified auth session exists, to avoid creating compliance rows for unverified users.
+Grants + RLS:
+- `GRANT SELECT, INSERT ON advisor_applications TO authenticated`
+- `GRANT ALL TO service_role`
+- User can INSERT/SELECT their own row (`auth.uid() = user_id`)
+- Admins (via existing `is_admin(auth.uid())`) SELECT/UPDATE/DELETE all
 
-4. **Harden global auth state against cached/cookie sessions**
-   - Update `src/lib/auth.tsx` to call `supabase.auth.getUser()` when a session exists.
-   - If `getUser()` fails, clear local session and treat the user as signed out.
-   - If the user is email/password and `email_confirmed_at` is missing, clear local session and block dashboard/profile access.
-   - Only fetch `profiles` after the user is verified or is an OAuth user that is already confirmed.
+RPCs (all `SECURITY DEFINER`, `SET search_path = public`):
 
-5. **Harden login form behavior**
-   - Keep the existing backend invalid-credentials behavior.
-   - After `signInWithPassword`, re-check the authenticated user using `getUser()` before navigation.
-   - If no verified profile exists, sign out and show a clear error instead of navigating.
-   - This fixes “random password lets me login” if it is caused by stale existing session/cached auth state rather than the password request itself.
+- **`admin_list_pending_applications()`** — returns pending rows for admin dashboard.
+- **`admin_approve_application(_app_id uuid)`** — admin check, INSERT into `advisors` (with `pan_no`, without `aadhaar_no`), flip `profiles.role → 'advisor'`, set app `status='approved'`, NULL `aadhaar_number` on app row, record `reviewed_at/by`.
+- **`admin_reject_application(_app_id uuid, _reason text)`** — admin check, call `delete_kyc_files_for_user(user_id)`, hard-DELETE the row. No archive.
+- **`expire_stale_applications()`** — for `pending` rows older than 60 days: set `status='expired'`, NULL `pan_number` + `aadhaar_number`, call `delete_kyc_files_for_user(user_id)`.
+- **`delete_kyc_files_for_user(_user_id uuid)`** — deletes from `storage.objects` using the correct Supabase column names:
+  ```sql
+  DELETE FROM storage.objects
+  WHERE bucket_id = 'kyc-documents'
+    AND name LIKE _user_id::text || '%';
+  ```
 
-6. **Fix custom verification email delivery path**
-   - Re-run the auth email template scaffold only if needed to repair hook wiring.
-   - Deploy `auth-email-hook` and `process-email-queue`.
-   - Verify the project email domain remains `notify.racircle.in`.
-   - Check that a signup produces an auth email queue/log row.
-   - If the hook still does not fire, fall back to default managed auth emails temporarily so users receive verification emails while custom templates are investigated.
+DPDP sweep on the legacy `rejected_advisor_applications` table:
+- `ALTER COLUMN pan_no DROP NOT NULL`, `ALTER COLUMN aadhaar_no DROP NOT NULL` (guarded — no-op if already nullable).
+- Backfill `UPDATE ... SET pan_no = NULL, aadhaar_no = NULL`.
+- Update existing `admin_reject_advisor` RPC to stop writing PAN/Aadhaar into the archive going forward.
 
-7. **Database safety check**
-   - Verify triggers remain:
-     - profile creation on confirmed email only
-     - no profile creation for unverified email/password users
-   - Add or adjust trigger logic only if current functions still create profiles before confirmation.
+Add columns to `advisor_legal_acceptances`:
+- `checkbox_3_dpdp_consent boolean`, `checkbox_3_text text`.
 
-8. **End-to-end validation**
-   - Test signup with a fresh email:
-     - user should not be logged into the app before email verification
-     - no profile should exist before confirmation
-     - a verification email should be queued/sent
-   - Test login with random password:
-     - should show invalid credentials
-     - should not reuse cached auth
-   - Test login with an unverified user:
-     - should be blocked and signed out
-   - Test after verification:
-     - profile should be created
-     - login should route by role correctly
+## 2. pg_cron job (via `supabase--insert`)
 
-## Expected final behavior
+Daily at 03:00 IST → `SELECT public.expire_stale_applications();`. Scheduled via the insert tool (not migration) per Lovable docs for user-specific cron setup.
 
-- Signup creates an auth user but does not create a public profile until email is verified.
-- Verification email is sent from the verified RA Circle sender domain.
-- Phone number is optional.
-- Cached cookies/local storage cannot bypass verification.
-- Random passwords cannot log in; stale sessions are cleared before routing.
-- Users only reach dashboards after a verified backend-authenticated session exists.
+## 3. `AdvisorRegister.tsx`
+
+- Change insert target from `advisors` → `advisor_applications`.
+- Add third checkbox `check3` with exact required text (stored as `DPDP_CONSENT_TEXT` in `src/lib/legalTexts.ts`):
+  > "I explicitly consent to STREZONIC PRIVATE LIMITED processing my PAN and Aadhaar numbers for manual SEBI verification. I understand that if my application is rejected, or remains un-actioned for more than 60 days, my sensitive identity records will be permanently erased from the system automatically."
+- Store `check3_dpdp_consent + check3_text` in `advisor_legal_acceptances`.
+- Submit button disabled unless `check1 && check2 && check3`.
+- "Already registered" guard also checks `advisor_applications` for pending rows.
+
+## 4. `AdminDashboard.tsx`
+
+- Fetch pending from `advisor_applications` via new `admin_list_pending_applications` RPC (approved advisors tab still reads `advisors`).
+- Pending rows show:
+  - Green Approve button (`bg-green-600 hover:bg-green-700 text-white`) → `admin_approve_application` + existing approval email.
+  - Red Reject button (`bg-red-600 hover:bg-red-700 text-white`) → existing `RejectApplicationModal` → `admin_reject_application` + existing rejection email.
+
+## 5. Files touched
+
+- `supabase/migrations/<new>.sql` — table (with `ON DELETE CASCADE`), grants, RLS, RPCs (correct `bucket_id`/`name` storage columns), triggers, archive scrub with `DROP NOT NULL` guards, legal-acceptance columns.
+- `supabase--insert` — schedule pg_cron job.
+- `src/lib/legalTexts.ts` — add `DPDP_CONSENT_TEXT`.
+- `src/pages/AdvisorRegister.tsx` — 3rd checkbox, new table target, updated guard.
+- `src/pages/AdminDashboard.tsx` — new RPC calls, styled Approve/Reject buttons.
+- `src/integrations/supabase/types.ts` — regenerated after migration approval.
+
+## Out of scope
+
+- No changes to groups/payments/referrals/edge functions — they continue keying off `advisors.id` for approved users.
+- No trader-facing UI changes.
