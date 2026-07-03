@@ -244,26 +244,25 @@ export default function AdminDashboard() {
   const approveAdvisor = async (advisor: Advisor) => {
     setApprovingAdvisorId(advisor.id);
     try {
-      // Update advisor status
-      const { error: advisorError } = await supabase
-        .from('advisors')
-        .update({ status: 'approved' })
-        .eq('id', advisor.id);
+      const appId = (advisor as any)._app_id;
+      if (appId) {
+        // New intake flow: promote application -> advisors, scrub Aadhaar
+        const { error } = await (supabase as any).rpc('admin_approve_application', { _app_id: appId });
+        if (error) throw error;
+      } else {
+        // Legacy fallback (advisor row already exists)
+        const { error: advisorError } = await supabase
+          .from('advisors').update({ status: 'approved' }).eq('id', advisor.id);
+        if (advisorError) throw advisorError;
+        const { error: profileError } = await supabase
+          .from('profiles').update({ role: 'advisor' }).eq('id', advisor.user_id);
+        if (profileError) throw profileError;
+      }
 
-      if (advisorError) throw advisorError;
-
-      // Update profile role to advisor
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ role: 'advisor' })
-        .eq('id', advisor.user_id);
-
-      if (profileError) throw profileError;
-
-      // Send approval email via edge function
+      // Send approval email
       try {
         const { data: session } = await supabase.auth.getSession();
-        const response = await fetch(
+        await fetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-advisor-approval-email`,
           {
             method: 'POST',
@@ -278,10 +277,6 @@ export default function AdminDashboard() {
             }),
           }
         );
-
-        if (!response.ok) {
-          console.warn('Email notification failed, but approval succeeded');
-        }
       } catch (emailErr) {
         console.warn('Could not send approval email:', emailErr);
       }
@@ -299,7 +294,7 @@ export default function AdminDashboard() {
   const rejectAdvisor = async (advisor: Advisor, reason: string) => {
     setRejectingAdvisorId(advisor.id);
     try {
-      // Send rejection email BEFORE deleting the advisor row so we still have their email
+      // Send rejection email BEFORE deleting the row so we still have their email
       try {
         const { data: session } = await supabase.auth.getSession();
         await fetch(
@@ -322,14 +317,24 @@ export default function AdminDashboard() {
         console.warn('Could not send rejection email:', emailErr);
       }
 
-      // Move to rejected_advisor_applications archive + remove from advisors + revert role
-      const { error: rpcErr } = await supabase.rpc('admin_reject_advisor', {
-        _advisor_id: advisor.id,
-        _reason: reason,
-      });
-      if (rpcErr) throw rpcErr;
+      const appId = (advisor as any)._app_id;
+      if (appId) {
+        // New intake flow: hard-delete application row + KYC files
+        const { error } = await (supabase as any).rpc('admin_reject_application', {
+          _app_id: appId,
+          _reason: reason,
+        });
+        if (error) throw error;
+      } else {
+        // Legacy flow: archive + delete from advisors
+        const { error: rpcErr } = await supabase.rpc('admin_reject_advisor', {
+          _advisor_id: advisor.id,
+          _reason: reason,
+        });
+        if (rpcErr) throw rpcErr;
+      }
 
-      toast.success(`${advisor.full_name} rejected and archived.`);
+      toast.success(`${advisor.full_name} rejected.`);
       fetchData();
     } catch (err) {
       toast.error((err as Error).message || 'Failed to reject advisor');
