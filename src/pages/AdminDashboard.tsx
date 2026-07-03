@@ -198,13 +198,29 @@ export default function AdminDashboard() {
   useEffect(() => { if (isVerifiedAdmin) fetchData(); }, [isVerifiedAdmin]);
 
   const fetchData = async () => {
-    const [pending, all, usersData, paymentsData] = await Promise.all([
-      (supabase as any).rpc('admin_list_advisors', { _status: 'pending' }),
+    const [pendingApps, all, usersData, paymentsData] = await Promise.all([
+      (supabase as any).rpc('admin_list_pending_applications'),
       (supabase as any).rpc('admin_list_advisors', { _status: null }),
       supabase.from('profiles').select('*').order('created_at', { ascending: false }),
       supabase.from('subscriptions').select('*, profiles!inner(full_name), advisors!inner(full_name), groups!inner(name)').order('created_at', { ascending: false }),
     ]);
-    setPendingAdvisors(pending.data || []);
+    // Map advisor_applications rows into the Advisor shape the JSX renders.
+    setPendingAdvisors((pendingApps.data || []).map((a: any) => ({
+      id: a.id,
+      user_id: a.user_id,
+      full_name: a.full_name,
+      email: a.email,
+      phone: a.phone,
+      sebi_reg_no: a.sebi_number,
+      pan_no: a.pan_number,
+      aadhaar_no: a.aadhaar_number,
+      address: a.address,
+      bio: a.bio,
+      strategy_type: a.strategy_type,
+      status: a.status,
+      created_at: a.created_at,
+      _app_id: a.id,
+    } as any)));
     setAllAdvisors(all.data || []);
     setUsers(usersData.data || []);
     setPayments(paymentsData.data || []);
@@ -228,26 +244,25 @@ export default function AdminDashboard() {
   const approveAdvisor = async (advisor: Advisor) => {
     setApprovingAdvisorId(advisor.id);
     try {
-      // Update advisor status
-      const { error: advisorError } = await supabase
-        .from('advisors')
-        .update({ status: 'approved' })
-        .eq('id', advisor.id);
+      const appId = (advisor as any)._app_id;
+      if (appId) {
+        // New intake flow: promote application -> advisors, scrub Aadhaar
+        const { error } = await (supabase as any).rpc('admin_approve_application', { _app_id: appId });
+        if (error) throw error;
+      } else {
+        // Legacy fallback (advisor row already exists)
+        const { error: advisorError } = await supabase
+          .from('advisors').update({ status: 'approved' }).eq('id', advisor.id);
+        if (advisorError) throw advisorError;
+        const { error: profileError } = await supabase
+          .from('profiles').update({ role: 'advisor' }).eq('id', advisor.user_id);
+        if (profileError) throw profileError;
+      }
 
-      if (advisorError) throw advisorError;
-
-      // Update profile role to advisor
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ role: 'advisor' })
-        .eq('id', advisor.user_id);
-
-      if (profileError) throw profileError;
-
-      // Send approval email via edge function
+      // Send approval email
       try {
         const { data: session } = await supabase.auth.getSession();
-        const response = await fetch(
+        await fetch(
           `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-advisor-approval-email`,
           {
             method: 'POST',
@@ -262,10 +277,6 @@ export default function AdminDashboard() {
             }),
           }
         );
-
-        if (!response.ok) {
-          console.warn('Email notification failed, but approval succeeded');
-        }
       } catch (emailErr) {
         console.warn('Could not send approval email:', emailErr);
       }
@@ -283,7 +294,7 @@ export default function AdminDashboard() {
   const rejectAdvisor = async (advisor: Advisor, reason: string) => {
     setRejectingAdvisorId(advisor.id);
     try {
-      // Send rejection email BEFORE deleting the advisor row so we still have their email
+      // Send rejection email BEFORE deleting the row so we still have their email
       try {
         const { data: session } = await supabase.auth.getSession();
         await fetch(
@@ -306,14 +317,24 @@ export default function AdminDashboard() {
         console.warn('Could not send rejection email:', emailErr);
       }
 
-      // Move to rejected_advisor_applications archive + remove from advisors + revert role
-      const { error: rpcErr } = await supabase.rpc('admin_reject_advisor', {
-        _advisor_id: advisor.id,
-        _reason: reason,
-      });
-      if (rpcErr) throw rpcErr;
+      const appId = (advisor as any)._app_id;
+      if (appId) {
+        // New intake flow: hard-delete application row + KYC files
+        const { error } = await (supabase as any).rpc('admin_reject_application', {
+          _app_id: appId,
+          _reason: reason,
+        });
+        if (error) throw error;
+      } else {
+        // Legacy flow: archive + delete from advisors
+        const { error: rpcErr } = await supabase.rpc('admin_reject_advisor', {
+          _advisor_id: advisor.id,
+          _reason: reason,
+        });
+        if (rpcErr) throw rpcErr;
+      }
 
-      toast.success(`${advisor.full_name} rejected and archived.`);
+      toast.success(`${advisor.full_name} rejected.`);
       fetchData();
     } catch (err) {
       toast.error((err as Error).message || 'Failed to reject advisor');
@@ -896,10 +917,10 @@ export default function AdminDashboard() {
                     </div>
                     {a.bio && <div className="rounded-xl bg-muted p-3"><p className="text-[11px] text-muted-foreground font-semibold uppercase">Bio</p><p className="text-[14px] text-foreground mt-0.5">{a.bio}</p></div>}
                     <div className="flex gap-2 items-end flex-wrap">
-                      <Button onClick={() => approveAdvisor(a)} className="bg-primary hover:bg-primary/90 font-semibold rounded-lg" disabled={approvingAdvisorId === a.id}>
+                      <Button onClick={() => approveAdvisor(a)} className="bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg" disabled={approvingAdvisorId === a.id}>
                         {approvingAdvisorId === a.id ? 'Approving...' : '✓ Approve'}
                       </Button>
-                      <Button variant="destructive" className="font-semibold rounded-lg" onClick={() => { setSelectedAdvisorForReject(a); setRejectModalOpen(true); }} disabled={rejectingAdvisorId === a.id}>
+                      <Button className="bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg" onClick={() => { setSelectedAdvisorForReject(a); setRejectModalOpen(true); }} disabled={rejectingAdvisorId === a.id}>
                         {rejectingAdvisorId === a.id ? 'Rejecting...' : '✕ Reject'}
                       </Button>
                     </div>

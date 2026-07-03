@@ -4,6 +4,9 @@ export const ADVISOR_CHECKBOX_1_TEXT =
 export const ADVISOR_CHECKBOX_2_TEXT =
   'I agree to fully indemnify and hold harmless STREZONIC PRIVATE LIMITED (CIN: U62099MH2025PTC453360, PAN: ABQCS8594P), its directors and employees against any losses, fines, penalties, or legal costs arising from my trading signals, SEBI violations, or user complaints. I confirm I have read the full Platform Agent Agreement before accepting.';
 
+export const ADVISOR_CHECKBOX_3_DPDP_TEXT =
+  'I explicitly consent to STREZONIC PRIVATE LIMITED processing my PAN and Aadhaar numbers for manual SEBI verification. I understand that if my application is rejected, or remains un-actioned for more than 60 days, my sensitive identity records will be permanently erased from the system automatically.';
+
 export const SUBSCRIPTION_RISK_TEXT =
   'I acknowledge that stock market trading and investment signals carry significant financial risk. I take complete responsibility for all trading decisions I make. STREZONIC PRIVATE LIMITED (RA Circle) (CIN: U62099MH2025PTC453360) operates as a technology listing platform only and holds no liability for any profits or losses from signals provided by advisors on this platform.';
 
