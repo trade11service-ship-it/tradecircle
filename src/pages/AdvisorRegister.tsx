@@ -23,8 +23,10 @@ export default function AdvisorRegister() {
   const [form, setForm] = useState({ sebiRegNo: '', bio: '', strategyType: '', aadhaarNo: '', panNo: '', address: '', phone: '' });
   const [check1, setCheck1] = useState(false);
   const [check2, setCheck2] = useState(false);
+  const [check3, setCheck3] = useState(false);
   const [showCheckError, setShowCheckError] = useState(false);
   const [existingAdvisor, setExistingAdvisor] = useState<any>(null);
+  const [existingApplication, setExistingApplication] = useState<any>(null);
   const [checkingAdvisor, setCheckingAdvisor] = useState(false);
   const update = (key: string, value: string) => setForm({ ...form, [key]: value });
 
