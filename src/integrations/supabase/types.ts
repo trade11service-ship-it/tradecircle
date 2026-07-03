@@ -14,6 +14,66 @@ export type Database = {
   }
   public: {
     Tables: {
+      advisor_applications: {
+        Row: {
+          aadhaar_number: string | null
+          address: string | null
+          bio: string | null
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          pan_number: string | null
+          phone: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          sebi_number: string
+          status: string
+          strategy_type: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          aadhaar_number?: string | null
+          address?: string | null
+          bio?: string | null
+          created_at?: string
+          email: string
+          full_name: string
+          id?: string
+          pan_number?: string | null
+          phone?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          sebi_number: string
+          status?: string
+          strategy_type?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          aadhaar_number?: string | null
+          address?: string | null
+          bio?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string
+          id?: string
+          pan_number?: string | null
+          phone?: string | null
+          rejection_reason?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          sebi_number?: string
+          status?: string
+          strategy_type?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       advisor_daily_earnings: {
         Row: {
           advisor_id: string
@@ -70,12 +130,16 @@ export type Database = {
       advisor_legal_acceptances: {
         Row: {
           advisor_id: string | null
+          application_id: string | null
           checkbox_1_accepted_at: string
           checkbox_1_sebi_responsibility: boolean
           checkbox_1_text: string
           checkbox_2_accepted_at: string
           checkbox_2_indemnity: boolean
           checkbox_2_text: string
+          checkbox_3_accepted_at: string | null
+          checkbox_3_dpdp_consent: boolean
+          checkbox_3_text: string | null
           company_cin: string
           device_info: string | null
           form_submitted_at: string
@@ -89,12 +153,16 @@ export type Database = {
         }
         Insert: {
           advisor_id?: string | null
+          application_id?: string | null
           checkbox_1_accepted_at?: string
           checkbox_1_sebi_responsibility?: boolean
           checkbox_1_text: string
           checkbox_2_accepted_at?: string
           checkbox_2_indemnity?: boolean
           checkbox_2_text: string
+          checkbox_3_accepted_at?: string | null
+          checkbox_3_dpdp_consent?: boolean
+          checkbox_3_text?: string | null
           company_cin?: string
           device_info?: string | null
           form_submitted_at?: string
@@ -108,12 +176,16 @@ export type Database = {
         }
         Update: {
           advisor_id?: string | null
+          application_id?: string | null
           checkbox_1_accepted_at?: string
           checkbox_1_sebi_responsibility?: boolean
           checkbox_1_text?: string
           checkbox_2_accepted_at?: string
           checkbox_2_indemnity?: boolean
           checkbox_2_text?: string
+          checkbox_3_accepted_at?: string | null
+          checkbox_3_dpdp_consent?: boolean
+          checkbox_3_text?: string | null
           company_cin?: string
           device_info?: string | null
           form_submitted_at?: string
@@ -131,6 +203,13 @@ export type Database = {
             columns: ["advisor_id"]
             isOneToOne: false
             referencedRelation: "advisors"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "advisor_legal_acceptances_application_id_fkey"
+            columns: ["application_id"]
+            isOneToOne: false
+            referencedRelation: "advisor_applications"
             referencedColumns: ["id"]
           },
         ]
@@ -1186,6 +1265,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: undefined
       }
+      admin_approve_application: { Args: { _app_id: string }; Returns: string }
       admin_list_advisors: {
         Args: { _status?: string }
         Returns: {
@@ -1222,6 +1302,34 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      admin_list_pending_applications: {
+        Args: never
+        Returns: {
+          aadhaar_number: string | null
+          address: string | null
+          bio: string | null
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          pan_number: string | null
+          phone: string | null
+          rejection_reason: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          sebi_number: string
+          status: string
+          strategy_type: string | null
+          updated_at: string
+          user_id: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "advisor_applications"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       admin_list_rejected_applications: {
         Args: never
         Returns: {
@@ -1252,15 +1360,24 @@ export type Database = {
         Args: { _advisor_id: string; _reason: string }
         Returns: undefined
       }
+      admin_reject_application: {
+        Args: { _app_id: string; _reason: string }
+        Returns: undefined
+      }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
+      }
+      delete_kyc_files_for_user: {
+        Args: { _user_id: string }
+        Returns: undefined
       }
       email_queue_dispatch: { Args: never; Returns: undefined }
       enqueue_email: {
         Args: { payload: Json; queue_name: string }
         Returns: number
       }
+      expire_stale_applications: { Args: never; Returns: number }
       get_advisor_earnings: {
         Args: { _advisor_id: string; _month?: string }
         Returns: Json
