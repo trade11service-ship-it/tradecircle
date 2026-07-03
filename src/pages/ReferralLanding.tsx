@@ -11,6 +11,7 @@ import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
 import { Shield, Users, CheckCircle, Star, Eye, EyeOff, Lock, Mail, User } from 'lucide-react';
 import { GENERAL_TERMS_TEXT, SUBSCRIPTION_RISK_TEXT, getDeviceInfo, getIpAddress } from '@/lib/legalTexts';
+import { getCanonicalOrigin } from '@/lib/canonicalOrigin';
 
 export default function ReferralLanding() {
   const { code } = useParams<{ code: string }>();
@@ -34,6 +35,12 @@ export default function ReferralLanding() {
   const [showPassword, setShowPassword] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
   const [registered, setRegistered] = useState(false);
+
+  const clearLocalAuth = async () => {
+    try { await supabase.auth.signOut({ scope: 'local' }); } catch {}
+    Object.keys(localStorage).forEach(k => { if (k.startsWith('sb-') && k.includes('-auth-token')) localStorage.removeItem(k); });
+    Object.keys(sessionStorage).forEach(k => { if (k.startsWith('sb-') && k.includes('-auth-token')) sessionStorage.removeItem(k); });
+  };
 
   useEffect(() => {
     if (code) fetchReferralData();
@@ -166,24 +173,30 @@ export default function ReferralLanding() {
     if (signupForm.password.length < 6) { toast.error('Password must be at least 6 characters'); return; }
     setSignupLoading(true);
 
+    const cleanEmail = signupForm.email.trim().toLowerCase();
+    const cleanName = signupForm.fullName.trim();
+    if (!cleanName) { toast.error('Please enter your full name'); setSignupLoading(false); return; }
+
     const { data, error } = await supabase.auth.signUp({
-      email: signupForm.email,
+      email: cleanEmail,
       password: signupForm.password,
       options: {
-        data: { full_name: signupForm.fullName, role: 'trader' },
-        emailRedirectTo: `${window.location.origin}/join/${code}`,
+        data: { full_name: cleanName, role: 'trader' },
+        emailRedirectTo: `${getCanonicalOrigin()}/join/${code}`,
       },
     });
 
     if (error) { toast.error(error.message); setSignupLoading(false); return; }
 
-    if (data.user) {
-      // Save legal acceptance
+    const isVerified = !!data.user?.email_confirmed_at;
+
+    if (data.user && isVerified) {
+      // Save legal acceptance only for verified sessions.
       const ip = await getIpAddress();
       await supabase.from('user_legal_acceptances').insert({
         user_id: data.user.id,
-        full_name: signupForm.fullName,
-        email: signupForm.email,
+        full_name: cleanName,
+        email: cleanEmail,
         acceptance_type: 'general_terms',
         checkbox_text: GENERAL_TERMS_TEXT,
         accepted: true,
@@ -206,6 +219,11 @@ export default function ReferralLanding() {
         } catch (e) { console.error('Referral signup tracking:', e); }
       }
 
+      setRegistered(true);
+    }
+
+    if (!isVerified) {
+      await clearLocalAuth();
       setRegistered(true);
     }
     setSignupLoading(false);
