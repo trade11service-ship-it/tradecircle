@@ -198,13 +198,29 @@ export default function AdminDashboard() {
   useEffect(() => { if (isVerifiedAdmin) fetchData(); }, [isVerifiedAdmin]);
 
   const fetchData = async () => {
-    const [pending, all, usersData, paymentsData] = await Promise.all([
-      (supabase as any).rpc('admin_list_advisors', { _status: 'pending' }),
+    const [pendingApps, all, usersData, paymentsData] = await Promise.all([
+      (supabase as any).rpc('admin_list_pending_applications'),
       (supabase as any).rpc('admin_list_advisors', { _status: null }),
       supabase.from('profiles').select('*').order('created_at', { ascending: false }),
       supabase.from('subscriptions').select('*, profiles!inner(full_name), advisors!inner(full_name), groups!inner(name)').order('created_at', { ascending: false }),
     ]);
-    setPendingAdvisors(pending.data || []);
+    // Map advisor_applications rows into the Advisor shape the JSX renders.
+    setPendingAdvisors((pendingApps.data || []).map((a: any) => ({
+      id: a.id,
+      user_id: a.user_id,
+      full_name: a.full_name,
+      email: a.email,
+      phone: a.phone,
+      sebi_reg_no: a.sebi_number,
+      pan_no: a.pan_number,
+      aadhaar_no: a.aadhaar_number,
+      address: a.address,
+      bio: a.bio,
+      strategy_type: a.strategy_type,
+      status: a.status,
+      created_at: a.created_at,
+      _app_id: a.id,
+    } as any)));
     setAllAdvisors(all.data || []);
     setUsers(usersData.data || []);
     setPayments(paymentsData.data || []);
