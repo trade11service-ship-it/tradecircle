@@ -1,6 +1,6 @@
 import * as React from 'npm:react@18.3.1'
 import { renderAsync } from 'npm:@react-email/components@0.0.22'
-import { parseEmailWebhookPayload } from 'npm:@lovable.dev/email-js'
+import { parseEmailWebhookPayload, sendLovableEmail } from 'npm:@lovable.dev/email-js'
 import { WebhookError, verifyWebhookRequest } from 'npm:@lovable.dev/webhooks-js'
 import { createClient } from 'npm:@supabase/supabase-js@2'
 import { SignupEmail } from '../_shared/email-templates/signup.tsx'
@@ -40,6 +40,52 @@ const SITE_NAME = "RA Circle"
 const SENDER_DOMAIN = "notify.racircle.in"
 const ROOT_DOMAIN = "racircle.in"
 const FROM_DOMAIN = "racircle.in" // Domain shown in From address (may be root or sender subdomain)
+const FROM_ADDRESS = `RA Circle <compliance@${FROM_DOMAIN}>`
+
+function normalizeRaCircleUrl(rawUrl?: string): string {
+  const fallback = `https://${ROOT_DOMAIN}`
+  if (!rawUrl) return fallback
+
+  let value = rawUrl
+    .replaceAll('https://stockcircle.lovable.app', fallback)
+    .replaceAll('http://stockcircle.lovable.app', fallback)
+    .replaceAll('stockcircle.lovable.app', ROOT_DOMAIN)
+
+  try {
+    const url = new URL(value)
+
+    // If Supabase gives us a stale Lovable-hosted action URL, pin it to the real domain.
+    if (url.hostname.endsWith('.lovable.app') || url.hostname === 'stockcircle.lovable.app') {
+      url.protocol = 'https:'
+      url.hostname = ROOT_DOMAIN
+      url.port = ''
+    }
+
+    // Also sanitize nested redirect URLs inside Supabase verification links.
+    const redirectTo = url.searchParams.get('redirect_to') || url.searchParams.get('redirectTo')
+    if (redirectTo) {
+      try {
+        const redirect = new URL(redirectTo)
+        if (redirect.hostname.endsWith('.lovable.app') || redirect.hostname === 'stockcircle.lovable.app') {
+          redirect.protocol = 'https:'
+          redirect.hostname = ROOT_DOMAIN
+          redirect.port = ''
+          url.searchParams.set(url.searchParams.has('redirect_to') ? 'redirect_to' : 'redirectTo', redirect.toString())
+        }
+      } catch {
+        const cleanedRedirect = redirectTo
+          .replaceAll('https://stockcircle.lovable.app', fallback)
+          .replaceAll('http://stockcircle.lovable.app', fallback)
+          .replaceAll('stockcircle.lovable.app', ROOT_DOMAIN)
+        url.searchParams.set(url.searchParams.has('redirect_to') ? 'redirect_to' : 'redirectTo', cleanedRedirect)
+      }
+    }
+
+    return url.toString()
+  } catch {
+    return value
+  }
+}
 
 // Sample data for preview mode ONLY (not used in actual email sending).
 // URLs are baked in at scaffold time from the project's real data.
@@ -219,11 +265,12 @@ async function handleWebhook(req: Request): Promise<Response> {
   }
 
   // Build template props from payload.data (HookData structure)
+  const confirmationUrl = normalizeRaCircleUrl(payload.data.url)
   const templateProps = {
     siteName: SITE_NAME,
     siteUrl: `https://${ROOT_DOMAIN}`,
     recipient: payload.data.email,
-    confirmationUrl: payload.data.url,
+    confirmationUrl,
     token: payload.data.token,
     email: payload.data.email,
     oldEmail: payload.data.old_email,
@@ -236,7 +283,8 @@ async function handleWebhook(req: Request): Promise<Response> {
     plainText: true,
   })
 
-  // Enqueue email for async processing by the dispatcher (process-email-queue).
+  // Send auth email immediately. Auth verification must not depend on a delayed cron worker,
+  // otherwise users can sign up and never receive the confirmation email.
   const supabase = createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -244,7 +292,7 @@ async function handleWebhook(req: Request): Promise<Response> {
 
   const messageId = crypto.randomUUID()
 
-  // Log pending BEFORE enqueue so we have a record even if enqueue crashes
+  // Log pending BEFORE sending so we have a record even if the mail API fails.
   await supabase.from('email_send_log').insert({
     message_id: messageId,
     template_name: emailType,
@@ -252,42 +300,50 @@ async function handleWebhook(req: Request): Promise<Response> {
     status: 'pending',
   })
 
-  const { error: enqueueError } = await supabase.rpc('enqueue_email', {
-    queue_name: 'auth_emails',
-    payload: {
+  try {
+    await sendLovableEmail(
+      {
       run_id,
       message_id: messageId,
       to: payload.data.email,
-      from: `${SITE_NAME} <noreply@${FROM_DOMAIN}>`,
+        from: FROM_ADDRESS,
       sender_domain: SENDER_DOMAIN,
       subject: EMAIL_SUBJECTS[emailType] || 'Notification',
       html,
       text,
       purpose: 'transactional',
       label: emailType,
-      queued_at: new Date().toISOString(),
-    },
-  })
+      },
+      { apiKey, sendUrl: Deno.env.get('LOVABLE_SEND_URL') }
+    )
 
-  if (enqueueError) {
-    console.error('Failed to enqueue auth email', { error: enqueueError, run_id, emailType })
+    await supabase.from('email_send_log').insert({
+      message_id: messageId,
+      template_name: emailType,
+      recipient_email: payload.data.email,
+      status: 'sent',
+    })
+
+    console.log('Auth email sent', { emailType, email: payload.data.email, run_id })
+  } catch (sendError) {
+    const errorMsg = sendError instanceof Error ? sendError.message : String(sendError)
+    console.error('Failed to send auth email', { error: errorMsg, run_id, emailType })
     await supabase.from('email_send_log').insert({
       message_id: messageId,
       template_name: emailType,
       recipient_email: payload.data.email,
       status: 'failed',
-      error_message: 'Failed to enqueue email',
+      error_message: errorMsg.slice(0, 1000),
     })
+
     return new Response(JSON.stringify({ error: 'Failed to enqueue email' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
   }
 
-  console.log('Auth email enqueued', { emailType, email: payload.data.email, run_id })
-
   return new Response(
-    JSON.stringify({ success: true, queued: true }),
+    JSON.stringify({ success: true, sent: true }),
     { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
   )
 }

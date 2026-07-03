@@ -10,6 +10,17 @@ import { toast } from 'sonner';
 import { Mail, Lock, Eye, EyeOff, Shield } from 'lucide-react';
 import { getCanonicalOrigin } from '@/lib/canonicalOrigin';
 
+const clearLocalAuth = async () => {
+  try { await supabase.auth.signOut({ scope: 'local' }); } catch {}
+  Object.keys(localStorage).forEach(k => { if (k.startsWith('sb-') && k.includes('-auth-token')) localStorage.removeItem(k); });
+  Object.keys(sessionStorage).forEach(k => { if (k.startsWith('sb-') && k.includes('-auth-token')) sessionStorage.removeItem(k); });
+};
+
+const isVerifiedAuthUser = (authUser: any) => {
+  const provider = authUser?.app_metadata?.provider;
+  return provider && provider !== 'email' ? true : !!authUser?.email_confirmed_at;
+};
+
 export default function Login() {
   const navigate = useNavigate();
   const { user, profile, loading: authLoading } = useAuth();
@@ -39,15 +50,37 @@ export default function Login() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    await clearLocalAuth();
+    const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password });
     if (error) {
       toast.error(error.message);
-    } else if (data.user && !data.user.email_confirmed_at) {
-      await supabase.auth.signOut();
-      toast.error('Please verify your email before signing in. Check your inbox for the verification link.');
     } else if (data.user) {
-      const { data: profile } = await supabase.from('profiles').select('role').eq('id', data.user.id).single();
-      const { data: advisor } = await supabase.from('advisors').select('id').eq('user_id', data.user.id).maybeSingle();
+      const { data: verifiedUser, error: userError } = await supabase.auth.getUser();
+      const authUser = verifiedUser.user;
+
+      if (userError || !authUser) {
+        await clearLocalAuth();
+        toast.error('Could not verify your session. Please sign in again.');
+        setLoading(false);
+        return;
+      }
+
+      if (!isVerifiedAuthUser(authUser)) {
+        await clearLocalAuth();
+        toast.error('Please verify your email before signing in. Check your inbox for the verification link.');
+        setLoading(false);
+        return;
+      }
+
+      const { data: profile } = await supabase.from('profiles').select('role').eq('id', authUser.id).single();
+      if (!profile) {
+        await clearLocalAuth();
+        toast.error('Your account setup is not complete yet. Please verify your email and try again.');
+        setLoading(false);
+        return;
+      }
+
+      const { data: advisor } = await supabase.from('advisors').select('id').eq('user_id', authUser.id).maybeSingle();
       if (profile?.role === 'advisor' || advisor) navigate('/advisor/dashboard');
       else if (profile?.role === 'admin') navigate('/admin');
       else navigate('/home');
@@ -124,7 +157,7 @@ export default function Login() {
                   </button>
                 </div>
               </div>
-              <Button type="submit" className="w-full h-11 rounded-xl font-semibold tc-btn-click" disabled={loading}>
+              <Button type="submit" className="w-full h-11 rounded-xl font-semibold tc-btn-click" disabled={loading || !email || !password}>
                 {loading ? 'Signing in...' : 'Sign In'}
               </Button>
             </form>
