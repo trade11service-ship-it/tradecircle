@@ -65,32 +65,37 @@ export default function AdvisorRegister() {
     </div>
   );
 
-  if (existingAdvisor) return (
-    <div className="min-h-screen flex flex-col bg-off-white"><Navbar />
-      <div className="flex-1 flex items-center justify-center px-4">
-        <div className="tc-card-static p-8 text-center max-w-md">
-          <CheckCircle className="mx-auto h-16 w-16 text-primary" />
-          <h2 className="mt-4 text-xl font-bold">Already Registered</h2>
-          <p className="mt-3 text-sm text-muted-foreground">
-            You are already registered as an advisor on RA Circle. 
-            {existingAdvisor.status === 'pending' && ' Your application is currently under review.'}
-            {existingAdvisor.status === 'approved' && ' Your account is active.'}
-            {existingAdvisor.status === 'rejected' && ` Your application was rejected${existingAdvisor.rejection_reason ? ': ' + existingAdvisor.rejection_reason : '.'}`}
-          </p>
-          <div className="mt-6 flex gap-3 justify-center">
-            {existingAdvisor.status === 'approved' && (
-              <Button onClick={() => navigate('/advisor/dashboard')} className="tc-btn-click">Go to Dashboard</Button>
-            )}
-            <Button variant="outline" onClick={() => navigate('/')} className="tc-btn-click">Back to Home</Button>
+  if (existingAdvisor || (existingApplication && existingApplication.status !== 'expired' && existingApplication.status !== 'rejected')) {
+    const status = existingAdvisor?.status || existingApplication?.status;
+    const reason = existingAdvisor?.rejection_reason || existingApplication?.rejection_reason;
+    return (
+      <div className="min-h-screen flex flex-col bg-off-white"><Navbar />
+        <div className="flex-1 flex items-center justify-center px-4">
+          <div className="tc-card-static p-8 text-center max-w-md">
+            <CheckCircle className="mx-auto h-16 w-16 text-primary" />
+            <h2 className="mt-4 text-xl font-bold">
+              {status === 'approved' ? 'Already Registered' : 'Application Submitted'}
+            </h2>
+            <p className="mt-3 text-sm text-muted-foreground">
+              {status === 'pending' && 'Your application is currently under review. Our team will contact you within 24-48 hours.'}
+              {status === 'approved' && 'You are already registered as an advisor on RA Circle. Your account is active.'}
+              {status === 'rejected' && `Your application was rejected${reason ? ': ' + reason : '.'}`}
+            </p>
+            <div className="mt-6 flex gap-3 justify-center">
+              {status === 'approved' && (
+                <Button onClick={() => navigate('/advisor/dashboard')} className="tc-btn-click">Go to Dashboard</Button>
+              )}
+              <Button variant="outline" onClick={() => navigate('/')} className="tc-btn-click">Back to Home</Button>
+            </div>
           </div>
         </div>
+        <Footer />
       </div>
-      <Footer />
-    </div>
-  );
+    );
+  }
 
   const handleSubmit = async () => {
-    if (!check1 || !check2) {
+    if (!check1 || !check2 || !check3) {
       setShowCheckError(true);
       toast.error('Please accept all terms to proceed');
       return;
@@ -102,21 +107,28 @@ export default function AdvisorRegister() {
     setLoading(true);
     try {
       if (form.phone) await supabase.from('profiles').update({ phone: sanitizePhone(form.phone) }).eq('id', user.id);
-      const { data: advData, error: advError } = await supabase.from('advisors').insert({
-        user_id: user.id, full_name: profile?.full_name || '', email: profile?.email || user.email || '',
-        phone: sanitizePhone(form.phone || profile?.phone || ''), sebi_reg_no: sanitizeAlphanumeric(form.sebiRegNo), bio: sanitizeTextarea(form.bio),
-        strategy_type: sanitizeText(form.strategyType), aadhaar_no: sanitizeAlphanumeric(form.aadhaarNo), pan_no: sanitizeAlphanumeric(form.panNo),
-        address: sanitizeText(form.address), status: 'pending',
+      const { data: appData, error: appError } = await (supabase as any).from('advisor_applications').insert({
+        user_id: user.id,
+        full_name: profile?.full_name || '',
+        email: profile?.email || user.email || '',
+        phone: sanitizePhone(form.phone || profile?.phone || ''),
+        sebi_number: sanitizeAlphanumeric(form.sebiRegNo),
+        pan_number: sanitizeAlphanumeric(form.panNo),
+        aadhaar_number: sanitizeAlphanumeric(form.aadhaarNo),
+        address: sanitizeText(form.address),
+        bio: sanitizeTextarea(form.bio),
+        strategy_type: sanitizeText(form.strategyType),
+        status: 'pending',
       }).select('id').single();
-      if (advError) throw advError;
+      if (appError) throw appError;
 
       // NOTE: Do NOT set role to 'advisor' here. Role stays 'trader' until admin approves.
-      // Admin approval flow in AdminDashboard handles the role change.
 
-      // Save legal acceptance
+      // Save legal acceptance (linked to application, not to advisors row yet)
       const ip = await getIpAddress();
-      await supabase.from('advisor_legal_acceptances').insert({
-        advisor_id: advData.id,
+      const now = new Date().toISOString();
+      await (supabase as any).from('advisor_legal_acceptances').insert({
+        application_id: appData.id,
         full_name: profile?.full_name || '',
         sebi_reg_no: form.sebiRegNo,
         pan_no: form.panNo,
@@ -124,6 +136,9 @@ export default function AdvisorRegister() {
         checkbox_1_text: ADVISOR_CHECKBOX_1_TEXT,
         checkbox_2_indemnity: true,
         checkbox_2_text: ADVISOR_CHECKBOX_2_TEXT,
+        checkbox_3_dpdp_consent: true,
+        checkbox_3_text: ADVISOR_CHECKBOX_3_DPDP_TEXT,
+        checkbox_3_accepted_at: now,
         ip_address: ip,
         user_agent: navigator.userAgent,
         device_info: getDeviceInfo(),
