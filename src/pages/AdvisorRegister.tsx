@@ -30,13 +30,17 @@ export default function AdvisorRegister() {
   const [checkingAdvisor, setCheckingAdvisor] = useState(false);
   const update = (key: string, value: string) => setForm({ ...form, [key]: value });
 
-  // Check if user is already registered as advisor
+  // Check if user is already registered as advisor OR has a pending application
   useEffect(() => {
     if (user) {
       setCheckingAdvisor(true);
-      (supabase as any).rpc('get_advisor_full_by_user', { _user_id: user.id }).then(({ data }: any) => {
-        const adv = Array.isArray(data) ? data[0] : null;
+      Promise.all([
+        (supabase as any).rpc('get_advisor_full_by_user', { _user_id: user.id }),
+        (supabase as any).from('advisor_applications').select('id,status,rejection_reason,created_at').eq('user_id', user.id).maybeSingle(),
+      ]).then(([advRes, appRes]: any[]) => {
+        const adv = Array.isArray(advRes?.data) ? advRes.data[0] : null;
         if (adv) setExistingAdvisor(adv);
+        if (appRes?.data) setExistingApplication(appRes.data);
         setCheckingAdvisor(false);
       });
     }
