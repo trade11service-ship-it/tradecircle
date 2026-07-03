@@ -74,6 +74,17 @@ export default function Register() {
     });
     if (error) { toast.error(error.message); setLoading(false); return; }
 
+    // Supabase returns a user object with an empty `identities` array when the
+    // email is already registered (obfuscated response to avoid enumeration).
+    // Detect this and block, so duplicate accounts cannot be created.
+    const identities = (data.user as any)?.identities;
+    if (data.user && Array.isArray(identities) && identities.length === 0) {
+      await clearLocalAuth();
+      setLoading(false);
+      toast.error('This email is already registered. Please login instead.');
+      return;
+    }
+
     const isVerified = !!data.user?.email_confirmed_at;
 
     // Only write app records after the backend says this account is verified.
