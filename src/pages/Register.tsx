@@ -199,9 +199,19 @@ export default function Register() {
                 </label>
               </div>
 
-              <Button type="submit" className="w-full h-11 rounded-xl font-semibold tc-btn-click" disabled={loading}>
+              <Button
+                type="submit"
+                className="w-full h-11 rounded-xl font-semibold tc-btn-click disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={loading || !termsAccepted}
+                aria-disabled={loading || !termsAccepted}
+              >
                 {loading ? 'Creating Account...' : 'Create Account'}
               </Button>
+              {!termsAccepted && (
+                <p className="text-[11px] text-muted-foreground text-center -mt-1">
+                  Tick the consent box above to enable account creation.
+                </p>
+              )}
             </form>
 
             <div className="relative my-6">
