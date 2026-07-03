@@ -407,7 +407,7 @@ export default function ReferralLanding() {
                 <Checkbox id="terms-ref" checked={termsAccepted} onCheckedChange={(c) => setTermsAccepted(c === true)} className="mt-0.5" />
                 <label htmlFor="terms-ref" className="text-xs leading-relaxed text-muted-foreground cursor-pointer">{GENERAL_TERMS_TEXT}</label>
               </div>
-              <Button type="submit" className="w-full py-5 font-semibold" disabled={signupLoading}>
+              <Button type="submit" className="w-full py-5 font-semibold disabled:opacity-50 disabled:cursor-not-allowed" disabled={signupLoading || !termsAccepted}>
                 {signupLoading ? 'Creating Account...' : 'Create Account & Subscribe'}
               </Button>
             </form>
