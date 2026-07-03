@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Navbar } from '@/components/Navbar';
 import { useAuth } from '@/lib/auth';
@@ -23,6 +23,7 @@ const isVerifiedAuthUser = (authUser: any) => {
 
 export default function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, profile, loading: authLoading } = useAuth();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -30,9 +31,17 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  // Auto-redirect if already logged in (e.g. after Google OAuth redirect)
+  // Auto-redirect only after an OAuth/email action callback.
+  // A stale cached session must never make a random email/password attempt look successful.
   useEffect(() => {
-    if (!authLoading && user && profile) {
+    const isAuthCallback =
+      location.search.includes('code=') ||
+      location.hash.includes('access_token=') ||
+      location.hash.includes('refresh_token=') ||
+      location.search.includes('type=') ||
+      location.hash.includes('type=');
+
+    if (!authLoading && user && profile && isAuthCallback) {
       const checkAdvisor = async () => {
         const { data: advisor } = await supabase.from('advisors').select('id').eq('user_id', user.id).maybeSingle();
         if (profile.role === 'advisor' || advisor) {
@@ -45,7 +54,7 @@ export default function Login() {
       };
       checkAdvisor();
     }
-  }, [user, profile, authLoading, navigate]);
+  }, [user, profile, authLoading, navigate, location.search, location.hash]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
