@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { User, Mail, Lock, Phone, Eye, EyeOff, CheckCircle, Shield } from 'lucide-react';
 import { GENERAL_TERMS_TEXT, getDeviceInfo, getIpAddress } from '@/lib/legalTexts';
+import { getCanonicalOrigin } from '@/lib/canonicalOrigin';
 
 export default function Register() {
   const navigate = useNavigate();
