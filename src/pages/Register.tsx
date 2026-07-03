@@ -38,15 +38,17 @@ export default function Register() {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Hard-block submission (including Enter key) if consent not given
     if (!termsAccepted) { toast.error('Please accept the terms to proceed'); return; }
+    if (loading) return;
     if (form.password.length < 6) { toast.error('Password must be at least 6 characters'); return; }
     const cleanEmail = sanitizeEmail(form.email);
     const cleanName = sanitizeName(form.fullName);
     const cleanPhone = sanitizePhone(form.phone);
     if (!isValidEmail(cleanEmail)) { toast.error('Please enter a valid email address'); return; }
-    if (cleanPhone && !isValidPhone(cleanPhone)) { toast.error('Please enter a valid 10-digit phone number'); return; }
+    if (!cleanPhone || !isValidPhone(cleanPhone)) { toast.error('Please enter a valid 10-digit phone number'); return; }
     if (!cleanName) { toast.error('Please enter your full name'); return; }
-    
+
     setLoading(true);
     const { data: existingUser } = await supabase.from('profiles').select('id').eq('email', cleanEmail).maybeSingle();
     if (existingUser) {
@@ -54,38 +56,51 @@ export default function Register() {
       toast.error('This email is already registered. Please use a different email or login.');
       return;
     }
-    
+
     const { data, error } = await supabase.auth.signUp({
       email: cleanEmail,
       password: form.password,
       options: {
-        data: { full_name: cleanName, role: 'trader' },
-        emailRedirectTo: window.location.origin,
+        data: { full_name: cleanName, phone: cleanPhone, role: 'trader' },
+        emailRedirectTo: `${window.location.origin}/login`,
       },
     });
-    if (error) toast.error(error.message);
-    else {
-      if (data.user) {
-        await saveLegalAcceptance(data.user.id);
-        const cookie = document.cookie.split(';').find(c => c.trim().startsWith('referral_code='));
-        const cookieCode = cookie?.split('=')?.[1]?.trim();
-        if (cookieCode) {
-          try {
-            const { data: refLink } = await supabase.from('referral_links').select('*').eq('referral_code', cookieCode).eq('is_active', true).maybeSingle();
-            if (refLink) {
-              await supabase.from('referral_signups').insert({
-                referral_code: cookieCode,
-                advisor_id: refLink.advisor_id,
-                group_id: refLink.group_id,
-                user_id: data.user.id,
-              });
-              await supabase.rpc('increment_referral_signups', { _code: cookieCode });
-            }
-          } catch (e) { console.error('Referral signup error:', e); }
-        }
+    if (error) { toast.error(error.message); setLoading(false); return; }
+
+    // Save legal acceptance BEFORE tearing down the session (RLS needs auth.uid()).
+    if (data.user) {
+      try { await saveLegalAcceptance(data.user.id); } catch (e) { console.error('Legal acceptance save error:', e); }
+
+      const cookie = document.cookie.split(';').find(c => c.trim().startsWith('referral_code='));
+      const cookieCode = cookie?.split('=')?.[1]?.trim();
+      if (cookieCode) {
+        try {
+          const { data: refLink } = await supabase.from('referral_links').select('*').eq('referral_code', cookieCode).eq('is_active', true).maybeSingle();
+          if (refLink) {
+            await supabase.from('referral_signups').insert({
+              referral_code: cookieCode,
+              advisor_id: refLink.advisor_id,
+              group_id: refLink.group_id,
+              user_id: data.user.id,
+            });
+            await supabase.rpc('increment_referral_signups', { _code: cookieCode });
+          }
+        } catch (e) { console.error('Referral signup error:', e); }
       }
-      setRegistered(true);
     }
+
+    // CRITICAL: destroy any unverified session so the user cannot access protected routes.
+    // If Supabase auto-signed the user in before email verification, we tear it down here.
+    const isVerified = !!data.user?.email_confirmed_at;
+    if (!isVerified) {
+      try {
+        await supabase.auth.signOut({ scope: 'local' });
+        Object.keys(localStorage).forEach(k => { if (k.startsWith('sb-') && k.includes('-auth-token')) localStorage.removeItem(k); });
+        Object.keys(sessionStorage).forEach(k => { if (k.startsWith('sb-') && k.includes('-auth-token')) sessionStorage.removeItem(k); });
+      } catch (e) { console.error('Session cleanup error:', e); }
+    }
+
+    setRegistered(true);
     setLoading(false);
   };
 
