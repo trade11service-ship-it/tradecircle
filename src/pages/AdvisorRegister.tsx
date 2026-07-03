@@ -247,6 +247,17 @@ export default function AdvisorRegister() {
                   {ADVISOR_CHECKBOX_2_TEXT}
                 </label>
               </div>
+              <div className="flex items-start gap-2 rounded border p-2 bg-muted/20">
+                <Checkbox
+                  id="check3"
+                  checked={check3}
+                  onCheckedChange={(checked) => { setCheck3(checked === true); setShowCheckError(false); }}
+                  className="mt-0.5 shrink-0"
+                />
+                <label htmlFor="check3" className="text-[11px] leading-snug text-muted-foreground cursor-pointer">
+                  {ADVISOR_CHECKBOX_3_DPDP_TEXT}
+                </label>
+              </div>
               {showCheckError && (
                 <p className="text-xs text-destructive font-medium">Please accept all terms to proceed</p>
               )}
@@ -254,7 +265,7 @@ export default function AdvisorRegister() {
 
             <div className="flex gap-2">
               <Button variant="outline" className="flex-1 tc-btn-click" onClick={() => setStep(2)}>Back</Button>
-              <Button className="flex-1 tc-btn-click font-semibold" onClick={handleSubmit} disabled={loading || !check1 || !check2}>{loading ? 'Submitting...' : 'Submit Application'}</Button>
+              <Button className="flex-1 tc-btn-click font-semibold" onClick={handleSubmit} disabled={loading || !check1 || !check2 || !check3}>{loading ? 'Submitting...' : 'Submit Application'}</Button>
             </div>
           </div>
         )}
