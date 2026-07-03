@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
 import { CheckCircle, FileText, Shield } from 'lucide-react';
-import { ADVISOR_CHECKBOX_1_TEXT, ADVISOR_CHECKBOX_2_TEXT, getDeviceInfo, getIpAddress } from '@/lib/legalTexts';
+import { ADVISOR_CHECKBOX_1_TEXT, ADVISOR_CHECKBOX_2_TEXT, ADVISOR_CHECKBOX_3_DPDP_TEXT, getDeviceInfo, getIpAddress } from '@/lib/legalTexts';
 
 export default function AdvisorRegister() {
   const navigate = useNavigate();
