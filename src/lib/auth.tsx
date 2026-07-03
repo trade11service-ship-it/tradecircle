@@ -22,6 +22,29 @@ async function fetchProfile(userId: string): Promise<Profile | null> {
   return data;
 }
 
+async function clearLocalAuthSession() {
+  try { await supabase.auth.signOut({ scope: 'local' }); } catch {}
+  Object.keys(localStorage).forEach(k => { if (k.startsWith('sb-') && k.includes('-auth-token')) localStorage.removeItem(k); });
+  Object.keys(sessionStorage).forEach(k => { if (k.startsWith('sb-') && k.includes('-auth-token')) sessionStorage.removeItem(k); });
+}
+
+function isVerifiedAuthUser(user: User) {
+  const provider = user.app_metadata?.provider;
+  return provider && provider !== 'email' ? true : !!user.email_confirmed_at;
+}
+
+async function getTrustedUser(): Promise<User | null> {
+  const { data, error } = await supabase.auth.getUser();
+  const verifiedUser = data.user ?? null;
+
+  if (error || !verifiedUser || !isVerifiedAuthUser(verifiedUser)) {
+    await clearLocalAuthSession();
+    return null;
+  }
+
+  return verifiedUser;
+}
+
 /** Process referral cookie for OAuth signups */
 async function processReferralCookie(userId: string) {
   try {
@@ -69,37 +92,54 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const setSignedOutState = () => {
+      setUser(null);
+      setProfile(null);
+    };
+
+    const acceptSession = async (event?: string) => {
       if (!mounted) return;
-      const currentUser = session?.user ?? null;
+      const currentUser = await getTrustedUser();
+
+      if (!mounted) return;
+      if (!currentUser) {
+        setSignedOutState();
+        setLoading(false);
+        return;
+      }
+
       setUser(currentUser);
+      const p = await fetchProfile(currentUser.id);
+      if (!mounted) return;
+      setProfile(p);
+
+      // Process referral cookie on sign-in (covers OAuth signups)
+      if (event === 'SIGNED_IN') {
+        await processReferralCookie(currentUser.id);
+      }
+
+      if (mounted) setLoading(false);
+    };
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (!mounted) return;
+
       // Keep realtime authorized with the latest JWT so RLS evaluates correctly on postgres_changes.
       try { (supabase.realtime as any).setAuth(session?.access_token ?? null); } catch {}
-
 
       if (event === 'PASSWORD_RECOVERY') {
         navigate('/reset-password');
         return;
       }
 
-      if (currentUser) {
-        setTimeout(async () => {
-          if (!mounted) return;
-          const p = await fetchProfile(currentUser.id);
-          if (mounted) setProfile(p);
-
-          // Process referral cookie on sign-in (covers OAuth signups)
-          if (event === 'SIGNED_IN') {
-            await processReferralCookie(currentUser.id);
-          }
-        }, 0);
-      } else {
-        setProfile(null);
+      if (!session) {
+        setSignedOutState();
+        if (event !== 'INITIAL_SESSION') setLoading(false);
+        return;
       }
 
-      if (event !== 'INITIAL_SESSION') {
-        setLoading(false);
-      }
+      // Avoid async work directly inside the auth callback.
+      setTimeout(() => { void acceptSession(event); }, 0);
     });
 
     supabase.auth.getSession().then(async ({ data: { session }, error }) => {
@@ -107,33 +147,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Stale/invalid refresh token: clear local session so we don't loop on 400s.
       if (error && /refresh.*token/i.test(error.message || '')) {
-        try { await supabase.auth.signOut({ scope: 'local' }); } catch {}
-        setUser(null);
-        setProfile(null);
+        await clearLocalAuthSession();
+        setSignedOutState();
         setLoading(false);
         return;
       }
 
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-
-      if (currentUser) {
-        const p = await fetchProfile(currentUser.id);
-        if (mounted) setProfile(p);
+      if (!session) {
+        setSignedOutState();
+        setLoading(false);
+        return;
       }
 
-      if (mounted) setLoading(false);
+      await acceptSession('INITIAL_SESSION');
     });
 
     return () => {
       mounted = false;
       subscription.unsubscribe();
     };
-  }, []);
+  }, [navigate]);
 
   const signOut = async () => {
     try {
-      await supabase.auth.signOut({ scope: 'local' });
+      await clearLocalAuthSession();
       setUser(null);
       setProfile(null);
       // Force navigate to home

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { sanitizeText, sanitizeName, sanitizeEmail, sanitizePhone, isValidEmail, isValidPhone } from '@/lib/sanitize';
+import { sanitizeName, sanitizeEmail, sanitizePhone, isValidEmail, isValidPhone } from '@/lib/sanitize';
 import { supabase } from '@/integrations/supabase/client';
 import { Navbar } from '@/components/Navbar';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { User, Mail, Lock, Phone, Eye, EyeOff, CheckCircle, Shield } from 'lucide-react';
+import { User, Mail, Lock, Phone, Eye, EyeOff, CheckCircle } from 'lucide-react';
 import { GENERAL_TERMS_TEXT, getDeviceInfo, getIpAddress } from '@/lib/legalTexts';
 import { getCanonicalOrigin } from '@/lib/canonicalOrigin';
 
@@ -21,12 +21,18 @@ export default function Register() {
   const [registered, setRegistered] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
 
-  const saveLegalAcceptance = async (userId: string) => {
+  const clearLocalAuth = async () => {
+    try { await supabase.auth.signOut({ scope: 'local' }); } catch {}
+    Object.keys(localStorage).forEach(k => { if (k.startsWith('sb-') && k.includes('-auth-token')) localStorage.removeItem(k); });
+    Object.keys(sessionStorage).forEach(k => { if (k.startsWith('sb-') && k.includes('-auth-token')) sessionStorage.removeItem(k); });
+  };
+
+  const saveLegalAcceptance = async (userId: string, cleanName: string, cleanEmail: string) => {
     const ip = await getIpAddress();
     await supabase.from('user_legal_acceptances').insert({
       user_id: userId,
-      full_name: form.fullName,
-      email: form.email,
+      full_name: cleanName,
+      email: cleanEmail,
       acceptance_type: 'general_terms',
       checkbox_text: GENERAL_TERMS_TEXT,
       accepted: true,
@@ -45,9 +51,9 @@ export default function Register() {
     if (form.password.length < 6) { toast.error('Password must be at least 6 characters'); return; }
     const cleanEmail = sanitizeEmail(form.email);
     const cleanName = sanitizeName(form.fullName);
-    const cleanPhone = sanitizePhone(form.phone);
+    const cleanPhone = form.phone.trim() ? sanitizePhone(form.phone) : '';
     if (!isValidEmail(cleanEmail)) { toast.error('Please enter a valid email address'); return; }
-    if (!cleanPhone || !isValidPhone(cleanPhone)) { toast.error('Please enter a valid 10-digit phone number'); return; }
+    if (cleanPhone && !isValidPhone(cleanPhone)) { toast.error('Please enter a valid 10-digit phone number'); return; }
     if (!cleanName) { toast.error('Please enter your full name'); return; }
 
     setLoading(true);
@@ -62,15 +68,17 @@ export default function Register() {
       email: cleanEmail,
       password: form.password,
       options: {
-        data: { full_name: cleanName, phone: cleanPhone, role: 'trader' },
+        data: { full_name: cleanName, ...(cleanPhone ? { phone: cleanPhone } : {}), role: 'trader' },
         emailRedirectTo: `${getCanonicalOrigin()}/login`,
       },
     });
     if (error) { toast.error(error.message); setLoading(false); return; }
 
-    // Save legal acceptance BEFORE tearing down the session (RLS needs auth.uid()).
-    if (data.user) {
-      try { await saveLegalAcceptance(data.user.id); } catch (e) { console.error('Legal acceptance save error:', e); }
+    const isVerified = !!data.user?.email_confirmed_at;
+
+    // Only write app records after the backend says this account is verified.
+    if (data.user && isVerified) {
+      try { await saveLegalAcceptance(data.user.id, cleanName, cleanEmail); } catch (e) { console.error('Legal acceptance save error:', e); }
 
       const cookie = document.cookie.split(';').find(c => c.trim().startsWith('referral_code='));
       const cookieCode = cookie?.split('=')?.[1]?.trim();
@@ -90,15 +98,9 @@ export default function Register() {
       }
     }
 
-    // CRITICAL: destroy any unverified session so the user cannot access protected routes.
-    // If Supabase auto-signed the user in before email verification, we tear it down here.
-    const isVerified = !!data.user?.email_confirmed_at;
+    // CRITICAL: destroy any unverified session so cached auth cannot access protected routes.
     if (!isVerified) {
-      try {
-        await supabase.auth.signOut({ scope: 'local' });
-        Object.keys(localStorage).forEach(k => { if (k.startsWith('sb-') && k.includes('-auth-token')) localStorage.removeItem(k); });
-        Object.keys(sessionStorage).forEach(k => { if (k.startsWith('sb-') && k.includes('-auth-token')) sessionStorage.removeItem(k); });
-      } catch (e) { console.error('Session cleanup error:', e); }
+      await clearLocalAuth();
     }
 
     setRegistered(true);
@@ -129,9 +131,9 @@ export default function Register() {
             </div>
             <h2 className="mt-2 text-xl font-bold" style={{ fontFamily: 'Outfit, sans-serif' }}>Verify Your Email to Continue</h2>
             <p className="mt-3 text-sm text-muted-foreground">
-              We've sent a verification link to <strong>{form.email}</strong>. Your account is <strong>not active</strong> until you click that link. Please check your inbox (and Spam / Promotions folder).
+              We've sent a verification link to <strong>{form.email}</strong>. Your account is <strong>not active</strong> until you click that link. Please check your inbox and Spam / Promotions folder.
             </p>
-            <Button className="mt-6 tc-btn-click rounded-xl" variant="outline" onClick={() => navigate('/login')}>I've Verified — Go to Login</Button>
+            <Button className="mt-6 tc-btn-click rounded-xl" variant="outline" onClick={() => navigate('/login')}>Go to Login After Verification</Button>
           </div>
         </div>
       </div>
@@ -180,10 +182,10 @@ export default function Register() {
                 </div>
               </div>
               <div className="space-y-2">
-                <Label className="text-sm font-medium">Phone Number</Label>
+                <Label className="text-sm font-medium">Phone Number <span className="text-muted-foreground font-normal">(optional)</span></Label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} required className="pl-10 h-11 rounded-xl tc-input-focus" placeholder="+91 XXXXX XXXXX" />
+                  <Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} className="pl-10 h-11 rounded-xl tc-input-focus" placeholder="+91 XXXXX XXXXX" />
                 </div>
               </div>
 
