@@ -303,16 +303,16 @@ async function handleWebhook(req: Request): Promise<Response> {
   try {
     await sendLovableEmail(
       {
-      run_id,
-      message_id: messageId,
-      to: payload.data.email,
+        run_id,
+        message_id: messageId,
+        to: payload.data.email,
         from: FROM_ADDRESS,
-      sender_domain: SENDER_DOMAIN,
-      subject: EMAIL_SUBJECTS[emailType] || 'Notification',
-      html,
-      text,
-      purpose: 'transactional',
-      label: emailType,
+        sender_domain: SENDER_DOMAIN,
+        subject: EMAIL_SUBJECTS[emailType] || 'Notification',
+        html,
+        text,
+        purpose: 'transactional',
+        label: emailType,
       },
       { apiKey, sendUrl: Deno.env.get('LOVABLE_SEND_URL') }
     )
@@ -336,7 +336,7 @@ async function handleWebhook(req: Request): Promise<Response> {
       error_message: errorMsg.slice(0, 1000),
     })
 
-    return new Response(JSON.stringify({ error: 'Failed to enqueue email' }), {
+    return new Response(JSON.stringify({ error: 'Failed to send email' }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     })
