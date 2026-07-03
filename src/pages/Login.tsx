@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Mail, Lock, Eye, EyeOff, Shield } from 'lucide-react';
+import { getCanonicalOrigin } from '@/lib/canonicalOrigin';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -58,7 +59,7 @@ export default function Login() {
     setGoogleLoading(true);
     const { lovable } = await import('@/integrations/lovable/index');
     const result = await lovable.auth.signInWithOAuth('google', {
-      redirect_uri: window.location.origin + '/login',
+      redirect_uri: getCanonicalOrigin() + '/login',
     });
     if (result.error) {
       toast.error((result.error as any)?.message || 'Google sign-in failed');

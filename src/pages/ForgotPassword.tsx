@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Mail, CheckCircle } from 'lucide-react';
+import { getCanonicalOrigin } from '@/lib/canonicalOrigin';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -17,7 +18,7 @@ export default function ForgotPassword() {
   const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${window.location.origin}/reset-password` });
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo: `${getCanonicalOrigin()}/reset-password` });
     if (error) toast.error(error.message);
     else setSent(true);
     setLoading(false);

@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { User, Mail, Lock, Phone, Eye, EyeOff, CheckCircle, Shield } from 'lucide-react';
 import { GENERAL_TERMS_TEXT, getDeviceInfo, getIpAddress } from '@/lib/legalTexts';
+import { getCanonicalOrigin } from '@/lib/canonicalOrigin';
 
 export default function Register() {
   const navigate = useNavigate();
@@ -62,7 +63,7 @@ export default function Register() {
       password: form.password,
       options: {
         data: { full_name: cleanName, phone: cleanPhone, role: 'trader' },
-        emailRedirectTo: `${window.location.origin}/login`,
+        emailRedirectTo: `${getCanonicalOrigin()}/login`,
       },
     });
     if (error) { toast.error(error.message); setLoading(false); return; }
@@ -109,7 +110,7 @@ export default function Register() {
     setGoogleLoading(true);
     const { lovable } = await import('@/integrations/lovable/index');
     const result = await lovable.auth.signInWithOAuth('google', {
-      redirect_uri: window.location.origin + '/login',
+      redirect_uri: getCanonicalOrigin() + '/login',
     });
     if (result.error) {
       toast.error((result.error as any)?.message || 'Google sign-up failed');
