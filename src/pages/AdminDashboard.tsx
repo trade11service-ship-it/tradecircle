@@ -317,9 +317,26 @@ export default function AdminDashboard() {
         console.warn('Could not send rejection email:', emailErr);
       }
 
+      // Remove KYC files via Storage API (direct DELETE on storage.objects is blocked)
+      try {
+        const uid = (advisor as any).user_id;
+        if (uid) {
+          const { data: files } = await supabase.storage
+            .from('kyc-documents')
+            .list(uid, { limit: 100 });
+          if (files && files.length > 0) {
+            await supabase.storage
+              .from('kyc-documents')
+              .remove(files.map((f) => `${uid}/${f.name}`));
+          }
+        }
+      } catch (storageErr) {
+        console.warn('KYC file cleanup failed (continuing):', storageErr);
+      }
+
       const appId = (advisor as any)._app_id;
       if (appId) {
-        // New intake flow: hard-delete application row + KYC files
+        // New intake flow: hard-delete application row
         const { error } = await (supabase as any).rpc('admin_reject_application', {
           _app_id: appId,
           _reason: reason,
