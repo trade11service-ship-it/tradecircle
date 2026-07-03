@@ -126,12 +126,11 @@ export default function Register() {
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
               <CheckCircle className="h-8 w-8 text-primary" />
             </div>
-            <h2 className="mt-2 text-xl font-bold" style={{ fontFamily: 'Outfit, sans-serif' }}>Check Your Email</h2>
+            <h2 className="mt-2 text-xl font-bold" style={{ fontFamily: 'Outfit, sans-serif' }}>Verify Your Email to Continue</h2>
             <p className="mt-3 text-sm text-muted-foreground">
-              We've sent a verification link to <strong>{form.email}</strong>. 
-              Please click the link in the email to verify your account before signing in.
+              We've sent a verification link to <strong>{form.email}</strong>. Your account is <strong>not active</strong> until you click that link. Please check your inbox (and Spam / Promotions folder).
             </p>
-            <Button className="mt-6 tc-btn-click rounded-xl" variant="outline" onClick={() => navigate('/login')}>Go to Login</Button>
+            <Button className="mt-6 tc-btn-click rounded-xl" variant="outline" onClick={() => navigate('/login')}>I've Verified — Go to Login</Button>
           </div>
         </div>
       </div>
