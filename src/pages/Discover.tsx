@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Shield, Search, ArrowRight, TrendingUp, Users, BadgeCheck } from 'lucide-react';
 import { GroupCard } from '@/components/GroupCard';
 import { setMetaTags, SEO_CONFIG } from '@/lib/seo';
+import { PageHeader } from '@/components/PageHeader';
 
 interface GroupWithDetails {
   id: string;
@@ -127,33 +128,30 @@ export default function Groups() {
 
   return (
     <div className="min-h-full h-full flex flex-col bg-background">
-      
-      <div className="container mx-auto px-4 py-6 md:py-10 flex-1">
-        <div className="mb-6 rounded-2xl border border-border bg-card p-5">
-          <div className="flex flex-wrap items-center gap-2 text-xs font-semibold text-muted-foreground">
-            <span className="tc-badge-sebi"><BadgeCheck className="h-3.5 w-3.5" /> Manual verification</span>
-            <span className="rounded-full border border-border px-3 py-1">Transparent track records</span>
-            <span className="rounded-full border border-border px-3 py-1">Monthly plans</span>
+      <PageHeader
+        eyebrow="Discover"
+        title="Browse Verified Advisor Groups"
+        subtitle="Choose by strategy fit, signal consistency, and mentorship style."
+        badges={[
+          { icon: <BadgeCheck className="h-3 w-3 text-primary" />, label: 'Manual verification' },
+          { label: 'Transparent track records' },
+          { label: 'Monthly plans' },
+        ]}
+      />
+
+      <div className="container mx-auto px-4 py-6 md:py-8 flex-1">
+        <div className="mb-6 grid grid-cols-3 gap-3 text-center">
+          <div className="rounded-lg border border-border bg-card p-3">
+            <p className="text-[11px] text-muted-foreground">Groups</p>
+            <p className="text-lg font-bold">{groups.length}</p>
           </div>
-          <h2 className="text-2xl md:text-3xl font-extrabold text-foreground tracking-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>
-            Browse Verified Advisor Groups
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Choose by strategy fit, signal consistency, and mentorship style.
-          </p>
-          <div className="mt-4 grid grid-cols-3 gap-3 text-center">
-            <div className="rounded-lg bg-muted p-2">
-              <p className="text-xs text-muted-foreground">Groups</p>
-              <p className="text-lg font-bold">{groups.length}</p>
-            </div>
-            <div className="rounded-lg bg-muted p-2">
-              <p className="text-xs text-muted-foreground">Avg price</p>
-              <p className="text-lg font-bold">₹{groups.length ? Math.round(groups.reduce((acc, g) => acc + g.monthly_price, 0) / groups.length) : 0}</p>
-            </div>
-            <div className="rounded-lg bg-muted p-2">
-              <p className="text-xs text-muted-foreground">Top filter</p>
-              <p className="text-lg font-bold">{filter}</p>
-            </div>
+          <div className="rounded-lg border border-border bg-card p-3">
+            <p className="text-[11px] text-muted-foreground">Avg price</p>
+            <p className="text-lg font-bold">₹{groups.length ? Math.round(groups.reduce((acc, g) => acc + g.monthly_price, 0) / groups.length) : 0}</p>
+          </div>
+          <div className="rounded-lg border border-border bg-card p-3">
+            <p className="text-[11px] text-muted-foreground">Top filter</p>
+            <p className="text-lg font-bold">{filter}</p>
           </div>
         </div>
 
