@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { setMetaTags, SEO_CONFIG } from "@/lib/seo";
 import { supabase } from "@/integrations/supabase/client";
 import { Shield, Lock, Radio } from "lucide-react";
+import { PageHeader } from "@/components/PageHeader";
 
 export default function Explore() {
   const [advisorCount, setAdvisorCount] = useState<number | null>(null);
