@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Mail, Shield, ExternalLink } from 'lucide-react';
+import { Logo } from '@/components/Logo';
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -17,13 +18,8 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-5 gap-8 mb-8">
           {/* Brand */}
           <div className="md:col-span-2">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-black text-primary-foreground">
-                R
-              </div>
-              <span className="text-lg font-extrabold tracking-tight">
-                RA <span className="text-sky">Circle</span>
-              </span>
+            <div className="mb-3 inline-flex items-center rounded-lg bg-white/95 px-2.5 py-1.5">
+              <Logo size={28} />
             </div>
             <p className="text-sm text-white/50 leading-relaxed max-w-xs">
               India's first SEBI-only advisory marketplace. Verified advisors. Tamper-proof records. Real trust.

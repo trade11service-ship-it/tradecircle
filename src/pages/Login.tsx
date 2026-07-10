@@ -7,7 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-import { Mail, Lock, Eye, EyeOff, Shield } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
+import { Logo } from '@/components/Logo';
 import { getCanonicalOrigin } from '@/lib/canonicalOrigin';
 
 const clearLocalAuth = async () => {
@@ -118,12 +119,10 @@ export default function Login() {
           <div className="rounded-2xl border border-border bg-card p-8 shadow-xl shadow-black/5">
             {/* Header */}
             <div className="mb-8 text-center">
-              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-                <Shield className="h-6 w-6 text-primary" />
-              </div>
+              <Logo size={56} className="mx-auto mb-4" />
               <h1 className="text-2xl font-extrabold text-foreground" style={{ fontFamily: 'Outfit, sans-serif' }}>Welcome Back</h1>
               <p className="mt-2 text-sm text-muted-foreground">
-                Sign in to your <span className="font-bold text-foreground">RA <span className="text-sky">Circle</span></span> account
+                Sign in to your RA Circle account
               </p>
             </div>
 

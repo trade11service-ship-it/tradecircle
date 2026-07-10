@@ -2,6 +2,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { User, LogOut, ChevronDown, Menu, X, ShieldCheck } from 'lucide-react';
+import { Logo } from '@/components/Logo';
 import { useState, useEffect } from 'react';
 import {
   DropdownMenu,
@@ -39,13 +40,9 @@ export function Navbar() {
       <nav className="sticky top-0 z-50 h-14 bg-background/95 backdrop-blur border-b border-border shadow-sm">
         <div className="container mx-auto flex h-full items-center justify-between px-4">
           {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 group">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-sm font-black text-white transition-transform group-hover:scale-105">
-              R
-            </div>
-            <span className="text-lg font-extrabold tracking-tight text-foreground">
-              RA <span className="text-sky">Circle</span>
-            </span>
+          <Link to="/" className="flex items-center gap-2 group" aria-label="RA Circle home">
+            <Logo size={32} className="transition-transform group-hover:scale-105" />
+            <span className="sr-only">RA Circle</span>
           </Link>
 
           {/* Desktop nav */}
