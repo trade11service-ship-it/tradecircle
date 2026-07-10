@@ -22,7 +22,7 @@ export const RecoveryEmail = ({ siteUrl, confirmationUrl }: RecoveryEmailProps) 
     <Body style={main}>
       <Container style={container}>
         <Section style={header}>
-          <Text style={brandText}>RA <span style={brandAccent}>Circle</span></Text>
+          <img src="https://racircle.in/favicon.png" alt="RA Circle" width="120" style={{ display: "block", height: "auto", maxWidth: "120px" }} />
         </Section>
         <Section style={body}>
           <Heading style={h1}>Reset your password</Heading>
