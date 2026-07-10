@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { User, Mail, Lock, Phone, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import { Logo } from '@/components/Logo';
 import { GENERAL_TERMS_TEXT, getDeviceInfo, getIpAddress } from '@/lib/legalTexts';
 import { getCanonicalOrigin } from '@/lib/canonicalOrigin';
 
@@ -158,12 +159,10 @@ export default function Register() {
         <div className="w-full max-w-md">
           <div className="rounded-2xl border border-border bg-card p-8 shadow-xl shadow-black/5">
             <div className="mb-8 text-center">
-              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-                <User className="h-6 w-6 text-primary" />
-              </div>
+              <Logo size={56} className="mx-auto mb-4" />
               <h1 className="text-2xl font-extrabold text-foreground" style={{ fontFamily: 'Outfit, sans-serif' }}>Create Account</h1>
               <p className="mt-2 text-sm text-muted-foreground">
-                Join <span className="font-bold text-foreground">RA <span className="text-sky">Circle</span></span> and find verified advisors
+                Join RA Circle and find verified advisors
               </p>
             </div>
 

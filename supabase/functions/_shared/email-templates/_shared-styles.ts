@@ -26,9 +26,10 @@ export const container = {
 }
 
 export const header = {
-  backgroundColor: brand.slate,
+  backgroundColor: '#ffffff',
   padding: '24px 32px',
-  textAlign: 'left' as const,
+  textAlign: 'center' as const,
+  borderBottom: `1px solid ${brand.border}`,
 }
 
 export const brandText = {
