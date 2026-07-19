@@ -259,27 +259,9 @@ export default function AdminDashboard() {
         if (profileError) throw profileError;
       }
 
-      // Send approval email
-      try {
-        const { data: session } = await supabase.auth.getSession();
-        await fetch(
-          `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/send-advisor-approval-email`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Authorization': `Bearer ${session?.session?.access_token}`,
-            },
-            body: JSON.stringify({
-              advisor_id: advisor.id,
-              email: advisor.email,
-              full_name: advisor.full_name,
-            }),
-          }
-        );
-      } catch (emailErr) {
-        console.warn('Could not send approval email:', emailErr);
-      }
+      // Welcome email is enqueued + dispatched by admin_approve_application RPC
+      // (writes email_send_log + triggers send-advisor-approval-email server-side).
+
 
       toast.success(`${advisor.full_name} approved! Email sent.`);
       fetchData();
