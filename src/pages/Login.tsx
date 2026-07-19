@@ -97,7 +97,19 @@ export default function Login() {
   };
 
   const handleGoogleLogin = async () => {
+    if (!googleTerms) {
+      toast.error('Please accept the terms to continue with Google');
+      return;
+    }
     setGoogleLoading(true);
+    // Stash consent so AuthProvider records it if this Google account is new.
+    try {
+      sessionStorage.setItem('pending_general_terms_consent', JSON.stringify({
+        text: GENERAL_TERMS_TEXT,
+        page_url: window.location.href,
+        accepted_at_client: new Date().toISOString(),
+      }));
+    } catch {}
     const { lovable } = await import('@/integrations/lovable/index');
     const result = await lovable.auth.signInWithOAuth('google', {
       redirect_uri: getCanonicalOrigin() + '/login',
