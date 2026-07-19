@@ -632,6 +632,47 @@ export default function AdvisorDashboard() {
           </div>
         )}
 
+        {/* EDIT GROUP DIALOG */}
+        <Dialog open={!!editingGroup} onOpenChange={(o) => !o && setEditingGroup(null)}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Edit Group</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Group Name</Label>
+                <Input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} className="mt-1.5" />
+              </div>
+              <div>
+                <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Description</Label>
+                <Textarea value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} className="mt-1.5" />
+              </div>
+              <div>
+                <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Monthly Price (₹)</Label>
+                <Input type="text" inputMode="numeric" pattern="[0-9]*" value={editForm.monthlyPrice} onChange={e => setEditForm({ ...editForm, monthlyPrice: e.target.value.replace(/\D/g, '') })} placeholder="e.g. 4000" className="mt-1.5" />
+                <p className="mt-1 text-[11px] text-muted-foreground">Whole rupees only. Price change applies to new subscriptions only — existing subscribers keep their current rate until renewal.</p>
+              </div>
+              <div>
+                <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Strategy Category</Label>
+                <Select value={editForm.strategyCategory} onValueChange={v => setEditForm({ ...editForm, strategyCategory: v })}>
+                  <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="All">All</SelectItem>
+                    <SelectItem value="Intraday">Intraday</SelectItem>
+                    <SelectItem value="Swing">Swing</SelectItem>
+                    <SelectItem value="Options">Options</SelectItem>
+                    <SelectItem value="Equity">Equity</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setEditingGroup(null)} disabled={editSaving}>Cancel</Button>
+              <Button onClick={saveEditGroup} disabled={editSaving}>{editSaving ? 'Saving…' : 'Save changes'}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
         {/* POST TAB */}
         {tab === 'post' && (
           <div className="max-w-2xl">
