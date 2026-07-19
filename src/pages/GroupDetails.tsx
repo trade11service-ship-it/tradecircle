@@ -45,12 +45,16 @@ export default function GroupDetails() {
   const fetchGroup = async () => {
     if (!id) return;
     setLoading(true);
-    const { data: grp } = await supabase
+
+    // 1) Fetch the group by itself (public RLS = true). This must not depend on advisor visibility.
+    const { data: grp, error: grpErr } = await supabase
       .from("groups")
-      .select("*, advisors!inner(id, user_id, full_name, sebi_reg_no, bio, strategy_type, status, profile_photo_url, cover_image_url, public_tagline, public_description, public_years_experience, risk_level, preferred_trading_hours)")
+      .select("*")
       .eq("id", id)
       .eq("is_active", true)
       .maybeSingle();
+
+    if (grpErr) console.error("[GroupDetails] group fetch error:", grpErr);
 
     if (!grp) {
       setGroup(null);
@@ -58,7 +62,15 @@ export default function GroupDetails() {
       return;
     }
 
-    const advisor = (grp as any).advisors as Advisor;
+    // 2) Fetch advisor separately (best-effort — never block the group page if this fails).
+    const { data: adv, error: advErr } = await supabase
+      .from("advisors")
+      .select("id, user_id, full_name, sebi_reg_no, bio, strategy_type, status, profile_photo_url, cover_image_url, public_tagline, public_description, public_years_experience, risk_level, preferred_trading_hours")
+      .eq("id", (grp as any).advisor_id)
+      .maybeSingle();
+    if (advErr) console.error("[GroupDetails] advisor fetch error:", advErr);
+
+    const advisor = (adv as Advisor | null) || undefined;
     const normalized = { ...(grp as Group), advisor };
     setGroup(normalized);
 
