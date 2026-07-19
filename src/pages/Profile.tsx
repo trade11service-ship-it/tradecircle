@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
-import { User, Mail, Phone, Lock, Eye, EyeOff, Shield, Calendar, Settings, AlertTriangle, Trash2, Pencil, Users, Send, MapPin, CheckCircle, LogOut } from 'lucide-react';
+import { User, Mail, Phone, Lock, Eye, EyeOff, Shield, Calendar, Settings, AlertTriangle, Trash2, Pencil, Users, Send, MapPin, CheckCircle, LogOut, Camera, Image as ImageIcon } from 'lucide-react';
 import { TelegramSettings } from '@/components/TelegramSettings';
 import {
   Dialog,
@@ -41,6 +41,7 @@ export default function Profile() {
   const [deleteReason, setDeleteReason] = useState('');
   const [submittingRequest, setSubmittingRequest] = useState(false);
   const [existingRequests, setExistingRequests] = useState<any[]>([]);
+  const [uploadingAdvisorImage, setUploadingAdvisorImage] = useState<'avatar' | 'cover' | null>(null);
 
   // Email change
   const [newEmail, setNewEmail] = useState('');
@@ -85,6 +86,43 @@ export default function Profile() {
     if (error) toast.error(error.message);
     else { toast.success('Profile updated'); setEditing(false); }
     setLoading(false);
+  };
+
+  const handleAdvisorImageUpload = async (file: File | undefined, type: 'avatar' | 'cover') => {
+    if (!file || !advisor || !user) return;
+    if (file.size > 5 * 1024 * 1024) { toast.error('Max file size is 5MB'); return; }
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { toast.error('Only JPG, PNG, WEBP allowed'); return; }
+
+    setUploadingAdvisorImage(type);
+    const bucket = type === 'avatar' ? 'advisor-avatars' : 'advisor-covers';
+    const column = type === 'avatar' ? 'profile_photo_url' : 'cover_image_url';
+    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+    const path = `${user.id}/${type}.${ext}`;
+
+    const { data: uploadData, error: uploadError } = await supabase.storage.from(bucket).upload(path, file, {
+      cacheControl: '3600',
+      upsert: true,
+      contentType: file.type,
+    });
+
+    if (uploadError) {
+      toast.error(uploadError.message || 'Image upload failed');
+      setUploadingAdvisorImage(null);
+      return;
+    }
+
+    const publicUrl = `${supabase.storage.from(bucket).getPublicUrl(uploadData.path).data.publicUrl}?v=${Date.now()}`;
+    const { error: updateError } = await (supabase.from('advisors') as any)
+      .update({ [column]: publicUrl })
+      .eq('id', advisor.id)
+      .eq('user_id', user.id);
+
+    if (updateError) toast.error(updateError.message || 'Profile image update failed');
+    else {
+      toast.success(type === 'avatar' ? 'Profile picture updated' : 'Banner picture updated');
+      setAdvisor((prev: any) => prev ? { ...prev, [column]: publicUrl } : prev);
+    }
+    setUploadingAdvisorImage(null);
   };
 
   const handleChangePassword = async (e: React.FormEvent) => {
@@ -181,18 +219,41 @@ export default function Profile() {
       {/* ===== PROFILE HERO ===== */}
       <div className="bg-card shadow-[0_4px_20px_rgba(0,0,0,0.07)]" style={{ borderRadius: '0 0 28px 28px', marginBottom: 16 }}>
         {/* Cover strip */}
-        <div className="relative h-[90px]" style={{ background: 'linear-gradient(135deg, #0D47A1 0%, #1B5E20 100%)', borderRadius: '0 0 28px 28px' }}>
+        <div
+          className="relative h-[110px] overflow-hidden"
+          style={{
+            background: advisor?.cover_image_url ? `linear-gradient(rgba(31,41,55,0.15), rgba(31,41,55,0.25)), url(${advisor.cover_image_url}) center/cover` : 'linear-gradient(135deg, #0D47A1 0%, #1B5E20 100%)',
+            borderRadius: '0 0 28px 28px',
+          }}
+        >
+          {advisor && (
+            <label className="absolute right-4 top-4 inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-border bg-card/95 px-3 py-1.5 text-[12px] font-bold text-foreground shadow-sm transition hover:bg-card">
+              <ImageIcon className="h-3.5 w-3.5" />
+              {uploadingAdvisorImage === 'cover' ? 'Uploading…' : 'Edit banner'}
+              <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={!!uploadingAdvisorImage} onChange={e => handleAdvisorImageUpload(e.target.files?.[0], 'cover')} />
+            </label>
+          )}
           {/* Avatar */}
-          <div
-            className="absolute flex items-center justify-center text-[28px] font-extrabold text-white"
+          <label
+            className="absolute flex cursor-pointer items-center justify-center overflow-hidden text-[28px] font-extrabold text-white group"
             style={{
               bottom: -36, left: 20, width: 72, height: 72, borderRadius: '50%',
               background: 'linear-gradient(135deg, #1B5E20, #0D47A1)',
               border: '3px solid white', boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
             }}
           >
-            {(profile?.full_name || 'U').charAt(0).toUpperCase()}
-          </div>
+            {advisor?.profile_photo_url ? (
+              <img src={advisor.profile_photo_url} alt={profile?.full_name || 'Advisor'} className="h-full w-full object-cover" />
+            ) : (
+              (profile?.full_name || 'U').charAt(0).toUpperCase()
+            )}
+            {advisor && (
+              <span className="absolute inset-0 hidden items-center justify-center bg-foreground/55 group-hover:flex">
+                <Camera className="h-5 w-5" />
+              </span>
+            )}
+            {advisor && <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={!!uploadingAdvisorImage} onChange={e => handleAdvisorImageUpload(e.target.files?.[0], 'avatar')} />}
+          </label>
         </div>
 
         {/* Content below cover */}

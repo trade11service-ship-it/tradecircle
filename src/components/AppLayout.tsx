@@ -12,6 +12,7 @@ import {
   Settings
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { Logo } from "@/components/Logo";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -53,9 +54,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       <aside className="hidden md:flex flex-col w-[260px] lg:w-[280px] border-r border-border bg-card shrink-0 z-20 h-full">
         <div className="h-16 flex items-center px-6 border-b border-border">
           <Link to="/" className="flex items-center gap-2 text-foreground">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold">
-              R
-            </div>
+            <Logo size={34} className="rounded-md" />
             <span className="text-xl font-extrabold tracking-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>
               RA <span className="text-sky">Circle</span>
             </span>
@@ -134,9 +133,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         {!isGroupPage && (
           <header className="md:hidden h-14 flex items-center justify-between px-4 bg-card border-b border-border shrink-0 z-30">
             <Link to="/" className="flex items-center gap-2">
-              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-primary-foreground font-bold text-sm">
-                R
-              </div>
+              <Logo size={30} className="rounded-md" />
               <span className="text-lg font-extrabold tracking-tight text-foreground" style={{ fontFamily: 'Outfit, sans-serif' }}>
                 RA <span className="text-sky">Circle</span>
               </span>
