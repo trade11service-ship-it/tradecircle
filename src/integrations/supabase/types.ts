@@ -150,6 +150,7 @@ export type Database = {
           sebi_reg_no: string
           status: string
           user_agent: string | null
+          user_id: string | null
         }
         Insert: {
           advisor_id?: string | null
@@ -173,6 +174,7 @@ export type Database = {
           sebi_reg_no: string
           status?: string
           user_agent?: string | null
+          user_id?: string | null
         }
         Update: {
           advisor_id?: string | null
@@ -196,6 +198,7 @@ export type Database = {
           sebi_reg_no?: string
           status?: string
           user_agent?: string | null
+          user_id?: string | null
         }
         Relationships: [
           {

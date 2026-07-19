@@ -124,25 +124,38 @@ export default function AdvisorRegister() {
 
       // NOTE: Do NOT set role to 'advisor' here. Role stays 'trader' until admin approves.
 
-      // Save legal acceptance (linked to application, not to advisors row yet)
+      // Save legal acceptance (linked to application, not to advisors row yet).
+      // MUST NOT fail silently — this is the SEBI/DPDP consent audit record.
       const ip = await getIpAddress();
       const now = new Date().toISOString();
-      await (supabase as any).from('advisor_legal_acceptances').insert({
-        application_id: appData.id,
-        full_name: profile?.full_name || '',
-        sebi_reg_no: form.sebiRegNo,
-        pan_no: form.panNo,
-        checkbox_1_sebi_responsibility: true,
-        checkbox_1_text: ADVISOR_CHECKBOX_1_TEXT,
-        checkbox_2_indemnity: true,
-        checkbox_2_text: ADVISOR_CHECKBOX_2_TEXT,
-        checkbox_3_dpdp_consent: true,
-        checkbox_3_text: ADVISOR_CHECKBOX_3_DPDP_TEXT,
-        checkbox_3_accepted_at: now,
-        ip_address: ip,
-        user_agent: navigator.userAgent,
-        device_info: getDeviceInfo(),
-      });
+      const { error: legalError } = await (supabase as any)
+        .from('advisor_legal_acceptances')
+        .insert({
+          application_id: appData.id,
+          user_id: user.id,
+          full_name: profile?.full_name || '',
+          sebi_reg_no: sanitizeAlphanumeric(form.sebiRegNo),
+          pan_no: sanitizeAlphanumeric(form.panNo),
+          checkbox_1_sebi_responsibility: check1 === true,
+          checkbox_1_text: ADVISOR_CHECKBOX_1_TEXT,
+          checkbox_1_accepted_at: now,
+          checkbox_2_indemnity: check2 === true,
+          checkbox_2_text: ADVISOR_CHECKBOX_2_TEXT,
+          checkbox_2_accepted_at: now,
+          checkbox_3_dpdp_consent: check3 === true,
+          checkbox_3_text: ADVISOR_CHECKBOX_3_DPDP_TEXT,
+          checkbox_3_accepted_at: now,
+          form_submitted_at: now,
+          ip_address: ip,
+          user_agent: navigator.userAgent,
+          device_info: getDeviceInfo(),
+        });
+
+      if (legalError) {
+        // Roll back the application so consent + application stay atomic.
+        await (supabase as any).from('advisor_applications').delete().eq('id', appData.id);
+        throw new Error('Consent record could not be saved: ' + legalError.message);
+      }
 
       setStep(4);
     } catch (error: any) { toast.error(error.message || 'Registration failed'); }

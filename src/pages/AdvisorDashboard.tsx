@@ -234,7 +234,9 @@ export default function AdvisorDashboard() {
       if (uploadErr) { toast.error('Group photo upload failed: ' + uploadErr.message); return; }
       if (data) dpUrl = supabase.storage.from('group-media').getPublicUrl(data.path).data.publicUrl;
     }
-    const { data: newGroup, error } = await (supabase.from('groups') as any).insert({ advisor_id: advisor.id, name: sanitizeText(groupForm.name), description: sanitizeTextarea(groupForm.description), monthly_price: parseInt(groupForm.monthlyPrice) || 0, dp_url: dpUrl, strategy_category: groupForm.strategyCategory || 'All' }).select().single();
+    const cleanPrice = Math.max(0, Math.floor(Number(String(groupForm.monthlyPrice).replace(/\D/g, '')) || 0));
+    if (cleanPrice <= 0) { toast.error('Please enter a valid monthly price in whole rupees'); return; }
+    const { data: newGroup, error } = await (supabase.from('groups') as any).insert({ advisor_id: advisor.id, name: sanitizeText(groupForm.name), description: sanitizeTextarea(groupForm.description), monthly_price: cleanPrice, dp_url: dpUrl, strategy_category: groupForm.strategyCategory || 'All' }).select().single();
     if (error) { toast.error(error.message); return; }
 
     // Generate ONE permanent referral link for this group (only admin can change later)
@@ -528,7 +530,7 @@ export default function AdvisorDashboard() {
               <div className="mb-6 rounded-2xl border-[1.5px] border-border bg-card p-6 space-y-4 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
                 <div><Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Group Name</Label><Input value={groupForm.name} onChange={e => setGroupForm({ ...groupForm, name: e.target.value })} className="mt-1.5" /></div>
                 <div><Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Description</Label><Textarea value={groupForm.description} onChange={e => setGroupForm({ ...groupForm, description: e.target.value })} className="mt-1.5" /></div>
-                <div><Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Monthly Price (₹)</Label><Input type="number" value={groupForm.monthlyPrice} onChange={e => setGroupForm({ ...groupForm, monthlyPrice: e.target.value })} className="mt-1.5" /></div>
+                <div><Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Monthly Price (₹)</Label><Input type="text" inputMode="numeric" pattern="[0-9]*" value={groupForm.monthlyPrice} onChange={e => setGroupForm({ ...groupForm, monthlyPrice: e.target.value.replace(/\D/g, '') })} placeholder="e.g. 4000" className="mt-1.5" /><p className="mt-1 text-[11px] text-muted-foreground">Whole rupees only. The exact amount you enter is saved — we never deduct fees from your listed price.</p></div>
                 <div>
                   <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Strategy Category</Label>
                   <Select value={groupForm.strategyCategory} onValueChange={v => setGroupForm({ ...groupForm, strategyCategory: v })}>
@@ -905,6 +907,27 @@ export default function AdvisorDashboard() {
                 </div>
               </div>
             )}
+
+            {/* Present vs Past subscriber summary */}
+            {(() => {
+              const present = subscribers.filter(s => s.status === 'active' && s.end_date && new Date(s.end_date).getTime() > now);
+              const past = subscribers.filter(s => (s.status === 'cancelled' || s.status === 'expired') || (s.end_date && new Date(s.end_date).getTime() <= now));
+              return (
+                <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="rounded-2xl border-[1.5px] border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-5">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Present Subscribers</p>
+                    <p className="mt-1 text-3xl font-extrabold text-emerald-900">{present.length}</p>
+                    <p className="mt-1 text-xs text-emerald-800/70">Active with a valid end date in the future.</p>
+                  </div>
+                  <div className="rounded-2xl border-[1.5px] border-slate-200 bg-gradient-to-br from-slate-50 to-white p-5">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Past Subscribers</p>
+                    <p className="mt-1 text-3xl font-extrabold text-slate-900">{past.length}</p>
+                    <p className="mt-1 text-xs text-slate-600">Cancelled, expired, or end date has passed.</p>
+                  </div>
+                </div>
+              );
+            })()}
+
 
             {groups.map(g => {
               const groupSubs = subscribers.filter(s => s.group_id === g.id);
