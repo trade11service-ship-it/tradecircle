@@ -234,7 +234,9 @@ export default function AdvisorDashboard() {
       if (uploadErr) { toast.error('Group photo upload failed: ' + uploadErr.message); return; }
       if (data) dpUrl = supabase.storage.from('group-media').getPublicUrl(data.path).data.publicUrl;
     }
-    const { data: newGroup, error } = await (supabase.from('groups') as any).insert({ advisor_id: advisor.id, name: sanitizeText(groupForm.name), description: sanitizeTextarea(groupForm.description), monthly_price: parseInt(groupForm.monthlyPrice) || 0, dp_url: dpUrl, strategy_category: groupForm.strategyCategory || 'All' }).select().single();
+    const cleanPrice = Math.max(0, Math.floor(Number(String(groupForm.monthlyPrice).replace(/\D/g, '')) || 0));
+    if (cleanPrice <= 0) { toast.error('Please enter a valid monthly price in whole rupees'); return; }
+    const { data: newGroup, error } = await (supabase.from('groups') as any).insert({ advisor_id: advisor.id, name: sanitizeText(groupForm.name), description: sanitizeTextarea(groupForm.description), monthly_price: cleanPrice, dp_url: dpUrl, strategy_category: groupForm.strategyCategory || 'All' }).select().single();
     if (error) { toast.error(error.message); return; }
 
     // Generate ONE permanent referral link for this group (only admin can change later)
