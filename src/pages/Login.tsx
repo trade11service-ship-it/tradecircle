@@ -10,6 +10,8 @@ import { toast } from 'sonner';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { getCanonicalOrigin } from '@/lib/canonicalOrigin';
+import { Checkbox } from '@/components/ui/checkbox';
+import { GENERAL_TERMS_TEXT } from '@/lib/legalTexts';
 
 const clearLocalAuth = async () => {
   try { await supabase.auth.signOut({ scope: 'local' }); } catch {}
