@@ -14,7 +14,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
-import { BarChart3, Radio, Users, UserCircle, IndianRupee, TrendingUp, Clock, CheckCircle2, XCircle, AlertTriangle, MessageSquare, ImageIcon, X, Globe, Lock, Gift, Plus, Shield, Download, FileSpreadsheet } from 'lucide-react';
+import { BarChart3, Radio, Users, UserCircle, IndianRupee, TrendingUp, Clock, CheckCircle2, XCircle, AlertTriangle, MessageSquare, ImageIcon, X, Globe, Lock, Gift, Plus, Shield, Download, FileSpreadsheet, Pencil } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { sanitizeText, sanitizeTextarea, sanitizeNumeric, sanitizeAlphanumeric } from '@/lib/sanitize';
 import type { Tables } from '@/integrations/supabase/types';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -40,6 +41,9 @@ export default function AdvisorDashboard() {
   const [groupForm, setGroupForm] = useState({ name: '', description: '', monthlyPrice: '', strategyCategory: 'All' });
   const [groupDp, setGroupDp] = useState<File | null>(null);
   const [showGroupForm, setShowGroupForm] = useState(false);
+  const [editingGroup, setEditingGroup] = useState<Group | null>(null);
+  const [editForm, setEditForm] = useState({ name: '', description: '', monthlyPrice: '', strategyCategory: 'All' });
+  const [editSaving, setEditSaving] = useState(false);
 
   // Post forms
   const [postMode, setPostMode] = useState<'choose' | 'message' | 'signal'>('choose');
@@ -252,6 +256,38 @@ export default function AdvisorDashboard() {
     else toast.warning('Group created but payment link generation failed: ' + (result.error || 'Unknown error'));
     setShowGroupForm(false);
     setGroupForm({ name: '', description: '', monthlyPrice: '', strategyCategory: 'All' });
+    fetchData();
+  };
+
+  const openEditGroup = (g: Group) => {
+    setEditingGroup(g);
+    setEditForm({
+      name: g.name || '',
+      description: g.description || '',
+      monthlyPrice: String(g.monthly_price || ''),
+      strategyCategory: (g as any).strategy_category || 'All',
+    });
+  };
+
+  const saveEditGroup = async () => {
+    if (!editingGroup || !advisor) return;
+    const cleanPrice = Math.max(0, Math.floor(Number(String(editForm.monthlyPrice).replace(/\D/g, '')) || 0));
+    if (!editForm.name.trim()) { toast.error('Group name is required'); return; }
+    if (cleanPrice <= 0) { toast.error('Please enter a valid monthly price in whole rupees'); return; }
+    setEditSaving(true);
+    const { error } = await (supabase.from('groups') as any)
+      .update({
+        name: sanitizeText(editForm.name),
+        description: sanitizeTextarea(editForm.description),
+        monthly_price: cleanPrice,
+        strategy_category: editForm.strategyCategory || 'All',
+      })
+      .eq('id', editingGroup.id)
+      .eq('advisor_id', advisor.id);
+    setEditSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success('Group updated');
+    setEditingGroup(null);
     fetchData();
   };
 
@@ -563,6 +599,14 @@ export default function AdvisorDashboard() {
                         <p className="font-bold text-foreground truncate">{g.name}</p>
                         <p className="text-sm font-semibold text-primary">₹{g.monthly_price}/mo</p>
                       </div>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); openEditGroup(g); }}
+                        className="shrink-0 inline-flex items-center gap-1 rounded-lg border border-border bg-background px-2.5 h-8 text-xs font-semibold text-foreground hover:bg-muted transition"
+                        aria-label="Edit group"
+                      >
+                        <Pencil className="h-3.5 w-3.5" /> Edit
+                      </button>
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-center">
                       <div className="rounded-xl bg-muted p-2.5">
@@ -587,6 +631,47 @@ export default function AdvisorDashboard() {
             </div>
           </div>
         )}
+
+        {/* EDIT GROUP DIALOG */}
+        <Dialog open={!!editingGroup} onOpenChange={(o) => !o && setEditingGroup(null)}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Edit Group</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Group Name</Label>
+                <Input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} className="mt-1.5" />
+              </div>
+              <div>
+                <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Description</Label>
+                <Textarea value={editForm.description} onChange={e => setEditForm({ ...editForm, description: e.target.value })} className="mt-1.5" />
+              </div>
+              <div>
+                <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Monthly Price (₹)</Label>
+                <Input type="text" inputMode="numeric" pattern="[0-9]*" value={editForm.monthlyPrice} onChange={e => setEditForm({ ...editForm, monthlyPrice: e.target.value.replace(/\D/g, '') })} placeholder="e.g. 4000" className="mt-1.5" />
+                <p className="mt-1 text-[11px] text-muted-foreground">Whole rupees only. Price change applies to new subscriptions only — existing subscribers keep their current rate until renewal.</p>
+              </div>
+              <div>
+                <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Strategy Category</Label>
+                <Select value={editForm.strategyCategory} onValueChange={v => setEditForm({ ...editForm, strategyCategory: v })}>
+                  <SelectTrigger className="mt-1.5"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="All">All</SelectItem>
+                    <SelectItem value="Intraday">Intraday</SelectItem>
+                    <SelectItem value="Swing">Swing</SelectItem>
+                    <SelectItem value="Options">Options</SelectItem>
+                    <SelectItem value="Equity">Equity</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter className="gap-2">
+              <Button variant="outline" onClick={() => setEditingGroup(null)} disabled={editSaving}>Cancel</Button>
+              <Button onClick={saveEditGroup} disabled={editSaving}>{editSaving ? 'Saving…' : 'Save changes'}</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* POST TAB */}
         {tab === 'post' && (
