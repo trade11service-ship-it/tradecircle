@@ -11,6 +11,12 @@ import type { Tables } from "@/integrations/supabase/types";
 type Group = Tables<"groups">;
 type Advisor = Tables<"advisors">;
 
+type AdvisorSignalStats = {
+  total_signals?: number;
+  win_count?: number;
+  resolved_count?: number;
+};
+
 export default function GroupDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -66,7 +72,7 @@ export default function GroupDetails() {
     const { data: adv, error: advErr } = await supabase
       .from("advisors")
       .select("id, user_id, full_name, sebi_reg_no, bio, strategy_type, status, profile_photo_url, cover_image_url, public_tagline, public_description, public_years_experience, risk_level, preferred_trading_hours")
-      .eq("id", (grp as any).advisor_id)
+      .eq("id", grp.advisor_id)
       .maybeSingle();
     if (advErr) console.error("[GroupDetails] advisor fetch error:", advErr);
 
@@ -79,8 +85,9 @@ export default function GroupDetails() {
       supabase.rpc("get_advisor_signal_stats", { _advisor_id: normalized.advisor_id }),
     ]);
 
-    const stat = (statsRes.data as any) || { total_signals: 0, win_count: 0, resolved_count: 0 };
-    const winRate = stat.resolved_count > 0 ? Math.round((stat.win_count / stat.resolved_count) * 100) : null;
+    const stat = (statsRes.data as AdvisorSignalStats | null) || { total_signals: 0, win_count: 0, resolved_count: 0 };
+    const resolvedCount = stat.resolved_count || 0;
+    const winRate = resolvedCount > 0 ? Math.round(((stat.win_count || 0) / resolvedCount) * 100) : null;
     setStats({
       subscriberCount: (subCountRes.data as number) || 0,
       signalCount: stat.total_signals || 0,
@@ -174,18 +181,15 @@ export default function GroupDetails() {
       <div className="flex-1 flex overflow-hidden min-h-0 h-full">
 
 
-        {/* Left Sidebar (Desktop Only) */}
-        <div className="hidden md:flex w-[380px] lg:w-[420px] flex-col border-r border-border bg-card shadow-sm z-10 overflow-y-auto">
-          {/* Back link */}
-          <div className="p-4 border-b border-border/50">
-            <Link to={`/advisor/${group.advisor_id}`} className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-primary transition-colors">
-              <ArrowLeft className="h-4 w-4" /> Back to Advisor Profile
-            </Link>
-          </div>
-
+        {/* Desktop Group Info Panel */}
+        <div className="hidden md:flex w-[340px] lg:w-[380px] xl:w-[420px] flex-col border-r border-border bg-card z-10 overflow-y-auto overscroll-contain">
           {/* Advisor & Group Identity */}
-          <div className="p-6 text-center border-b border-border/50 bg-muted/10 relative overflow-hidden">
-            <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-primary/10 to-transparent"></div>
+          <div className="p-5 lg:p-6 text-center border-b border-border/50 bg-muted/10 relative overflow-hidden">
+            {group.advisor?.cover_image_url ? (
+              <img src={group.advisor.cover_image_url} alt="" className="absolute inset-x-0 top-0 h-28 w-full object-cover opacity-30" />
+            ) : (
+              <div className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-primary/10 to-transparent"></div>
+            )}
             
             <div className="relative inline-block mb-4 mt-2">
               <div className="h-24 w-24 rounded-full border-4 border-background shadow-xl overflow-hidden bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-3xl font-bold">
@@ -200,11 +204,11 @@ export default function GroupDetails() {
               </div>
             </div>
             
-            <h1 className="text-2xl font-extrabold text-foreground tracking-tight leading-tight mb-1">{group.name}</h1>
+            <h1 className="text-2xl font-extrabold text-foreground tracking-tight leading-tight mb-1 break-words">{group.name}</h1>
             <p className="text-sm font-medium text-muted-foreground mb-3">by {advisorName}</p>
             
-            <div className="inline-flex items-center justify-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary border border-primary/20">
-              <ShieldCheck className="h-3.5 w-3.5" /> SEBI Registered: {group.advisor?.sebi_reg_no}
+            <div className="inline-flex max-w-full items-center justify-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-bold text-primary border border-primary/20">
+              <ShieldCheck className="h-3.5 w-3.5 shrink-0" /> <span className="truncate">SEBI Registered: {group.advisor?.sebi_reg_no}</span>
             </div>
           </div>
 
@@ -286,7 +290,7 @@ export default function GroupDetails() {
         </div>
 
         {/* Right Area - Chat Interface */}
-        <div className="flex-1 flex flex-col relative bg-[#E7EBF0] dark:bg-[#0B141A] min-h-0 h-full overflow-hidden">
+        <div className="flex-1 flex flex-col relative bg-muted/60 min-h-0 h-full overflow-hidden">
           {/* Subtle Chat Background Pattern */}
           <div className="absolute inset-0 opacity-[0.25] dark:opacity-[0.05] pointer-events-none" style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M54.627 0l.83.83v58.34h-58.34l-.83-.83L0 54.628l54.627-54.627zM58.34 0v58.34L0 0h58.34zM0 58.34h58.34v.83l-58.34-.83v-.83zM0 0v.83L.83 0H0z' fill='%23000000' fill-opacity='0.05' fill-rule='evenodd'/%3E%3C/svg%3E")` }}></div>
 
@@ -296,7 +300,7 @@ export default function GroupDetails() {
             <button
               onClick={goBack}
               aria-label="Back"
-              className="p-1.5 -ml-1 text-muted-foreground hover:bg-muted rounded-full transition-colors shrink-0"
+              className="md:hidden p-1.5 -ml-1 text-muted-foreground hover:bg-muted rounded-full transition-colors shrink-0"
             >
               <ArrowLeft className="h-5 w-5" />
             </button>

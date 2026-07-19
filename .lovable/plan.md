@@ -1,36 +1,51 @@
-## Logo Refinement Plan — Based on Your Uploaded Reference
+## Plan: Production Fixes for Emails, Advisor Media, Branding, and Group Layout
 
-Your uploaded logo has a strong direction: **serif "RA" monogram in royal blue with a navy shadow layer, flanked by thin vertical rules, "CIRCLE" wordmark below**. It reads institutional, trustworthy, and finance-grade — perfect for a SEBI advisory platform. I'll keep this DNA and produce 3 polished finishes for you to choose from.
+### Already completed
+- Repaired the backend advisor-approval routine so future approved advisor applications enqueue an RA Circle approval email through the verified `notify.racircle.in` sender instead of the old external mail path.
+- Confirmed the sender domain is verified and the platform email setup is complete.
 
-### What stays (locked from your reference)
-- Serif "RA" monogram with dual-tone layered depth (royal blue + navy shadow)
-- Thin vertical rule lines framing the mark
-- "CIRCLE" wordmark below in spaced caps
-- Clean, minimal, professional composition
+### 1. Make advisor approval emails reliably deliver
+- Update the advisor approval email function to use the same verified RA Circle email infrastructure instead of the old SendGrid-only code path.
+- Keep audit logging intact so each approval records whether the email is queued, sent, or failed.
+- Verify the queue processor can pick up transactional approval emails.
 
-### What I'll refine
-- Cleaner vector-grade edges (your reference has slight raster softness on the "CIRCLE" text)
-- Tighter kerning and proper optical alignment
-- Balanced weight between the "RA" mark and "CIRCLE" wordmark
-- Consistent stroke widths on the framing rules
+### 2. Fix advisor profile photo upload and add banner upload
+- Update the Profile page for advisor accounts:
+  - Add avatar upload on the profile picture.
+  - Add cover/banner upload on the profile header.
+  - Validate file type and size before upload.
+  - Save uploaded URLs back to the advisor record securely, scoped to the logged-in advisor.
+- Make the uploaded advisor avatar/banner visible on public advisor pages and group detail pages.
 
-### 3 Finish Variants to Generate
+### 3. Replace old placeholder branding globally in the app shell
+- Replace the hardcoded “R” badge in the desktop sidebar and mobile header with the official RA logo component.
+- Keep the current RA Circle wordmark text beside the logo.
 
-**Variant 1 — Classic Institutional (closest to your reference)**
-Royal blue #1E40AF "RA" with navy #0F1B3D shadow layer, thin charcoal vertical rules, "CIRCLE" in clean black sans-serif spaced caps. Light neutral background. Most faithful to your upload.
+### 4. Rebuild the desktop Group/Channel detail layout
+- Keep the existing functionality but make the desktop layout stable and non-overlapping:
 
-**Variant 2 — Premium Monochrome Navy**
-Single-tone deep navy "RA" (drops the double-layer shadow for a cleaner, more premium feel), navy vertical rules, "CIRCLE" in the same navy. Reads more like a private bank / law firm mark. Works excellently on white and dark surfaces.
+```text
+Desktop /group/:id
+┌───────────────┬────────────────────────────┬──────────────────────────────┐
+│ App Sidebar   │ Group / Advisor Info       │ Live Signals / Chat Feed     │
+│ Navigation    │ Stats, SEBI, Subscribe     │ Full-height scrollable feed  │
+└───────────────┴────────────────────────────┴──────────────────────────────┘
+```
 
-**Variant 3 — Sky Accent (aligns to current site palette)**
-Navy "RA" with a sky-blue #0EA5E9 shadow layer (matches your current Sky/Slate app theme), slate rules, "CIRCLE" in slate. Ties the logo tightly to the live site's color system so header/footer feel unified.
+- Remove redundant desktop back links from the group info/feed area.
+- Keep the feed as the only scrollable area for messages.
+- Preserve the mobile locked chat-style layout with its subscribe CTA.
+- Prevent height compression, blank pull gaps, and panel overlap.
 
-All three delivered as ~1024×1024 PNGs on transparent + light backgrounds for review. No app files change yet — you pick one, then Phase 2 wires it in.
+### 5. Validate after implementation
+- Run the relevant app checks after code changes.
+- Verify the changed pages visually with the browser:
+  - `/group/:id` desktop layout.
+  - `/profile` advisor avatar/banner controls.
+  - Sidebar/mobile header logo.
+- Confirm no new frontend errors appear in the console.
 
-### Phase 2 (after you pick)
-- Upload chosen logo to Lovable CDN via `lovable-assets`
-- Generate favicon.ico and apple-touch-icon.png
-- Wire into `Navbar.tsx`, `Footer.tsx`, `index.html`, and the email template header in `auth-email-hook`
-- Remove the old "R" square placeholder mark everywhere
-
-Approve to generate the 3 variants.
+### Technical notes
+- Backend email migration is already applied successfully.
+- Remaining frontend/function edits require switching from plan mode to build mode before I can write files.
+- I will not change payment behavior, auth flow, or unrelated pages in this pass.

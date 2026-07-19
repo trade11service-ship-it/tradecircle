@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendLovableEmail } from "npm:@lovable.dev/email-js";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -54,25 +55,15 @@ serve(async (req: Request) => {
     if (!existing) {
       await supabase.from('email_send_log').insert({
         message_id: messageId, template_name: 'advisor-approval',
-        recipient_email: email, status: 'queued',
+        recipient_email: email, status: 'pending',
         metadata: { advisor_id, full_name },
       });
     }
 
-    const SENDGRID_API_KEY = Deno.env.get('SENDGRID_API_KEY');
-    if (!SENDGRID_API_KEY) throw new Error('SendGrid not configured');
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) throw new Error('Lovable email not configured');
 
-    const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${SENDGRID_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        personalizations: [{ to: [{ email }] }],
-        from: { email: 'noreply@racircle.in', name: 'RA Circle Team' },
-        subject: 'Your RA Circle Advisor Account Has Been Approved! 🎉',
-        html: `
+    const html = `
           <div style="font-family: Arial, sans-serif; color: #333; max-width: 600px;">
             <h1 style="color: #0EA5E9;">Congratulations, ${full_name}!</h1>
             <p>Your RA Circle advisor application has been <strong>approved</strong>.</p>
@@ -94,17 +85,23 @@ serve(async (req: Request) => {
               SEBI Disclaimer: You are SEBI registered (INH). You are solely responsible for regulatory compliance.
             </p>
           </div>
-        `,
-      }),
-    });
+        `;
 
-    if (!response.ok) {
-      const errText = await response.text();
-      await supabase.from('email_send_log').update({
-        status: 'failed', error_message: `SendGrid ${response.status}: ${errText.slice(0, 500)}`,
-      }).eq('message_id', messageId!);
-      throw new Error(`Email failed: ${response.status}`);
-    }
+    await sendLovableEmail(
+      {
+        message_id: messageId,
+        to: email,
+        from: 'RA Circle <compliance@racircle.in>',
+        sender_domain: 'notify.racircle.in',
+        subject: 'Your RA Circle Advisor Account Has Been Approved! 🎉',
+        html,
+        text: `Congratulations, ${full_name}! Your RA Circle advisor application has been approved. Open your dashboard: https://racircle.in/advisor/dashboard`,
+        purpose: 'transactional',
+        label: 'advisor-approval',
+        idempotency_key: messageId,
+      },
+      { apiKey: LOVABLE_API_KEY, sendUrl: Deno.env.get('LOVABLE_SEND_URL') }
+    );
 
     await supabase.from('email_send_log').update({ status: 'sent' }).eq('message_id', messageId!);
 
