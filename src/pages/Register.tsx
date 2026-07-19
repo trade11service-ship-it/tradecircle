@@ -126,6 +126,14 @@ export default function Register() {
   const handleGoogleSignUp = async () => {
     if (!termsAccepted) { toast.error('Please accept the terms to proceed'); return; }
     setGoogleLoading(true);
+    // Flag consent so AuthProvider records it after OAuth callback returns.
+    try {
+      sessionStorage.setItem('pending_general_terms_consent', JSON.stringify({
+        text: GENERAL_TERMS_TEXT,
+        page_url: window.location.href,
+        accepted_at_client: new Date().toISOString(),
+      }));
+    } catch {}
     const { lovable } = await import('@/integrations/lovable/index');
     const result = await lovable.auth.signInWithOAuth('google', {
       redirect_uri: getCanonicalOrigin() + '/login',
