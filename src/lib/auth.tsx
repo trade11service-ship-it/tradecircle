@@ -152,9 +152,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!mounted) return;
       setProfile(p);
 
-      // Process referral cookie on sign-in (covers OAuth signups)
+      // Process referral cookie + pending OAuth consent on sign-in
       if (event === 'SIGNED_IN') {
         await processReferralCookie(currentUser.id);
+        await processPendingConsent(
+          currentUser.id,
+          currentUser.email,
+          (p?.full_name as string) || (currentUser.user_metadata?.full_name as string) || ''
+        );
       }
 
       if (mounted) setLoading(false);
