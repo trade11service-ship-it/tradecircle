@@ -47,7 +47,7 @@ export default function GroupDetails() {
     setLoading(true);
     const { data: grp } = await supabase
       .from("groups")
-      .select("*, advisors!inner(*)")
+      .select("*, advisors!inner(id, user_id, full_name, sebi_reg_no, bio, strategy_type, status, profile_photo_url, cover_image_url, public_tagline, public_description, public_years_experience, risk_level, preferred_trading_hours)")
       .eq("id", id)
       .eq("is_active", true)
       .maybeSingle();
