@@ -41,6 +41,9 @@ export default function AdvisorDashboard() {
   const [groupForm, setGroupForm] = useState({ name: '', description: '', monthlyPrice: '', strategyCategory: 'All' });
   const [groupDp, setGroupDp] = useState<File | null>(null);
   const [showGroupForm, setShowGroupForm] = useState(false);
+  const [editingGroup, setEditingGroup] = useState<Group | null>(null);
+  const [editForm, setEditForm] = useState({ name: '', description: '', monthlyPrice: '', strategyCategory: 'All' });
+  const [editSaving, setEditSaving] = useState(false);
 
   // Post forms
   const [postMode, setPostMode] = useState<'choose' | 'message' | 'signal'>('choose');
