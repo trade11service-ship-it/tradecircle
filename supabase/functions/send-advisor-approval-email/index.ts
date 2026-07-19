@@ -55,7 +55,7 @@ serve(async (req: Request) => {
     if (!existing) {
       await supabase.from('email_send_log').insert({
         message_id: messageId, template_name: 'advisor-approval',
-        recipient_email: email, status: 'queued',
+        recipient_email: email, status: 'pending',
         metadata: { advisor_id, full_name },
       });
     }

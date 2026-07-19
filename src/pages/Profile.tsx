@@ -20,27 +20,70 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
+type AdvisorProfile = {
+  id: string;
+  user_id: string;
+  full_name: string | null;
+  email: string | null;
+  sebi_reg_no: string | null;
+  profile_photo_url: string | null;
+  cover_image_url: string | null;
+};
+
+type AdvisorGroup = {
+  id: string;
+  name: string;
+  dp_url: string | null;
+  monthly_price: number | null;
+};
+
+type SubscriptionItem = {
+  id: string;
+  status: string | null;
+  end_date: string | null;
+  amount_paid: number | null;
+  groups: { name: string | null; monthly_price: number | null } | null;
+  advisors: { full_name: string | null } | null;
+};
+
+type FollowedGroup = {
+  id: string;
+  groups: {
+    name: string | null;
+    advisor_id: string | null;
+    advisors: { full_name: string | null; profile_photo_url: string | null } | null;
+  } | null;
+};
+
+type DeletionRequest = {
+  id: string;
+  request_type: string;
+  group_name: string | null;
+  status: string | null;
+  created_at: string | null;
+};
+
 export default function Profile() {
   const { user, profile, signOut } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState<'details' | 'subscriptions' | 'following' | 'security' | 'settings'>('details');
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ fullName: '', phone: '', telegramUsername: '' });
-  const [subscriptions, setSubscriptions] = useState<any[]>([]);
+  const [subscriptions, setSubscriptions] = useState<SubscriptionItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [passwords, setPasswords] = useState({ current: '', newPass: '', confirm: '' });
   const [showPasswords, setShowPasswords] = useState(false);
   const [changingPassword, setChangingPassword] = useState(false);
 
   // Settings state
-  const [advisor, setAdvisor] = useState<any>(null);
-  const [advisorGroups, setAdvisorGroups] = useState<any[]>([]);
+  const [advisor, setAdvisor] = useState<AdvisorProfile | null>(null);
+  const [advisorGroups, setAdvisorGroups] = useState<AdvisorGroup[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [deleteType, setDeleteType] = useState<'account' | 'group'>('account');
-  const [selectedGroup, setSelectedGroup] = useState<any>(null);
+  const [selectedGroup, setSelectedGroup] = useState<AdvisorGroup | null>(null);
   const [deleteReason, setDeleteReason] = useState('');
   const [submittingRequest, setSubmittingRequest] = useState(false);
-  const [existingRequests, setExistingRequests] = useState<any[]>([]);
+  const [existingRequests, setExistingRequests] = useState<DeletionRequest[]>([]);
   const [uploadingAdvisorImage, setUploadingAdvisorImage] = useState<'avatar' | 'cover' | null>(null);
 
   // Email change
@@ -49,7 +92,7 @@ export default function Profile() {
 
   // Following count
   const [followingCount, setFollowingCount] = useState(0);
-  const [followedGroups, setFollowedGroups] = useState<any[]>([]);
+  const [followedGroups, setFollowedGroups] = useState<FollowedGroup[]>([]);
 
   useEffect(() => { if (profile) setForm({ fullName: profile.full_name || '', phone: profile.phone || '', telegramUsername: profile.telegram_username || '' }); }, [profile]);
   useEffect(() => { if (user) { fetchSubscriptions(); fetchAdvisorData(); fetchDeletionRequests(); fetchFollowingCount(); } }, [user]);
@@ -66,8 +109,8 @@ export default function Profile() {
   };
 
   const fetchAdvisorData = async () => {
-    const { data: advRows } = await (supabase as any).rpc('get_advisor_full_by_user', { _user_id: user!.id });
-    const adv = Array.isArray(advRows) ? advRows[0] : null;
+    const { data: advRows } = await supabase.rpc('get_advisor_full_by_user', { _user_id: user!.id });
+    const adv = (Array.isArray(advRows) ? advRows[0] : null) as AdvisorProfile | null;
     if (adv) {
       setAdvisor(adv);
       const { data: grps } = await supabase.from('groups').select('*').eq('advisor_id', adv.id);
@@ -112,7 +155,8 @@ export default function Profile() {
     }
 
     const publicUrl = `${supabase.storage.from(bucket).getPublicUrl(uploadData.path).data.publicUrl}?v=${Date.now()}`;
-    const { error: updateError } = await (supabase.from('advisors') as any)
+    const { error: updateError } = await supabase
+      .from('advisors')
       .update({ [column]: publicUrl })
       .eq('id', advisor.id)
       .eq('user_id', user.id);
@@ -120,7 +164,7 @@ export default function Profile() {
     if (updateError) toast.error(updateError.message || 'Profile image update failed');
     else {
       toast.success(type === 'avatar' ? 'Profile picture updated' : 'Banner picture updated');
-      setAdvisor((prev: any) => prev ? { ...prev, [column]: publicUrl } : prev);
+      setAdvisor((prev) => prev ? { ...prev, [column]: publicUrl } : prev);
     }
     setUploadingAdvisorImage(null);
   };
@@ -145,7 +189,7 @@ export default function Profile() {
     setChangingEmail(false);
   };
 
-  const openDeleteDialog = (type: 'account' | 'group', group?: any) => {
+  const openDeleteDialog = (type: 'account' | 'group', group?: AdvisorGroup) => {
     setDeleteType(type);
     setSelectedGroup(group || null);
     setDeleteReason('');
@@ -483,7 +527,7 @@ export default function Profile() {
               </div>
             ) : (
               <div className="space-y-2.5">
-                {subscriptions.map((sub: any) => {
+                {subscriptions.map((sub) => {
                   const daysLeft = getDaysRemaining(sub.end_date);
                   const totalDays = 30;
                   const progressPct = Math.min(100, Math.round((daysLeft / totalDays) * 100));
@@ -561,7 +605,7 @@ export default function Profile() {
               </div>
             ) : (
               <div className="space-y-2.5">
-                {followedGroups.map((fg: any) => (
+                {followedGroups.map((fg) => (
                   <div key={fg.id} style={{ background: 'white', borderRadius: 14, border: '1.5px solid #E5E7EB', padding: 16 }}>
                     <div className="flex items-center gap-3">
                       <div className="flex items-center justify-center shrink-0 text-sm font-bold text-white" style={{ width: 44, height: 44, borderRadius: '50%', background: 'linear-gradient(135deg, #1B5E20, #0D47A1)' }}>

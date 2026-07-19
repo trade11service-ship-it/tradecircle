@@ -11,6 +11,12 @@ import type { Tables } from "@/integrations/supabase/types";
 type Group = Tables<"groups">;
 type Advisor = Tables<"advisors">;
 
+type AdvisorSignalStats = {
+  total_signals?: number;
+  win_count?: number;
+  resolved_count?: number;
+};
+
 export default function GroupDetails() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -66,7 +72,7 @@ export default function GroupDetails() {
     const { data: adv, error: advErr } = await supabase
       .from("advisors")
       .select("id, user_id, full_name, sebi_reg_no, bio, strategy_type, status, profile_photo_url, cover_image_url, public_tagline, public_description, public_years_experience, risk_level, preferred_trading_hours")
-      .eq("id", (grp as any).advisor_id)
+      .eq("id", grp.advisor_id)
       .maybeSingle();
     if (advErr) console.error("[GroupDetails] advisor fetch error:", advErr);
 
@@ -79,8 +85,9 @@ export default function GroupDetails() {
       supabase.rpc("get_advisor_signal_stats", { _advisor_id: normalized.advisor_id }),
     ]);
 
-    const stat = (statsRes.data as any) || { total_signals: 0, win_count: 0, resolved_count: 0 };
-    const winRate = stat.resolved_count > 0 ? Math.round((stat.win_count / stat.resolved_count) * 100) : null;
+    const stat = (statsRes.data as AdvisorSignalStats | null) || { total_signals: 0, win_count: 0, resolved_count: 0 };
+    const resolvedCount = stat.resolved_count || 0;
+    const winRate = resolvedCount > 0 ? Math.round(((stat.win_count || 0) / resolvedCount) * 100) : null;
     setStats({
       subscriberCount: (subCountRes.data as number) || 0,
       signalCount: stat.total_signals || 0,
