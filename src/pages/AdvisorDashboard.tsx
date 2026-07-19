@@ -908,6 +908,27 @@ export default function AdvisorDashboard() {
               </div>
             )}
 
+            {/* Present vs Past subscriber summary */}
+            {(() => {
+              const present = subscribers.filter(s => s.status === 'active' && s.end_date && new Date(s.end_date).getTime() > now);
+              const past = subscribers.filter(s => (s.status === 'cancelled' || s.status === 'expired') || (s.end_date && new Date(s.end_date).getTime() <= now));
+              return (
+                <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <div className="rounded-2xl border-[1.5px] border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-5">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Present Subscribers</p>
+                    <p className="mt-1 text-3xl font-extrabold text-emerald-900">{present.length}</p>
+                    <p className="mt-1 text-xs text-emerald-800/70">Active with a valid end date in the future.</p>
+                  </div>
+                  <div className="rounded-2xl border-[1.5px] border-slate-200 bg-gradient-to-br from-slate-50 to-white p-5">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Past Subscribers</p>
+                    <p className="mt-1 text-3xl font-extrabold text-slate-900">{past.length}</p>
+                    <p className="mt-1 text-xs text-slate-600">Cancelled, expired, or end date has passed.</p>
+                  </div>
+                </div>
+              );
+            })()}
+
+
             {groups.map(g => {
               const groupSubs = subscribers.filter(s => s.group_id === g.id);
               const activeGroupSubs = groupSubs.filter(s => s.status === 'active' && s.end_date && new Date(s.end_date).getTime() > now);
