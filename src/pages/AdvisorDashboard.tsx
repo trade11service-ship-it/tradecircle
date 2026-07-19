@@ -599,6 +599,14 @@ export default function AdvisorDashboard() {
                         <p className="font-bold text-foreground truncate">{g.name}</p>
                         <p className="text-sm font-semibold text-primary">₹{g.monthly_price}/mo</p>
                       </div>
+                      <button
+                        type="button"
+                        onClick={(e) => { e.stopPropagation(); openEditGroup(g); }}
+                        className="shrink-0 inline-flex items-center gap-1 rounded-lg border border-border bg-background px-2.5 h-8 text-xs font-semibold text-foreground hover:bg-muted transition"
+                        aria-label="Edit group"
+                      >
+                        <Pencil className="h-3.5 w-3.5" /> Edit
+                      </button>
                     </div>
                     <div className="grid grid-cols-3 gap-2 text-center">
                       <div className="rounded-xl bg-muted p-2.5">
