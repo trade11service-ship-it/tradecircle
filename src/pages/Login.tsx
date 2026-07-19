@@ -54,6 +54,21 @@ export default function Login() {
     return () => { cancelled = true; };
   }, [user, profile, authLoading, navigate]);
 
+  // Surface OAuth callback errors returned in the URL hash (e.g. failed code exchange).
+  useEffect(() => {
+    const hash = window.location.hash || '';
+    if (!hash.includes('error')) return;
+    const params = new URLSearchParams(hash.replace(/^#/, ''));
+    const desc = params.get('error_description') || params.get('error');
+    if (desc) {
+      toast.error('Google sign-in failed: ' + decodeURIComponent(desc).replace(/\+/g, ' '));
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+    try { sessionStorage.removeItem('pending_general_terms_consent'); } catch {}
+  }, []);
+
+
+
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
