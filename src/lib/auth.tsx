@@ -83,6 +83,45 @@ async function processReferralCookie(userId: string) {
   }
 }
 
+/** Record OAuth signup consent captured before the redirect */
+async function processPendingConsent(userId: string, email: string | undefined, fullName: string) {
+  try {
+    const raw = sessionStorage.getItem('pending_general_terms_consent');
+    if (!raw) return;
+    const parsed = JSON.parse(raw) as { text: string; page_url: string };
+
+    const { data: existing } = await supabase
+      .from('user_legal_acceptances')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('acceptance_type', 'general_terms')
+      .maybeSingle();
+    if (existing) { sessionStorage.removeItem('pending_general_terms_consent'); return; }
+
+    let ip = 'unknown';
+    try {
+      const res = await fetch('https://api.ipify.org?format=json');
+      ip = (await res.json())?.ip || 'unknown';
+    } catch {}
+
+    await supabase.from('user_legal_acceptances').insert({
+      user_id: userId,
+      full_name: fullName || 'Google User',
+      email: email || '',
+      acceptance_type: 'general_terms',
+      checkbox_text: parsed.text,
+      accepted: true,
+      ip_address: ip,
+      user_agent: navigator.userAgent,
+      device_info: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
+      page_url: parsed.page_url,
+    });
+    sessionStorage.removeItem('pending_general_terms_consent');
+  } catch (e) {
+    console.error('Pending consent save error:', e);
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
@@ -113,9 +152,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!mounted) return;
       setProfile(p);
 
-      // Process referral cookie on sign-in (covers OAuth signups)
+      // Process referral cookie + pending OAuth consent on sign-in
       if (event === 'SIGNED_IN') {
         await processReferralCookie(currentUser.id);
+        await processPendingConsent(
+          currentUser.id,
+          currentUser.email,
+          (p?.full_name as string) || (currentUser.user_metadata?.full_name as string) || ''
+        );
       }
 
       if (mounted) setLoading(false);

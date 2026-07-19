@@ -88,10 +88,14 @@ export default function Register() {
 
     const isVerified = !!data.user?.email_confirmed_at;
 
-    // Only write app records after the backend says this account is verified.
-    if (data.user && isVerified) {
+    // Record consent immediately at signup — the auth.users row exists even
+    // before email confirmation, and the audit record must capture the
+    // exact moment the user ticked the checkbox.
+    if (data.user) {
       try { await saveLegalAcceptance(data.user.id, cleanName, cleanEmail); } catch (e) { console.error('Legal acceptance save error:', e); }
+    }
 
+    if (data.user && isVerified) {
       const cookie = document.cookie.split(';').find(c => c.trim().startsWith('referral_code='));
       const cookieCode = cookie?.split('=')?.[1]?.trim();
       if (cookieCode) {
@@ -122,6 +126,14 @@ export default function Register() {
   const handleGoogleSignUp = async () => {
     if (!termsAccepted) { toast.error('Please accept the terms to proceed'); return; }
     setGoogleLoading(true);
+    // Flag consent so AuthProvider records it after OAuth callback returns.
+    try {
+      sessionStorage.setItem('pending_general_terms_consent', JSON.stringify({
+        text: GENERAL_TERMS_TEXT,
+        page_url: window.location.href,
+        accepted_at_client: new Date().toISOString(),
+      }));
+    } catch {}
     const { lovable } = await import('@/integrations/lovable/index');
     const result = await lovable.auth.signInWithOAuth('google', {
       redirect_uri: getCanonicalOrigin() + '/login',
