@@ -33,6 +33,7 @@ export default function Login() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [googleTerms, setGoogleTerms] = useState(false);
 
   // Redirect once auth context is hydrated. Runs after both password sign-in and OAuth callback,
   // so the user never gets stuck on /login after a successful login.
