@@ -259,6 +259,38 @@ export default function AdvisorDashboard() {
     fetchData();
   };
 
+  const openEditGroup = (g: Group) => {
+    setEditingGroup(g);
+    setEditForm({
+      name: g.name || '',
+      description: g.description || '',
+      monthlyPrice: String(g.monthly_price || ''),
+      strategyCategory: (g as any).strategy_category || 'All',
+    });
+  };
+
+  const saveEditGroup = async () => {
+    if (!editingGroup || !advisor) return;
+    const cleanPrice = Math.max(0, Math.floor(Number(String(editForm.monthlyPrice).replace(/\D/g, '')) || 0));
+    if (!editForm.name.trim()) { toast.error('Group name is required'); return; }
+    if (cleanPrice <= 0) { toast.error('Please enter a valid monthly price in whole rupees'); return; }
+    setEditSaving(true);
+    const { error } = await (supabase.from('groups') as any)
+      .update({
+        name: sanitizeText(editForm.name),
+        description: sanitizeTextarea(editForm.description),
+        monthly_price: cleanPrice,
+        strategy_category: editForm.strategyCategory || 'All',
+      })
+      .eq('id', editingGroup.id)
+      .eq('advisor_id', advisor.id);
+    setEditSaving(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success('Group updated');
+    setEditingGroup(null);
+    fetchData();
+  };
+
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
