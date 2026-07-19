@@ -32,30 +32,25 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  // Auto-redirect only after an OAuth/email action callback.
-  // A stale cached session must never make a random email/password attempt look successful.
+  // Redirect once auth context is hydrated. Runs after both password sign-in and OAuth callback,
+  // so the user never gets stuck on /login after a successful login.
   useEffect(() => {
-    const isAuthCallback =
-      location.search.includes('code=') ||
-      location.hash.includes('access_token=') ||
-      location.hash.includes('refresh_token=') ||
-      location.search.includes('type=') ||
-      location.hash.includes('type=');
+    if (authLoading || !user || !profile) return;
+    let cancelled = false;
+    (async () => {
+      const { data: advisor } = await supabase.from('advisors').select('id').eq('user_id', user.id).maybeSingle();
+      if (cancelled) return;
+      if (profile.role === 'advisor' || advisor) {
+        navigate('/advisor/dashboard', { replace: true });
+      } else if (profile.role === 'admin') {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate('/home', { replace: true });
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [user, profile, authLoading, navigate]);
 
-    if (!authLoading && user && profile && isAuthCallback) {
-      const checkAdvisor = async () => {
-        const { data: advisor } = await supabase.from('advisors').select('id').eq('user_id', user.id).maybeSingle();
-        if (profile.role === 'advisor' || advisor) {
-          navigate('/advisor/dashboard', { replace: true });
-        } else if (profile.role === 'admin') {
-          navigate('/admin', { replace: true });
-        } else {
-          navigate('/home', { replace: true });
-        }
-      };
-      checkAdvisor();
-    }
-  }, [user, profile, authLoading, navigate, location.search, location.hash]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
