@@ -45,6 +45,13 @@ export default function AdvisorDashboard() {
   const [editForm, setEditForm] = useState({ name: '', description: '', monthlyPrice: '', strategyCategory: 'All' });
   const [editSaving, setEditSaving] = useState(false);
 
+  // Profile tab controlled form + uploads
+  const [profileForm, setProfileForm] = useState({ full_name: '', bio: '', strategy_type: '', risk_level: '', preferred_trading_hours: '' });
+  const [profileDirty, setProfileDirty] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingCover, setUploadingCover] = useState(false);
+
   // Post forms
   const [postMode, setPostMode] = useState<'choose' | 'message' | 'signal'>('choose');
   const [messageForm, setMessageForm] = useState({ groupId: '', text: '', isPublic: false });
