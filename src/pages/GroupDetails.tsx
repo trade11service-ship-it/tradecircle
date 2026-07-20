@@ -204,7 +204,9 @@ export default function GroupDetails() {
               to={`/advisor/${group.advisor_id}`}
               className="h-10 w-10 rounded-full border border-border overflow-hidden bg-primary/10 flex shrink-0 items-center justify-center text-primary font-bold shadow-sm"
             >
-              {group.advisor?.profile_photo_url ? (
+              {group.dp_url ? (
+                <img src={group.dp_url} alt={group.name} className="h-full w-full object-cover" />
+              ) : group.advisor?.profile_photo_url ? (
                 <img src={group.advisor.profile_photo_url} alt={advisorName} className="h-full w-full object-cover" />
               ) : advisorName.charAt(0)}
             </Link>
