@@ -1198,69 +1198,94 @@ export default function AdvisorDashboard() {
 
         {/* PROFILE TAB */}
         {tab === 'profile' && (
-          <div className="max-w-lg space-y-4">
-            <div className="rounded-2xl border-[1.5px] border-border bg-card p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-              <div className="flex items-center gap-4 mb-6">
-                <label className="relative cursor-pointer group">
-                  <div className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-gradient-to-br from-primary to-secondary text-2xl font-bold text-primary-foreground overflow-hidden">
-                    {advisor.profile_photo_url ? <img src={advisor.profile_photo_url} alt="" className="h-full w-full object-cover" /> : advisor.full_name.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
-                    <ImageIcon className="h-5 w-5 text-white" />
-                  </div>
-                  <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={async (e) => {
+          <div className="max-w-2xl space-y-4">
+            {/* Cover + Avatar card */}
+            <div className="rounded-2xl border-[1.5px] border-border bg-card overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
+              {/* Cover */}
+              <div className="relative h-32 md:h-40 w-full bg-gradient-to-r from-primary/15 via-primary/5 to-secondary/15">
+                {(advisor as any).cover_image_url && (
+                  <img src={(advisor as any).cover_image_url} alt="" className="absolute inset-0 h-full w-full object-cover" />
+                )}
+                <label className="absolute top-3 right-3 cursor-pointer inline-flex items-center gap-1.5 bg-black/60 hover:bg-black/80 text-white text-xs font-semibold px-3 py-1.5 rounded-full backdrop-blur transition">
+                  <ImageIcon className="h-3.5 w-3.5" />
+                  {uploadingCover ? 'Uploading…' : ((advisor as any).cover_image_url ? 'Change banner' : 'Add banner')}
+                  <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" disabled={uploadingCover} onChange={async (e) => {
                     const file = e.target.files?.[0];
-                    if (!file) return;
+                    if (!file || !user) return;
                     if (file.size > 5 * 1024 * 1024) { toast.error('Max 5MB'); return; }
-                    const ext = file.name.split('.').pop();
-                    const path = `${advisor.id}/${Date.now()}.${ext}`;
-                    const { data, error } = await supabase.storage.from('advisor-avatars').upload(path, file);
-                    if (error) { toast.error('Upload failed'); return; }
-                    const url = supabase.storage.from('advisor-avatars').getPublicUrl(data.path).data.publicUrl;
-                    await supabase.from('advisors').update({ profile_photo_url: url }).eq('id', advisor.id);
-                    toast.success('Profile photo updated!');
-                    fetchData();
+                    if (!['image/jpeg','image/png','image/webp'].includes(file.type)) { toast.error('Only JPG, PNG, WEBP'); return; }
+                    setUploadingCover(true);
+                    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+                    const path = `${user.id}/cover.${ext}`;
+                    const { data, error } = await supabase.storage.from('advisor-covers').upload(path, file, { upsert: true, cacheControl: '3600', contentType: file.type });
+                    if (error) { toast.error('Banner upload failed: ' + error.message); setUploadingCover(false); return; }
+                    const url = `${supabase.storage.from('advisor-covers').getPublicUrl(data.path).data.publicUrl}?v=${Date.now()}`;
+                    const { error: updErr } = await supabase.from('advisors').update({ cover_image_url: url } as any).eq('id', advisor.id).eq('user_id', user.id);
+                    if (updErr) toast.error(updErr.message); else { toast.success('Banner updated'); setAdvisor(prev => prev ? { ...prev, cover_image_url: url } as any : prev); }
+                    setUploadingCover(false);
                   }} />
                 </label>
-                <div>
-                  <h2 className="text-[22px] font-extrabold text-foreground capitalize">{advisor.full_name}</h2>
-                  <span className="inline-flex items-center rounded-full bg-light-green px-3 py-0.5 text-xs font-semibold text-primary mt-1">✓ {advisor.status}</span>
-                  <p className="text-[11px] text-muted-foreground mt-1">Tap photo to change</p>
+              </div>
+              {/* Avatar + name */}
+              <div className="px-6 pb-6 -mt-10 flex items-end gap-4">
+                <label className="relative cursor-pointer group shrink-0">
+                  <div className="flex h-[88px] w-[88px] items-center justify-center rounded-full bg-gradient-to-br from-primary to-secondary text-3xl font-bold text-primary-foreground overflow-hidden border-4 border-card shadow-lg">
+                    {advisor.profile_photo_url ? <img src={advisor.profile_photo_url} alt="" className="h-full w-full object-cover" /> : advisor.full_name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <ImageIcon className="h-5 w-5 text-white" />
+                  </div>
+                  {uploadingAvatar && <div className="absolute inset-0 rounded-full bg-black/60 flex items-center justify-center text-white text-[10px] font-bold">Uploading…</div>}
+                  <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" disabled={uploadingAvatar} onChange={async (e) => {
+                    const file = e.target.files?.[0];
+                    if (!file || !user) return;
+                    if (file.size > 5 * 1024 * 1024) { toast.error('Max 5MB'); return; }
+                    if (!['image/jpeg','image/png','image/webp'].includes(file.type)) { toast.error('Only JPG, PNG, WEBP'); return; }
+                    setUploadingAvatar(true);
+                    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
+                    const path = `${user.id}/avatar.${ext}`;
+                    const { data, error } = await supabase.storage.from('advisor-avatars').upload(path, file, { upsert: true, cacheControl: '3600', contentType: file.type });
+                    if (error) { toast.error('Upload failed: ' + error.message); setUploadingAvatar(false); return; }
+                    const url = `${supabase.storage.from('advisor-avatars').getPublicUrl(data.path).data.publicUrl}?v=${Date.now()}`;
+                    const { error: updErr } = await supabase.from('advisors').update({ profile_photo_url: url }).eq('id', advisor.id).eq('user_id', user.id);
+                    if (updErr) toast.error(updErr.message); else { toast.success('Profile photo updated'); setAdvisor(prev => prev ? { ...prev, profile_photo_url: url } : prev); }
+                    setUploadingAvatar(false);
+                  }} />
+                </label>
+                <div className="pb-2 min-w-0">
+                  <h2 className="text-[22px] font-extrabold text-foreground capitalize truncate">{advisor.full_name}</h2>
+                  <span className="inline-flex items-center rounded-full bg-primary/10 px-3 py-0.5 text-xs font-semibold text-primary mt-1">✓ {advisor.status}</span>
+                  <p className="text-[11px] text-muted-foreground mt-1">Tap photo or banner to change (max 5MB)</p>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-2.5">
+
+              {/* Read-only info */}
+              <div className="px-6 pb-6 grid grid-cols-2 gap-2.5">
                 <div className="rounded-xl bg-muted p-3.5">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">SEBI Reg No</p>
                   <p className="mt-1 text-sm font-semibold text-foreground">{advisor.sebi_reg_no}</p>
                 </div>
                 <div className="rounded-xl bg-muted p-3.5">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Strategy</p>
-                  <p className="mt-1 text-sm font-semibold text-foreground">{advisor.strategy_type || '—'}</p>
-                </div>
-                <div className="col-span-2 rounded-xl bg-muted p-3.5">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Email</p>
-                  <p className="mt-1 text-sm font-semibold text-foreground">{advisor.email}</p>
+                  <p className="mt-1 text-sm font-semibold text-foreground truncate">{advisor.email}</p>
                 </div>
-                {advisor.bio && (
-                  <div className="col-span-2 rounded-xl bg-muted p-3.5">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Bio</p>
-                    <p className="mt-1 text-sm text-foreground leading-relaxed">{advisor.bio}</p>
-                  </div>
-                )}
               </div>
             </div>
 
-            {/* Edit Strategy & Bio */}
+            {/* Editable form with Save button */}
             <div className="rounded-2xl border-[1.5px] border-border bg-card p-6 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-              <h3 className="text-sm font-bold text-foreground mb-4">Update Profile Details</h3>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-bold text-foreground">Edit Profile Details</h3>
+                {profileDirty && <span className="text-[11px] font-semibold text-amber-600">Unsaved changes</span>}
+              </div>
               <div className="space-y-3">
                 <div>
+                  <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Full Name</Label>
+                  <Input value={profileForm.full_name} onChange={(e) => { setProfileForm(f => ({ ...f, full_name: e.target.value })); setProfileDirty(true); }} className="mt-1.5 border-[1.5px]" />
+                </div>
+                <div>
                   <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Strategy Type</Label>
-                  <Select defaultValue={advisor.strategy_type || ''} onValueChange={async (v) => {
-                    await supabase.from('advisors').update({ strategy_type: v }).eq('id', advisor.id);
-                    toast.success('Strategy updated');
-                    fetchData();
-                  }}>
+                  <Select value={profileForm.strategy_type} onValueChange={(v) => { setProfileForm(f => ({ ...f, strategy_type: v })); setProfileDirty(true); }}>
                     <SelectTrigger className="mt-1.5 border-[1.5px]"><SelectValue placeholder="Select strategy" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="All">All</SelectItem>
@@ -1273,12 +1298,8 @@ export default function AdvisorDashboard() {
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Risk Level (shown on profile)</Label>
-                  <Select defaultValue={(advisor as any).risk_level || ''} onValueChange={async (v) => {
-                    await supabase.from('advisors').update({ risk_level: v } as any).eq('id', advisor.id);
-                    toast.success('Risk level updated');
-                    fetchData();
-                  }}>
+                  <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Risk Level</Label>
+                  <Select value={profileForm.risk_level} onValueChange={(v) => { setProfileForm(f => ({ ...f, risk_level: v })); setProfileDirty(true); }}>
                     <SelectTrigger className="mt-1.5 border-[1.5px]"><SelectValue placeholder="Select risk level" /></SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Conservative">Conservative</SelectItem>
@@ -1289,25 +1310,58 @@ export default function AdvisorDashboard() {
                 </div>
                 <div>
                   <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Preferred Trading Hours</Label>
-                  <Input defaultValue={(advisor as any).preferred_trading_hours || ''} placeholder="e.g. 09:30 – 11:00 IST" className="mt-1.5 border-[1.5px]" onBlur={async (e) => {
-                    const val = sanitizeText(e.target.value).trim();
-                    if (val !== ((advisor as any).preferred_trading_hours || '')) {
-                      await supabase.from('advisors').update({ preferred_trading_hours: val } as any).eq('id', advisor.id);
-                      toast.success('Trading hours updated');
-                      fetchData();
-                    }
-                  }} />
+                  <Input value={profileForm.preferred_trading_hours} onChange={(e) => { setProfileForm(f => ({ ...f, preferred_trading_hours: e.target.value })); setProfileDirty(true); }} placeholder="e.g. 09:30 – 11:00 IST" className="mt-1.5 border-[1.5px]" />
                 </div>
                 <div>
                   <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Bio</Label>
-                  <Textarea defaultValue={advisor.bio || ''} placeholder="Describe your trading style..." className="mt-1.5 border-[1.5px] min-h-[80px]" onBlur={async (e) => {
-                    const val = e.target.value.trim();
-                    if (val !== (advisor.bio || '')) {
-                      await supabase.from('advisors').update({ bio: val }).eq('id', advisor.id);
-                      toast.success('Bio updated');
-                      fetchData();
-                    }
-                  }} />
+                  <Textarea value={profileForm.bio} onChange={(e) => { setProfileForm(f => ({ ...f, bio: e.target.value })); setProfileDirty(true); }} placeholder="Describe your trading style..." className="mt-1.5 border-[1.5px] min-h-[100px]" />
+                </div>
+                <div className="flex items-center gap-2 pt-2">
+                  <Button
+                    disabled={!profileDirty || savingProfile}
+                    onClick={async () => {
+                      if (!advisor || !user) return;
+                      setSavingProfile(true);
+                      const payload: any = {
+                        full_name: sanitizeName(profileForm.full_name) || advisor.full_name,
+                        bio: sanitizeTextarea(profileForm.bio),
+                        strategy_type: profileForm.strategy_type || null,
+                        risk_level: profileForm.risk_level || null,
+                        preferred_trading_hours: sanitizeText(profileForm.preferred_trading_hours) || null,
+                      };
+                      const { error } = await supabase.from('advisors').update(payload).eq('id', advisor.id).eq('user_id', user.id);
+                      if (error) {
+                        toast.error('Save failed: ' + error.message);
+                      } else {
+                        toast.success('Profile saved');
+                        setAdvisor(prev => prev ? { ...prev, ...payload } as any : prev);
+                        setProfileDirty(false);
+                      }
+                      setSavingProfile(false);
+                    }}
+                    className="rounded-full px-6 font-bold"
+                  >
+                    {savingProfile ? 'Saving…' : 'Save Changes'}
+                  </Button>
+                  {profileDirty && (
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        if (!advisor) return;
+                        setProfileForm({
+                          full_name: advisor.full_name || '',
+                          bio: advisor.bio || '',
+                          strategy_type: advisor.strategy_type || '',
+                          risk_level: (advisor as any).risk_level || '',
+                          preferred_trading_hours: (advisor as any).preferred_trading_hours || '',
+                        });
+                        setProfileDirty(false);
+                      }}
+                      className="rounded-full"
+                    >
+                      Cancel
+                    </Button>
+                  )}
                 </div>
               </div>
             </div>
