@@ -5,7 +5,8 @@ import { GroupFeed } from "@/components/GroupFeed";
 import { SubscriptionModal } from "@/components/SubscriptionModal";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
-import { ShieldCheck, Users, Activity, ArrowLeft, CheckCircle2, TrendingUp, BellRing, Lock, AlertCircle, User as UserIcon } from "lucide-react";
+import { ShieldCheck, Users, Activity, ArrowLeft, CheckCircle2, TrendingUp, AlertCircle, User as UserIcon } from "lucide-react";
+import { FollowButton } from "@/components/FollowButton";
 import type { Tables } from "@/integrations/supabase/types";
 
 type Group = Tables<"groups">;
