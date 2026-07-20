@@ -200,6 +200,16 @@ export default function AdvisorDashboard() {
     const adv = list.find((a: any) => a.status === 'approved') || list[0] || null;
     setAdvisor(adv);
     if (adv) {
+      setProfileForm({
+        full_name: adv.full_name || '',
+        bio: adv.bio || '',
+        strategy_type: adv.strategy_type || '',
+        risk_level: (adv as any).risk_level || '',
+        preferred_trading_hours: (adv as any).preferred_trading_hours || '',
+      });
+      setProfileDirty(false);
+    }
+    if (adv) {
       const [grpsRes, subsRes, sigsRes, earningsRes] = await Promise.all([
         supabase.from('groups').select('*').eq('advisor_id', adv.id),
         supabase.from('subscriptions').select('*, profiles(full_name, email), groups!inner(name)').eq('advisor_id', adv.id).order('created_at', { ascending: false }),
