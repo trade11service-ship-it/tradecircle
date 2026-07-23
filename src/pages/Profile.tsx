@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
-import { User, Mail, Phone, Lock, Eye, EyeOff, Shield, Calendar, Settings, AlertTriangle, Trash2, Pencil, Users, Send, MapPin, CheckCircle, LogOut, Camera, Image as ImageIcon } from 'lucide-react';
+import { User, Mail, Phone, Lock, Eye, EyeOff, Shield, Calendar, Settings, AlertTriangle, Trash2, Pencil, Users, Send, MapPin, CheckCircle, LogOut, Camera, Image as ImageIcon, IdCard, ClipboardList, Heart, ShieldCheck, Cog, BadgeCheck } from 'lucide-react';
 import { TelegramSettings } from '@/components/TelegramSettings';
 import {
   Dialog,
@@ -68,7 +68,8 @@ export default function Profile() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<'details' | 'subscriptions' | 'following' | 'security' | 'settings'>('details');
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ fullName: '', phone: '', telegramUsername: '' });
+  const [form, setForm] = useState({ fullName: '', phone: '', telegramUsername: '', bio: '' });
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [subscriptions, setSubscriptions] = useState<SubscriptionItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [passwords, setPasswords] = useState({ current: '', newPass: '', confirm: '' });
@@ -94,7 +95,7 @@ export default function Profile() {
   const [followingCount, setFollowingCount] = useState(0);
   const [followedGroups, setFollowedGroups] = useState<FollowedGroup[]>([]);
 
-  useEffect(() => { if (profile) setForm({ fullName: profile.full_name || '', phone: profile.phone || '', telegramUsername: profile.telegram_username || '' }); }, [profile]);
+  useEffect(() => { if (profile) setForm({ fullName: profile.full_name || '', phone: profile.phone || '', telegramUsername: profile.telegram_username || '', bio: (profile as any).bio || '' }); }, [profile]);
   useEffect(() => { if (user) { fetchSubscriptions(); fetchAdvisorData(); fetchDeletionRequests(); fetchFollowingCount(); } }, [user]);
 
   const fetchSubscriptions = async () => {
@@ -125,7 +126,14 @@ export default function Profile() {
 
   const handleSaveProfile = async () => {
     setLoading(true);
-    const { error } = await supabase.from('profiles').update({ full_name: sanitizeName(form.fullName), phone: sanitizePhone(form.phone), telegram_username: sanitizeText(form.telegramUsername) }).eq('id', user!.id);
+    const bioTrimmed = sanitizeTextarea(form.bio || '').slice(0, 280);
+    const payload: Record<string, unknown> = {
+      full_name: sanitizeName(form.fullName),
+      phone: sanitizePhone(form.phone),
+      telegram_username: sanitizeText(form.telegramUsername),
+    };
+    if (profile?.role === 'trader') payload.bio = bioTrimmed;
+    const { error } = await supabase.from('profiles').update(payload).eq('id', user!.id);
     if (error) toast.error(error.message);
     else { toast.success('Profile updated'); setEditing(false); }
     setLoading(false);
@@ -250,11 +258,11 @@ export default function Profile() {
   };
 
   const tabs = [
-    { key: 'details' as const, label: 'My Details', icon: '👤' },
-    { key: 'subscriptions' as const, label: 'Subscriptions', icon: '📋' },
-    { key: 'following' as const, label: 'Following', icon: '❤️' },
-    { key: 'security' as const, label: 'Security', icon: '🛡️' },
-    { key: 'settings' as const, label: 'Settings', icon: '⚙️' },
+    { key: 'details' as const, label: 'My Details', icon: IdCard },
+    { key: 'subscriptions' as const, label: 'Subscriptions', icon: ClipboardList },
+    { key: 'following' as const, label: 'Following', icon: Heart },
+    { key: 'security' as const, label: 'Security', icon: ShieldCheck },
+    { key: 'settings' as const, label: 'Settings', icon: Cog },
   ];
 
   return (
