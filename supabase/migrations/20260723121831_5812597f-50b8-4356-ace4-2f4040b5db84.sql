@@ -1,0 +1,2 @@
+ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS user_type text CHECK (user_type IN ('investor','trader'));
+UPDATE public.profiles SET user_type = 'trader' WHERE user_type IS NULL AND role = 'trader';
