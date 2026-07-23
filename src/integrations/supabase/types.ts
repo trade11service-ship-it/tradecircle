@@ -638,6 +638,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          bio: string | null
           created_at: string | null
           email: string | null
           full_name: string | null
@@ -647,6 +648,7 @@ export type Database = {
           telegram_username: string | null
         }
         Insert: {
+          bio?: string | null
           created_at?: string | null
           email?: string | null
           full_name?: string | null
@@ -656,6 +658,7 @@ export type Database = {
           telegram_username?: string | null
         }
         Update: {
+          bio?: string | null
           created_at?: string | null
           email?: string | null
           full_name?: string | null
