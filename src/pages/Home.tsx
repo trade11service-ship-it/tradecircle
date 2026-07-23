@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth";
 import { Bell, User, ArrowRight, Compass, Clock3, BookOpenText, Shield, Globe } from "lucide-react";
 import { setMetaTags, SEO_CONFIG } from "@/lib/seo";
 import { DashboardHero } from "@/components/DashboardHero";
+import { QuickStartTour } from "@/components/QuickStartTour";
 
 type FeedItem = {
   id: string;
@@ -185,6 +186,9 @@ export default function Home() {
             </>
           }
         />
+
+        {/* First-time guided tour (auto-dismisses via localStorage) */}
+        {!hasSubscriptions && <QuickStartTour />}
 
         {/* Main Content */}
         {!hasSubscriptions && loading ? (
