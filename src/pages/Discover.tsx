@@ -253,21 +253,21 @@ export default function Groups() {
                       {/* Row 2: Stats */}
                       <div className="grid grid-cols-4 gap-2 mb-3">
                         <div className="rounded-lg bg-muted p-2 text-center">
-                          <p className="text-xs text-muted-foreground">📊 Signals</p>
+                          <p className="text-[11px] text-muted-foreground inline-flex items-center gap-1 justify-center"><Activity className="h-3 w-3" /> Signals</p>
                           <p className="text-sm font-bold text-foreground">{g.signal_count}</p>
                         </div>
                         <div className="rounded-lg bg-muted p-2 text-center">
-                          <p className="text-xs text-muted-foreground">✅ Accuracy</p>
+                          <p className="text-[11px] text-muted-foreground inline-flex items-center gap-1 justify-center"><CheckCircle2 className="h-3 w-3" /> Accuracy</p>
                           <p className={`text-sm font-bold ${accuracy !== null && accuracy >= 70 ? 'text-primary' : accuracy !== null && accuracy >= 50 ? 'text-[hsl(var(--warning))]' : 'text-muted-foreground'}`}>
                             {accuracy !== null ? `${accuracy}%` : g.signal_count < 10 ? 'New' : '—'}
                           </p>
                         </div>
                         <div className="rounded-lg bg-muted p-2 text-center">
-                          <p className="text-xs text-muted-foreground">👥 Subs</p>
+                          <p className="text-[11px] text-muted-foreground inline-flex items-center gap-1 justify-center"><Users className="h-3 w-3" /> Subs</p>
                           <p className="text-sm font-bold text-foreground">{g.sub_count}</p>
                         </div>
                         <div className="rounded-lg bg-muted p-2 text-center">
-                          <p className="text-xs text-muted-foreground">📈 Type</p>
+                          <p className="text-[11px] text-muted-foreground inline-flex items-center gap-1 justify-center"><TrendingUp className="h-3 w-3" /> Type</p>
                           <p className="text-sm font-bold text-foreground truncate">{g.strategy_type || 'All'}</p>
                         </div>
                       </div>
