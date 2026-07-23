@@ -8,13 +8,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
-import { User, Mail, Lock, Phone, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import { User, Mail, Lock, Phone, Eye, EyeOff, CheckCircle, TrendingUp, Wallet, ArrowLeft, Briefcase } from 'lucide-react';
 import { Logo } from '@/components/Logo';
 import { GENERAL_TERMS_TEXT, getDeviceInfo, getIpAddress } from '@/lib/legalTexts';
 import { getCanonicalOrigin } from '@/lib/canonicalOrigin';
 
+type UserType = 'investor' | 'trader';
+
 export default function Register() {
   const navigate = useNavigate();
+  const [userType, setUserType] = useState<UserType | null>(null);
   const [form, setForm] = useState({ fullName: '', email: '', password: '', phone: '' });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -69,11 +72,12 @@ export default function Register() {
       email: cleanEmail,
       password: form.password,
       options: {
-        data: { full_name: cleanName, ...(cleanPhone ? { phone: cleanPhone } : {}), role: 'trader' },
+        data: { full_name: cleanName, ...(cleanPhone ? { phone: cleanPhone } : {}), role: 'trader', user_type: userType },
         emailRedirectTo: `${getCanonicalOrigin()}/login`,
       },
     });
     if (error) { toast.error(error.message); setLoading(false); return; }
+    try { sessionStorage.setItem('pending_user_type', userType || 'trader'); } catch {}
 
     // Supabase returns a user object with an empty `identities` array when the
     // email is already registered (obfuscated response to avoid enumeration).
@@ -126,13 +130,13 @@ export default function Register() {
   const handleGoogleSignUp = async () => {
     if (!termsAccepted) { toast.error('Please accept the terms to proceed'); return; }
     setGoogleLoading(true);
-    // Flag consent so AuthProvider records it after OAuth callback returns.
     try {
       sessionStorage.setItem('pending_general_terms_consent', JSON.stringify({
         text: GENERAL_TERMS_TEXT,
         page_url: window.location.href,
         accepted_at_client: new Date().toISOString(),
       }));
+      if (userType) sessionStorage.setItem('pending_user_type', userType);
     } catch {}
     const { lovable } = await import('@/integrations/lovable/index');
     const result = await lovable.auth.signInWithOAuth('google', {
@@ -143,6 +147,72 @@ export default function Register() {
       setGoogleLoading(false);
     }
   };
+
+  // ---- Step 0: Role Picker (Investor vs Trader vs Advisor) ----
+  if (!userType && !registered) {
+    return (
+      <div className="min-h-screen flex flex-col bg-background">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center px-4 py-12">
+          <div className="w-full max-w-2xl">
+            <div className="mb-8 text-center">
+              <Logo size={56} className="mx-auto mb-4" />
+              <h1 className="text-2xl md:text-3xl font-extrabold text-foreground" style={{ fontFamily: 'Outfit, sans-serif' }}>
+                How will you use RA Circle?
+              </h1>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Pick the role that fits you best. You can change your preferences anytime in Profile.
+              </p>
+            </div>
+            <div className="grid gap-4 md:grid-cols-3">
+              <button
+                type="button"
+                onClick={() => setUserType('investor')}
+                className="group rounded-2xl border border-border bg-card p-6 text-left transition hover:border-primary hover:shadow-lg tc-btn-click"
+              >
+                <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition">
+                  <Wallet className="h-5 w-5" />
+                </div>
+                <h3 className="text-base font-bold text-foreground">I'm an Investor</h3>
+                <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                  Long-term positions, mutual-fund style picks, low-frequency ideas from SEBI-verified analysts.
+                </p>
+              </button>
+              <button
+                type="button"
+                onClick={() => setUserType('trader')}
+                className="group rounded-2xl border border-border bg-card p-6 text-left transition hover:border-primary hover:shadow-lg tc-btn-click"
+              >
+                <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition">
+                  <TrendingUp className="h-5 w-5" />
+                </div>
+                <h3 className="text-base font-bold text-foreground">I'm a Trader</h3>
+                <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                  Intraday, swing and F&amp;O signals with entry, target and stop-loss delivered in real time.
+                </p>
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/advisor-register')}
+                className="group rounded-2xl border-2 border-dashed border-primary/40 bg-primary/5 p-6 text-left transition hover:border-primary hover:bg-primary/10 tc-btn-click"
+              >
+                <div className="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+                  <Briefcase className="h-5 w-5" />
+                </div>
+                <h3 className="text-base font-bold text-foreground">I'm a SEBI Analyst</h3>
+                <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
+                  Onboard as a Research Analyst and monetise your calls through verified subscription groups.
+                </p>
+              </button>
+            </div>
+            <p className="mt-6 text-center text-sm text-muted-foreground">
+              Already have an account? <Link to="/login" className="font-medium text-primary hover:underline">Sign In</Link>
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (registered) {
     return (
