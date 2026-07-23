@@ -269,8 +269,8 @@ export default function Profile() {
     <div className="min-h-full h-full flex flex-col" style={{ background: '#F8F9FA' }}>
       
       {/* ===== PROFILE HERO ===== */}
-      <div className="bg-card shadow-[0_4px_20px_rgba(0,0,0,0.07)]" style={{ borderRadius: '0 0 28px 28px', marginBottom: 16 }}>
-        {/* Cover strip */}
+      <div className="relative bg-card shadow-[0_4px_20px_rgba(0,0,0,0.07)]" style={{ borderRadius: '0 0 28px 28px', marginBottom: 16 }}>
+        {/* Cover strip — clips only the cover image, NOT the avatar */}
         <div
           className="relative h-[110px] overflow-hidden"
           style={{
@@ -285,28 +285,30 @@ export default function Profile() {
               <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={!!uploadingAdvisorImage} onChange={e => handleAdvisorImageUpload(e.target.files?.[0], 'cover')} />
             </label>
           )}
-          {/* Avatar */}
-          <label
-            className="absolute flex cursor-pointer items-center justify-center overflow-hidden text-[28px] font-extrabold text-white group"
-            style={{
-              bottom: -36, left: 20, width: 72, height: 72, borderRadius: '50%',
-              background: 'linear-gradient(135deg, #1B5E20, #0D47A1)',
-              border: '3px solid white', boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-            }}
-          >
-            {advisor?.profile_photo_url ? (
-              <img src={advisor.profile_photo_url} alt={profile?.full_name || 'Advisor'} className="h-full w-full object-cover" />
-            ) : (
-              (profile?.full_name || 'U').charAt(0).toUpperCase()
-            )}
-            {advisor && (
-              <span className="absolute inset-0 hidden items-center justify-center bg-foreground/55 group-hover:flex">
-                <Camera className="h-5 w-5" />
-              </span>
-            )}
-            {advisor && <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={!!uploadingAdvisorImage} onChange={e => handleAdvisorImageUpload(e.target.files?.[0], 'avatar')} />}
-          </label>
         </div>
+
+        {/* Avatar — sibling of the cover strip so overflow-hidden can't clip it */}
+        <label
+          className="absolute z-10 flex cursor-pointer items-center justify-center overflow-hidden text-[28px] font-extrabold text-white group ring-4 ring-card"
+          style={{
+            top: 74, left: 20, width: 72, height: 72, borderRadius: '50%',
+            background: 'linear-gradient(135deg, #1B5E20, #0D47A1)',
+            boxShadow: '0 6px 20px rgba(0,0,0,0.18)',
+          }}
+        >
+          {advisor?.profile_photo_url ? (
+            <img src={advisor.profile_photo_url} alt={profile?.full_name || 'Advisor'} className="h-full w-full object-cover" />
+          ) : (
+            (profile?.full_name || 'U').charAt(0).toUpperCase()
+          )}
+          {advisor && (
+            <span className="absolute inset-0 hidden items-center justify-center bg-foreground/55 group-hover:flex">
+              <Camera className="h-5 w-5" />
+            </span>
+          )}
+          {advisor && <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={!!uploadingAdvisorImage} onChange={e => handleAdvisorImageUpload(e.target.files?.[0], 'avatar')} />}
+        </label>
+
 
         {/* Content below cover */}
         <div className="px-5 pb-5" style={{ paddingTop: 48 }}>
