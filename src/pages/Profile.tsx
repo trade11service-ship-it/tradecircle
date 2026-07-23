@@ -916,9 +916,19 @@ export default function Profile() {
             </div>
           </div>
 
+          <div className="space-y-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+            <Label className="text-xs font-semibold text-destructive">Type <span className="font-mono">DELETE</span> to confirm</Label>
+            <Input
+              value={deleteConfirmText}
+              onChange={e => setDeleteConfirmText(e.target.value)}
+              placeholder="DELETE"
+              autoComplete="off"
+            />
+          </div>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleSubmitDeletionRequest} disabled={submittingRequest || !deleteReason.trim()}>
+            <Button variant="destructive" onClick={handleSubmitDeletionRequest} disabled={submittingRequest || !deleteReason.trim() || deleteConfirmText.trim() !== 'DELETE'}>
               {submittingRequest ? 'Submitting...' : 'Submit Request'}
             </Button>
           </DialogFooter>
