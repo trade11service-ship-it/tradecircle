@@ -407,7 +407,7 @@ export default function Profile() {
                 boxShadow: tab === t.key ? '0 2px 6px rgba(0,0,0,0.15)' : 'none',
               }}
             >
-              <span>{t.icon}</span> {t.label}
+              <t.icon className="h-4 w-4" /> {t.label}
             </button>
           ))}
         </div>
