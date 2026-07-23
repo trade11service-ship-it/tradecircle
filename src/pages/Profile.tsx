@@ -459,6 +459,18 @@ export default function Profile() {
                     <Input value={form.telegramUsername} onChange={e => setForm({ ...form, telegramUsername: e.target.value })} className="pl-10" placeholder="@username" />
                   </div>
                 </div>
+                {profile?.role === 'trader' && (
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold uppercase" style={{ color: '#9CA3AF' }}>Short Bio <span className="text-[10px] font-normal normal-case text-muted-foreground">(optional, {280 - (form.bio?.length || 0)} chars left)</span></Label>
+                    <Textarea
+                      value={form.bio}
+                      maxLength={280}
+                      onChange={e => setForm({ ...form, bio: e.target.value })}
+                      rows={3}
+                      placeholder="e.g. 5 years trading Bank Nifty options. Swing + intraday."
+                    />
+                  </div>
+                )}
                 <div className="flex gap-2 pt-2">
                   <Button onClick={handleSaveProfile} disabled={loading} className="font-semibold" style={{ background: '#1B5E20' }}>
                     {loading ? 'Saving...' : 'Save Changes'}
