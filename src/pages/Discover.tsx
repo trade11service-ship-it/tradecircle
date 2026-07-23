@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Shield, Search, ArrowRight, TrendingUp, Users, BadgeCheck } from 'lucide-react';
+import { Shield, Search, ArrowRight, TrendingUp, Users, BadgeCheck, Activity, CheckCircle2 } from 'lucide-react';
 import { GroupCard } from '@/components/GroupCard';
 import { setMetaTags, SEO_CONFIG } from '@/lib/seo';
 import { PageHeader } from '@/components/PageHeader';
