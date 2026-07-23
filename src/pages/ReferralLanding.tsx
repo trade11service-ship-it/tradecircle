@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
-import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -230,7 +229,7 @@ export default function ReferralLanding() {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-background"><Navbar />
+    <div className="min-h-screen bg-background">
       <div className="flex items-center justify-center py-20">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" />
       </div>
@@ -238,7 +237,7 @@ export default function ReferralLanding() {
   );
 
   if (!referralData || !advisor || !group) return (
-    <div className="min-h-screen flex flex-col bg-background"><Navbar />
+    <div className="min-h-screen flex flex-col bg-background">
       <div className="flex-1 flex items-center justify-center px-4">
         <div className="tc-card-static p-8 text-center max-w-md">
           <h1 className="text-xl font-bold">Invalid Referral Link</h1>
@@ -251,7 +250,7 @@ export default function ReferralLanding() {
   );
 
   if (isOwnLink) return (
-    <div className="min-h-screen flex flex-col bg-background"><Navbar />
+    <div className="min-h-screen flex flex-col bg-background">
       <div className="flex-1 flex items-center justify-center px-4">
         <div className="tc-card-static p-8 text-center max-w-md border-l-4 border-l-[hsl(var(--warning))]">
           <h1 className="text-xl font-bold">This is your own referral link!</h1>
@@ -264,7 +263,7 @@ export default function ReferralLanding() {
   );
 
   if (registered) return (
-    <div className="min-h-screen flex flex-col bg-background"><Navbar />
+    <div className="min-h-screen flex flex-col bg-background">
       <div className="flex-1 flex items-center justify-center px-4">
         <div className="tc-card-static p-8 text-center max-w-md">
           <CheckCircle className="mx-auto h-16 w-16 text-primary" />
@@ -286,7 +285,7 @@ export default function ReferralLanding() {
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Navbar />
+      
 
       {/* Green top banner */}
       <div className="bg-primary text-primary-foreground py-3 text-center text-sm font-medium">

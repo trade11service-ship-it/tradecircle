@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { Navbar } from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,7 +11,7 @@ export default function Contact() {
 
   return (
     <div className="min-h-screen bg-muted">
-      <Navbar />
+      
       <main className="mx-auto w-full max-w-3xl px-4 py-8">
         <div className="rounded-2xl border border-border bg-card p-6">
           <h1 className="text-2xl font-extrabold text-foreground">Contact Us</h1>

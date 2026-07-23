@@ -71,23 +71,24 @@ const App = () => (
           <ScrollToTop />
           <div className="h-screen w-full">
             <Routes>
-              {/* Marketing / Public Routes (No App Shell) */}
-              <Route path="/" element={<SmartLanding />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/contact" element={<Contact />} />
+              {/* Auth-only routes (no shell — focused forms) */}
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/advisor-register" element={<AdvisorRegister />} />
-              <Route path="/disclaimer" element={<Disclaimer />} />
-              <Route path="/terms" element={<Terms />} />
-              <Route path="/privacy" element={<Privacy />} />
-              <Route path="/refund" element={<Refund />} />
-              <Route path="/join/:code" element={<ReferralLanding />} />
 
-              {/* App Shell Routes (With Sidebar/Bottom Nav) */}
+              {/* App Shell Routes — single unified nav (sidebar desktop / bottom bar mobile) */}
               <Route element={<AppShell />}>
+                <Route path="/" element={<SmartLanding />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/disclaimer" element={<Disclaimer />} />
+                <Route path="/terms" element={<Terms />} />
+                <Route path="/privacy" element={<Privacy />} />
+                <Route path="/refund" element={<Refund />} />
+                <Route path="/join/:code" element={<ReferralLanding />} />
+
                 <Route path="/feed" element={<ProtectedRoute><Home /></ProtectedRoute>} />
                 <Route path="/home" element={<Navigate to="/feed" replace />} />
                 <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
@@ -109,16 +110,17 @@ const App = () => (
                 <Route path="/advisor/dashboard/earnings" element={<ProtectedRoute><AdvisorDashboard /></ProtectedRoute>} />
                 <Route path="/advisor/dashboard/subscribers" element={<ProtectedRoute><AdvisorDashboard /></ProtectedRoute>} />
                 <Route path="/payment-success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>} />
+
+                <Route path="*" element={<NotFound />} />
               </Route>
 
-              {/* Standalone Admin Shell (Has its own sidebar) */}
+              {/* Standalone Admin Shell (has its own sidebar) */}
               <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
               <Route path="/admin/approvals" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
               <Route path="/admin/revenue" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
               <Route path="/admin/complaints" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
-
-              <Route path="*" element={<NotFound />} />
             </Routes>
+
           </div>
         </AuthProvider>
       </BrowserRouter>
