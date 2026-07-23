@@ -48,7 +48,15 @@ export default function Login() {
       } else if (profile.role === 'admin') {
         navigate('/admin', { replace: true });
       } else {
-        navigate('/home', { replace: true });
+        // Trader: send to /feed only if they have active subscriptions,
+        // otherwise land them on the public home (`/`).
+        const nowIso = new Date().toISOString();
+        const { data: subs } = await supabase
+          .from('subscriptions').select('id')
+          .eq('user_id', user.id).eq('status', 'active')
+          .gte('end_date', nowIso).limit(1);
+        if (cancelled) return;
+        navigate((subs || []).length > 0 ? '/feed' : '/', { replace: true });
       }
     })();
     return () => { cancelled = true; };
@@ -106,7 +114,14 @@ export default function Login() {
       const { data: advisor } = await supabase.from('advisors').select('id').eq('user_id', authUser.id).maybeSingle();
       if (profile?.role === 'advisor' || advisor) navigate('/advisor/dashboard');
       else if (profile?.role === 'admin') navigate('/admin');
-      else navigate('/home');
+      else {
+        const nowIso = new Date().toISOString();
+        const { data: subs } = await supabase
+          .from('subscriptions').select('id')
+          .eq('user_id', authUser.id).eq('status', 'active')
+          .gte('end_date', nowIso).limit(1);
+        navigate((subs || []).length > 0 ? '/feed' : '/');
+      }
     }
     setLoading(false);
   };
