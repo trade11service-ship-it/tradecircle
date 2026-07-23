@@ -201,6 +201,7 @@ export default function Profile() {
     setDeleteType(type);
     setSelectedGroup(group || null);
     setDeleteReason('');
+    setDeleteConfirmText('');
     setDeleteDialogOpen(true);
   };
 
