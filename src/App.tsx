@@ -5,8 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider } from "@/lib/auth";
-import { BottomNavigation } from "@/components/BottomNavigation";
-import Landing from "./pages/Landing";
+import SmartLanding from "./pages/SmartLanding";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
@@ -73,7 +72,7 @@ const App = () => (
           <div className="h-screen w-full">
             <Routes>
               {/* Marketing / Public Routes (No App Shell) */}
-              <Route path="/" element={<Landing />} />
+              <Route path="/" element={<SmartLanding />} />
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/login" element={<Login />} />
@@ -89,7 +88,8 @@ const App = () => (
 
               {/* App Shell Routes (With Sidebar/Bottom Nav) */}
               <Route element={<AppShell />}>
-                <Route path="/home" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+                <Route path="/feed" element={<ProtectedRoute><Home /></ProtectedRoute>} />
+                <Route path="/home" element={<Navigate to="/feed" replace />} />
                 <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
                 <Route path="/discover" element={<Discover />} />
                 <Route path="/listed-advisors" element={<ListedAdvisors />} />

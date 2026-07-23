@@ -1,15 +1,12 @@
 import { ReactNode } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
-import { 
-  Home, 
-  Compass, 
-  Bell, 
-  User, 
-  LogOut, 
-  LayoutDashboard,
-  CreditCard,
-  Settings
+import {
+  Home,
+  Compass,
+  User,
+  LogOut,
+  Radio,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/Logo";
@@ -32,18 +29,18 @@ export function AppLayout({ children }: AppLayoutProps) {
   const isAdmin = profile?.role === "admin";
   const isGroupPage = location.pathname.startsWith("/group/");
 
-  // Dashboard target depends on role
-  const dashboardPath = isAdvisor
-    ? "/advisor/dashboard"
+  // "Feed / Dashboard" target — traders go to their subscriber Feed,
+  // advisors/admins go to their own dashboards.
+  const feedItem = isAdvisor
+    ? { name: "Dashboard", path: "/advisor/dashboard", icon: Radio, show: !!user, exact: false }
     : isAdmin
-      ? "/admin"
-      : "/home";
+      ? { name: "Admin", path: "/admin", icon: Radio, show: !!user, exact: false }
+      : { name: "Feed", path: "/feed", icon: Radio, show: !!user, exact: false };
 
-  // Unified nav: Home (always /), Discover, Dashboard (logged-in only), Profile
   const navItems = [
     { name: "Home", path: "/", icon: Home, show: true, exact: true },
     { name: "Discover", path: "/discover", icon: Compass, show: true, exact: false },
-    { name: "Dashboard", path: dashboardPath, icon: LayoutDashboard, show: !!user, exact: false },
+    feedItem,
     { name: "Profile", path: "/profile", icon: User, show: !!user, exact: false },
   ];
 

@@ -41,6 +41,15 @@ export default function Login() {
     if (authLoading || !user || !profile) return;
     let cancelled = false;
     (async () => {
+      // Persist pending user_type captured from the Register role picker
+      // (works for both email confirm-then-login and Google OAuth callback).
+      try {
+        const pending = sessionStorage.getItem('pending_user_type');
+        if (pending && !profile.user_type && (pending === 'investor' || pending === 'trader')) {
+          await supabase.from('profiles').update({ user_type: pending }).eq('id', user.id);
+        }
+        sessionStorage.removeItem('pending_user_type');
+      } catch {}
       const { data: advisor } = await supabase.from('advisors').select('id').eq('user_id', user.id).maybeSingle();
       if (cancelled) return;
       if (profile.role === 'advisor' || advisor) {
@@ -48,7 +57,15 @@ export default function Login() {
       } else if (profile.role === 'admin') {
         navigate('/admin', { replace: true });
       } else {
-        navigate('/home', { replace: true });
+        // Trader: send to /feed only if they have active subscriptions,
+        // otherwise land them on the public home (`/`).
+        const nowIso = new Date().toISOString();
+        const { data: subs } = await supabase
+          .from('subscriptions').select('id')
+          .eq('user_id', user.id).eq('status', 'active')
+          .gte('end_date', nowIso).limit(1);
+        if (cancelled) return;
+        navigate((subs || []).length > 0 ? '/feed' : '/', { replace: true });
       }
     })();
     return () => { cancelled = true; };
@@ -106,7 +123,14 @@ export default function Login() {
       const { data: advisor } = await supabase.from('advisors').select('id').eq('user_id', authUser.id).maybeSingle();
       if (profile?.role === 'advisor' || advisor) navigate('/advisor/dashboard');
       else if (profile?.role === 'admin') navigate('/admin');
-      else navigate('/home');
+      else {
+        const nowIso = new Date().toISOString();
+        const { data: subs } = await supabase
+          .from('subscriptions').select('id')
+          .eq('user_id', authUser.id).eq('status', 'active')
+          .gte('end_date', nowIso).limit(1);
+        navigate((subs || []).length > 0 ? '/feed' : '/');
+      }
     }
     setLoading(false);
   };

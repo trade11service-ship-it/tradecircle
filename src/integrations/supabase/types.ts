@@ -646,6 +646,7 @@ export type Database = {
           phone: string | null
           role: string | null
           telegram_username: string | null
+          user_type: string | null
         }
         Insert: {
           bio?: string | null
@@ -656,6 +657,7 @@ export type Database = {
           phone?: string | null
           role?: string | null
           telegram_username?: string | null
+          user_type?: string | null
         }
         Update: {
           bio?: string | null
@@ -666,6 +668,7 @@ export type Database = {
           phone?: string | null
           role?: string | null
           telegram_username?: string | null
+          user_type?: string | null
         }
         Relationships: []
       }
