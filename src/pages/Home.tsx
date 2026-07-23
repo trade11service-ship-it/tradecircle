@@ -351,14 +351,14 @@ export default function Home() {
                               <span className="text-[11px] text-muted-foreground truncate">• {groupName}</span>
                               <span className="ml-auto text-[10px] text-muted-foreground inline-flex items-center gap-0.5"><Clock3 className="h-3 w-3" />{post.created_at ? new Date(post.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}</span>
                             </div>
-                            {isSignal ? (
+                            {isSignal && post.entry_price && post.entry_price > 0 ? (
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className="text-[14px] font-extrabold text-foreground">{post.instrument}</span>
                                 <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${isBuy ? "bg-primary/15 text-primary" : "bg-destructive/15 text-destructive"}`}>{isBuy ? "BUY" : "SELL"}</span>
-                                <span className="text-[11px] text-muted-foreground">Entry ₹{Number(post.entry_price||0).toLocaleString("en-IN")} • Tgt ₹{Number(post.target_price||0).toLocaleString("en-IN")} • SL ₹{Number(post.stop_loss||0).toLocaleString("en-IN")}</span>
+                                <span className="text-[11px] text-muted-foreground">Entry ₹{Number(post.entry_price).toLocaleString("en-IN")} • Tgt ₹{Number(post.target_price||0).toLocaleString("en-IN")} • SL ₹{Number(post.stop_loss||0).toLocaleString("en-IN")}</span>
                               </div>
                             ) : (
-                              <p className="text-[13px] text-foreground line-clamp-2">{post.message_text}</p>
+                              <p className="text-[13px] text-foreground line-clamp-2">{post.message_text || post.notes || post.instrument || ''}</p>
                             )}
                           </div>
                         </div>
@@ -368,34 +368,8 @@ export default function Home() {
                 )}
               </div>
             </div>
-
-            {/* MINIMIZED PUBLIC FEED — 3 latest only */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <h2 className="text-base font-bold text-foreground">Live Public Feed</h2>
-                <Link to="/explore" className="text-xs font-semibold text-primary inline-flex items-center gap-1">
-                  See more on Explore <ArrowRight className="h-3 w-3" />
-                </Link>
-              </div>
-              <div className="grid gap-2 sm:grid-cols-3">
-                {publicSignals.slice(0, 3).map(sig => (
-                  <Link key={sig.id} to={`/explore`} className="rounded-xl border border-border bg-card p-3 hover:bg-muted/40 transition">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center overflow-hidden border border-primary/20">
-                        {sig.advisors?.profile_photo_url ? <img src={sig.advisors.profile_photo_url} className="h-full w-full object-cover" /> : <User className="h-3.5 w-3.5 text-primary" />}
-                      </div>
-                      <span className="text-[11px] font-bold text-foreground truncate flex-1">{sig.advisors?.full_name}</span>
-                      <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${sig.signal_type === 'BUY' ? 'bg-primary/15 text-primary' : 'bg-destructive/15 text-destructive'}`}>{sig.signal_type}</span>
-                    </div>
-                    <p className="text-[13px] font-extrabold text-foreground truncate">{sig.instrument}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">Entry ₹{sig.entry_price} • Tgt ₹{sig.target_price}</p>
-                  </Link>
-                ))}
-                {publicSignals.length === 0 && (
-                  <div className="sm:col-span-3 rounded-xl border border-dashed border-border p-4 text-center text-xs text-muted-foreground">No public signals right now.</div>
-                )}
-              </div>
-            </div>
+            {/* Live Public Feed section intentionally removed for subscribed users —
+                the primary focus stays on their subscribed-group signals. */}
           </div>
         )}
       </main>
