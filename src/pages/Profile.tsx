@@ -518,6 +518,14 @@ export default function Profile() {
                 ))}
               </div>
             )}
+            {!editing && profile?.role === 'trader' && (
+              <div style={{ padding: '16px 20px', borderTop: '1px solid #F8F9FA' }}>
+                <p style={{ fontSize: 11, color: '#9CA3AF', fontWeight: 700, textTransform: 'uppercase' as const, marginBottom: 6 }}>About</p>
+                <p style={{ fontSize: 13, color: (profile as any)?.bio ? '#1A1A2E' : '#9CA3AF', fontStyle: (profile as any)?.bio ? 'normal' : 'italic', lineHeight: 1.5 }}>
+                  {(profile as any)?.bio || 'Add a short bio to introduce yourself to the community.'}
+                </p>
+              </div>
+            )}
           </div>
         )}
 
@@ -885,7 +893,7 @@ export default function Profile() {
 
           <div className="space-y-4">
             <div className="rounded-lg bg-muted/50 p-3 text-sm space-y-1">
-              <p className="font-semibold">⚠️ Important Notice:</p>
+              <p className="font-semibold inline-flex items-center gap-1.5"><AlertTriangle className="h-4 w-4 text-destructive" /> Important Notice:</p>
               <ul className="text-xs text-muted-foreground space-y-1 list-disc pl-4">
                 <li>All active subscribers will be notified before any action</li>
                 <li>Our team will review your request within 24-48 hours</li>
