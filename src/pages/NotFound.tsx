@@ -1,6 +1,5 @@
 import { useLocation, Link } from "react-router-dom";
 import { useEffect } from "react";
-import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 
@@ -10,7 +9,7 @@ const NotFound = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-off-white">
-      <Navbar />
+      
       <div className="flex-1 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-6xl font-extrabold text-foreground">404</h1>

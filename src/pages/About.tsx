@@ -1,5 +1,4 @@
 import { useEffect } from "react";
-import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { HeroSection } from "@/components/HeroSection";
 import { TrustBadges } from "@/components/TrustBadges";
@@ -14,7 +13,7 @@ export default function About() {
   }, []);
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
+      
 
       {/* Hero Section */}
       <HeroSection

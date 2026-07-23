@@ -1,10 +1,9 @@
-import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 
 export default function Refund() {
   return (
     <div className="min-h-screen bg-background">
-      <Navbar />
+      
       <section className="tc-section">
         <div className="container mx-auto max-w-3xl">
           <h1 className="tc-page-title mb-8">Refund Policy</h1>
