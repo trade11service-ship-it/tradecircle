@@ -326,7 +326,7 @@ export default function Profile() {
                   padding: '3px 12px', fontSize: 11, fontWeight: 700, color: '#1B5E20',
                 }}
               >
-                🎯 Active {profile?.role === 'advisor' ? 'Advisor' : 'Trader'}
+                <BadgeCheck className="h-3 w-3" /> Active {profile?.role === 'advisor' ? 'Advisor' : 'Trader'}
               </span>
             </div>
             <div className="flex items-center gap-2">
