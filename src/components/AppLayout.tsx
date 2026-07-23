@@ -53,11 +53,9 @@ export function AppLayout({ children }: AppLayoutProps) {
       {/* Desktop Sidebar (Fixed Left) */}
       <aside className="hidden md:flex flex-col w-[260px] lg:w-[280px] border-r border-border bg-card shrink-0 z-20 h-full">
         <div className="h-16 flex items-center px-6 border-b border-border">
-          <Link to="/" className="flex items-center gap-2 text-foreground">
-            <Logo size={34} className="rounded-md" />
-            <span className="text-xl font-extrabold tracking-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>
-              RA <span className="text-sky">Circle</span>
-            </span>
+          <Link to="/" className="flex items-center text-foreground" aria-label="RA Circle home">
+            <Logo size={34} />
+            <span className="sr-only">RA Circle</span>
           </Link>
         </div>
 
@@ -132,11 +130,9 @@ export function AppLayout({ children }: AppLayoutProps) {
         {/* Mobile Header — hidden on group pages (group page owns its own chat header) */}
         {!isGroupPage && (
           <header className="md:hidden h-14 flex items-center justify-between px-4 bg-card border-b border-border shrink-0 z-30">
-            <Link to="/" className="flex items-center gap-2">
-              <Logo size={30} className="rounded-md" />
-              <span className="text-lg font-extrabold tracking-tight text-foreground" style={{ fontFamily: 'Outfit, sans-serif' }}>
-                RA <span className="text-sky">Circle</span>
-              </span>
+            <Link to="/" className="flex items-center" aria-label="RA Circle home">
+              <Logo size={30} />
+              <span className="sr-only">RA Circle</span>
             </Link>
             <div className="flex items-center gap-2">
               {user ? (

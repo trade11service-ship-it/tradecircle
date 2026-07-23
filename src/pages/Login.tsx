@@ -155,7 +155,7 @@ export default function Login() {
             <div className="mb-3 flex items-start gap-2 rounded-lg border border-border bg-muted/30 p-3">
               <Checkbox id="google-terms" checked={googleTerms} onCheckedChange={(v) => setGoogleTerms(!!v)} className="mt-0.5" />
               <label htmlFor="google-terms" className="text-xs leading-snug text-muted-foreground cursor-pointer">
-                I agree to the <Link to="/terms" className="text-primary underline">Terms</Link> & <Link to="/privacy" className="text-primary underline">Privacy Policy</Link>. Required for first-time Google sign-up.
+                Your data is protected under India's DPDP Act 2023. We encrypt every session and never share your information with third parties. By continuing, you agree to our <Link to="/terms" className="text-primary underline">Terms</Link> & <Link to="/privacy" className="text-primary underline">Privacy Policy</Link>.
               </label>
             </div>
 

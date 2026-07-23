@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
-import { User, Mail, Phone, Lock, Eye, EyeOff, Shield, Calendar, Settings, AlertTriangle, Trash2, Pencil, Users, Send, MapPin, CheckCircle, LogOut, Camera, Image as ImageIcon } from 'lucide-react';
+import { User, Mail, Phone, Lock, Eye, EyeOff, Shield, Calendar, Settings, AlertTriangle, Trash2, Pencil, Users, Send, MapPin, CheckCircle, LogOut, Camera, Image as ImageIcon, IdCard, ClipboardList, Heart, ShieldCheck, Cog, BadgeCheck } from 'lucide-react';
 import { TelegramSettings } from '@/components/TelegramSettings';
 import {
   Dialog,
@@ -68,7 +68,8 @@ export default function Profile() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<'details' | 'subscriptions' | 'following' | 'security' | 'settings'>('details');
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ fullName: '', phone: '', telegramUsername: '' });
+  const [form, setForm] = useState({ fullName: '', phone: '', telegramUsername: '', bio: '' });
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [subscriptions, setSubscriptions] = useState<SubscriptionItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [passwords, setPasswords] = useState({ current: '', newPass: '', confirm: '' });
@@ -94,7 +95,7 @@ export default function Profile() {
   const [followingCount, setFollowingCount] = useState(0);
   const [followedGroups, setFollowedGroups] = useState<FollowedGroup[]>([]);
 
-  useEffect(() => { if (profile) setForm({ fullName: profile.full_name || '', phone: profile.phone || '', telegramUsername: profile.telegram_username || '' }); }, [profile]);
+  useEffect(() => { if (profile) setForm({ fullName: profile.full_name || '', phone: profile.phone || '', telegramUsername: profile.telegram_username || '', bio: (profile as any).bio || '' }); }, [profile]);
   useEffect(() => { if (user) { fetchSubscriptions(); fetchAdvisorData(); fetchDeletionRequests(); fetchFollowingCount(); } }, [user]);
 
   const fetchSubscriptions = async () => {
@@ -125,7 +126,14 @@ export default function Profile() {
 
   const handleSaveProfile = async () => {
     setLoading(true);
-    const { error } = await supabase.from('profiles').update({ full_name: sanitizeName(form.fullName), phone: sanitizePhone(form.phone), telegram_username: sanitizeText(form.telegramUsername) }).eq('id', user!.id);
+    const bioTrimmed = sanitizeTextarea(form.bio || '').slice(0, 280);
+    const payload: Record<string, unknown> = {
+      full_name: sanitizeName(form.fullName),
+      phone: sanitizePhone(form.phone),
+      telegram_username: sanitizeText(form.telegramUsername),
+    };
+    if (profile?.role === 'trader') payload.bio = bioTrimmed;
+    const { error } = await supabase.from('profiles').update(payload).eq('id', user!.id);
     if (error) toast.error(error.message);
     else { toast.success('Profile updated'); setEditing(false); }
     setLoading(false);
@@ -193,6 +201,7 @@ export default function Profile() {
     setDeleteType(type);
     setSelectedGroup(group || null);
     setDeleteReason('');
+    setDeleteConfirmText('');
     setDeleteDialogOpen(true);
   };
 
@@ -250,19 +259,19 @@ export default function Profile() {
   };
 
   const tabs = [
-    { key: 'details' as const, label: 'My Details', icon: '👤' },
-    { key: 'subscriptions' as const, label: 'Subscriptions', icon: '📋' },
-    { key: 'following' as const, label: 'Following', icon: '❤️' },
-    { key: 'security' as const, label: 'Security', icon: '🛡️' },
-    { key: 'settings' as const, label: 'Settings', icon: '⚙️' },
+    { key: 'details' as const, label: 'My Details', icon: IdCard },
+    { key: 'subscriptions' as const, label: 'Subscriptions', icon: ClipboardList },
+    { key: 'following' as const, label: 'Following', icon: Heart },
+    { key: 'security' as const, label: 'Security', icon: ShieldCheck },
+    { key: 'settings' as const, label: 'Settings', icon: Cog },
   ];
 
   return (
     <div className="min-h-full h-full flex flex-col" style={{ background: '#F8F9FA' }}>
       
       {/* ===== PROFILE HERO ===== */}
-      <div className="bg-card shadow-[0_4px_20px_rgba(0,0,0,0.07)]" style={{ borderRadius: '0 0 28px 28px', marginBottom: 16 }}>
-        {/* Cover strip */}
+      <div className="relative bg-card shadow-[0_4px_20px_rgba(0,0,0,0.07)]" style={{ borderRadius: '0 0 28px 28px', marginBottom: 16 }}>
+        {/* Cover strip — clips only the cover image, NOT the avatar */}
         <div
           className="relative h-[110px] overflow-hidden"
           style={{
@@ -277,28 +286,30 @@ export default function Profile() {
               <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={!!uploadingAdvisorImage} onChange={e => handleAdvisorImageUpload(e.target.files?.[0], 'cover')} />
             </label>
           )}
-          {/* Avatar */}
-          <label
-            className="absolute flex cursor-pointer items-center justify-center overflow-hidden text-[28px] font-extrabold text-white group"
-            style={{
-              bottom: -36, left: 20, width: 72, height: 72, borderRadius: '50%',
-              background: 'linear-gradient(135deg, #1B5E20, #0D47A1)',
-              border: '3px solid white', boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-            }}
-          >
-            {advisor?.profile_photo_url ? (
-              <img src={advisor.profile_photo_url} alt={profile?.full_name || 'Advisor'} className="h-full w-full object-cover" />
-            ) : (
-              (profile?.full_name || 'U').charAt(0).toUpperCase()
-            )}
-            {advisor && (
-              <span className="absolute inset-0 hidden items-center justify-center bg-foreground/55 group-hover:flex">
-                <Camera className="h-5 w-5" />
-              </span>
-            )}
-            {advisor && <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={!!uploadingAdvisorImage} onChange={e => handleAdvisorImageUpload(e.target.files?.[0], 'avatar')} />}
-          </label>
         </div>
+
+        {/* Avatar — sibling of the cover strip so overflow-hidden can't clip it */}
+        <label
+          className="absolute z-10 flex cursor-pointer items-center justify-center overflow-hidden text-[28px] font-extrabold text-white group ring-4 ring-card"
+          style={{
+            top: 74, left: 20, width: 72, height: 72, borderRadius: '50%',
+            background: 'linear-gradient(135deg, #1B5E20, #0D47A1)',
+            boxShadow: '0 6px 20px rgba(0,0,0,0.18)',
+          }}
+        >
+          {advisor?.profile_photo_url ? (
+            <img src={advisor.profile_photo_url} alt={profile?.full_name || 'Advisor'} className="h-full w-full object-cover" />
+          ) : (
+            (profile?.full_name || 'U').charAt(0).toUpperCase()
+          )}
+          {advisor && (
+            <span className="absolute inset-0 hidden items-center justify-center bg-foreground/55 group-hover:flex">
+              <Camera className="h-5 w-5" />
+            </span>
+          )}
+          {advisor && <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={!!uploadingAdvisorImage} onChange={e => handleAdvisorImageUpload(e.target.files?.[0], 'avatar')} />}
+        </label>
+
 
         {/* Content below cover */}
         <div className="px-5 pb-5" style={{ paddingTop: 48 }}>
@@ -316,7 +327,7 @@ export default function Profile() {
                   padding: '3px 12px', fontSize: 11, fontWeight: 700, color: '#1B5E20',
                 }}
               >
-                🎯 Active {profile?.role === 'advisor' ? 'Advisor' : 'Trader'}
+                <BadgeCheck className="h-3 w-3" /> Active {profile?.role === 'advisor' ? 'Advisor' : 'Trader'}
               </span>
             </div>
             <div className="flex items-center gap-2">
@@ -399,7 +410,7 @@ export default function Profile() {
                 boxShadow: tab === t.key ? '0 2px 6px rgba(0,0,0,0.15)' : 'none',
               }}
             >
-              <span>{t.icon}</span> {t.label}
+              <t.icon className="h-4 w-4" /> {t.label}
             </button>
           ))}
         </div>
@@ -449,6 +460,18 @@ export default function Profile() {
                     <Input value={form.telegramUsername} onChange={e => setForm({ ...form, telegramUsername: e.target.value })} className="pl-10" placeholder="@username" />
                   </div>
                 </div>
+                {profile?.role === 'trader' && (
+                  <div className="space-y-2">
+                    <Label className="text-xs font-semibold uppercase" style={{ color: '#9CA3AF' }}>Short Bio <span className="text-[10px] font-normal normal-case text-muted-foreground">(optional, {280 - (form.bio?.length || 0)} chars left)</span></Label>
+                    <Textarea
+                      value={form.bio}
+                      maxLength={280}
+                      onChange={e => setForm({ ...form, bio: e.target.value })}
+                      rows={3}
+                      placeholder="e.g. 5 years trading Bank Nifty options. Swing + intraday."
+                    />
+                  </div>
+                )}
                 <div className="flex gap-2 pt-2">
                   <Button onClick={handleSaveProfile} disabled={loading} className="font-semibold" style={{ background: '#1B5E20' }}>
                     {loading ? 'Saving...' : 'Save Changes'}
@@ -494,6 +517,14 @@ export default function Profile() {
                     )}
                   </div>
                 ))}
+              </div>
+            )}
+            {!editing && profile?.role === 'trader' && (
+              <div style={{ padding: '16px 20px', borderTop: '1px solid #F8F9FA' }}>
+                <p style={{ fontSize: 11, color: '#9CA3AF', fontWeight: 700, textTransform: 'uppercase' as const, marginBottom: 6 }}>About</p>
+                <p style={{ fontSize: 13, color: (profile as any)?.bio ? '#1A1A2E' : '#9CA3AF', fontStyle: (profile as any)?.bio ? 'normal' : 'italic', lineHeight: 1.5 }}>
+                  {(profile as any)?.bio || 'Add a short bio to introduce yourself to the community.'}
+                </p>
               </div>
             )}
           </div>
@@ -863,7 +894,7 @@ export default function Profile() {
 
           <div className="space-y-4">
             <div className="rounded-lg bg-muted/50 p-3 text-sm space-y-1">
-              <p className="font-semibold">⚠️ Important Notice:</p>
+              <p className="font-semibold inline-flex items-center gap-1.5"><AlertTriangle className="h-4 w-4 text-destructive" /> Important Notice:</p>
               <ul className="text-xs text-muted-foreground space-y-1 list-disc pl-4">
                 <li>All active subscribers will be notified before any action</li>
                 <li>Our team will review your request within 24-48 hours</li>
@@ -885,9 +916,19 @@ export default function Profile() {
             </div>
           </div>
 
+          <div className="space-y-2 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+            <Label className="text-xs font-semibold text-destructive">Type <span className="font-mono">DELETE</span> to confirm</Label>
+            <Input
+              value={deleteConfirmText}
+              onChange={e => setDeleteConfirmText(e.target.value)}
+              placeholder="DELETE"
+              autoComplete="off"
+            />
+          </div>
+
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleSubmitDeletionRequest} disabled={submittingRequest || !deleteReason.trim()}>
+            <Button variant="destructive" onClick={handleSubmitDeletionRequest} disabled={submittingRequest || !deleteReason.trim() || deleteConfirmText.trim() !== 'DELETE'}>
               {submittingRequest ? 'Submitting...' : 'Submit Request'}
             </Button>
           </DialogFooter>

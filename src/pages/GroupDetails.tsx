@@ -215,8 +215,10 @@ export default function GroupDetails() {
                 <h2 className="text-[15px] font-bold text-foreground truncate leading-tight">{group.name}</h2>
                 <CheckCircle2 className="h-3.5 w-3.5 text-primary shrink-0" />
               </div>
-              <div className="text-[11px] text-muted-foreground font-medium truncate">
-                {advisorName} • 📊 {stats.signalCount} • ✅ {stats.winRate !== null ? `${stats.winRate}%` : '—'}
+              <div className="text-[11px] text-muted-foreground font-medium truncate inline-flex items-center gap-1">
+                <span className="truncate">{advisorName}</span> ·
+                <Activity className="h-3 w-3" /> {stats.signalCount} ·
+                <CheckCircle2 className="h-3 w-3" /> {stats.winRate !== null ? `${stats.winRate}%` : '—'}
               </div>
             </Link>
             <FollowButton groupId={group.id} size="sm" />

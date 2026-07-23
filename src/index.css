@@ -25,7 +25,7 @@
     --secondary-foreground: 0 0% 100%;
 
     --muted: 210 20% 96%;             /* slate-100 */
-    --muted-foreground: 215 16% 47%;  /* slate-500 */
+    --muted-foreground: 215 19% 38%;  /* WCAG AA on white cards */
 
     --accent: 199 89% 48%;            /* sky accent */
     --accent-foreground: 0 0% 100%;
