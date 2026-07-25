@@ -13,6 +13,7 @@ type FeedPost = {
   signal_type: string | null;
   entry_price: number | null;
   target_price: number | null;
+  target_price_2?: number | null;
   stop_loss: number | null;
   timeframe: string | null;
   notes: string | null;
@@ -99,15 +100,21 @@ function FeedRow({
               )}
             </div>
             {(post.entry_price || post.target_price || post.stop_loss) && (
-              <div className="grid grid-cols-3 gap-3 max-w-md">
+              <div className={`grid ${post.target_price_2 ? 'grid-cols-4' : 'grid-cols-3'} gap-3 max-w-md`}>
                 <div>
                   <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Entry</p>
                   <p className="text-[13px] font-mono font-semibold text-foreground tabular-nums">₹{Number(post.entry_price || 0).toLocaleString("en-IN")}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Target</p>
+                  <p className="text-[10px] uppercase tracking-wider text-muted-foreground">{post.target_price_2 ? 'Target 1' : 'Target'}</p>
                   <p className="text-[13px] font-mono font-semibold text-emerald tabular-nums">₹{Number(post.target_price || 0).toLocaleString("en-IN")}</p>
                 </div>
+                {post.target_price_2 ? (
+                  <div>
+                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Target 2</p>
+                    <p className="text-[13px] font-mono font-semibold text-emerald tabular-nums">₹{Number(post.target_price_2).toLocaleString("en-IN")}</p>
+                  </div>
+                ) : null}
                 <div>
                   <p className="text-[10px] uppercase tracking-wider text-muted-foreground">Stop loss</p>
                   <p className="text-[13px] font-mono font-semibold text-destructive tabular-nums">₹{Number(post.stop_loss || 0).toLocaleString("en-IN")}</p>
@@ -190,7 +197,7 @@ export function PublicMixedFeed({ preview = false, maxItems = 12, chatMode = fal
     setLoading(true);
     const { data: rows } = await supabase
       .from("signals")
-      .select("id,post_type,instrument,signal_type,entry_price,target_price,stop_loss,timeframe,notes,message_text,image_url,created_at,group_id,advisor_id,is_public,result,signal_date")
+      .select("id,post_type,instrument,signal_type,entry_price,target_price,target_price_2,stop_loss,timeframe,notes,message_text,image_url,created_at,group_id,advisor_id,is_public,result,signal_date")
       .eq("is_public", true)
       .order("created_at", { ascending: false })
       .range(nextOffset, nextOffset + pageSize - 1);
@@ -322,6 +329,7 @@ export function PublicMixedFeed({ preview = false, maxItems = 12, chatMode = fal
             signal_type: post.signal_type,
           });
           freeBadge = freeCheck.reason === 'fno_expired' ? 'F&O signal · 24hr delay'
+            : freeCheck.reason === 'public' ? 'Public signal'
             : freeCheck.reason === 'public_delayed' ? 'Free · signal expired'
             : null;
         }

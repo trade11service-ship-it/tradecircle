@@ -60,7 +60,8 @@ export default function AdvisorDashboard() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [posting, setPosting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [signalForm, setSignalForm] = useState({ groupId: '', instrument: '', signalType: 'BUY', entryPrice: '', targetPrice: '', stopLoss: '', timeframe: 'Intraday', notes: '', isPublic: false });
+  const [signalForm, setSignalForm] = useState({ groupId: '', instrument: '', signalType: 'BUY', entryPrice: '', targetPrice: '', targetPrice2: '', stopLoss: '', timeframe: 'Intraday', notes: '', isPublic: false });
+  const [showTarget2, setShowTarget2] = useState(false);
 
   // Feed view
   const [feedGroupId, setFeedGroupId] = useState<string | null>(null);
@@ -367,6 +368,7 @@ export default function AdvisorDashboard() {
   const postSignal = async () => {
     if (!advisor) return;
     setPosting(true);
+    const t2 = showTarget2 && signalForm.targetPrice2.trim() ? parseFirstNumber(signalForm.targetPrice2) : null;
     const { data: newSignal, error } = await supabase.from('signals').insert({
       group_id: signalForm.groupId,
       advisor_id: advisor.id,
@@ -375,11 +377,12 @@ export default function AdvisorDashboard() {
       signal_type: signalForm.signalType,
       entry_price: parseFirstNumber(signalForm.entryPrice),
       target_price: parseFirstNumber(signalForm.targetPrice),
+      target_price_2: t2,
       stop_loss: parseFirstNumber(signalForm.stopLoss),
       timeframe: signalForm.timeframe,
       notes: sanitizeTextarea(signalForm.notes),
       is_public: signalForm.isPublic,
-    }).select().single();
+    } as any).select().single();
 
     if (error) { toast.error(error.message); setPosting(false); return; }
     toast.success('Signal posted! Sending Telegram alerts...');
@@ -395,7 +398,8 @@ export default function AdvisorDashboard() {
     } catch (err) {
       console.error('Telegram send error:', err);
     }
-    setSignalForm({ groupId: signalForm.groupId, instrument: '', signalType: 'BUY', entryPrice: '', targetPrice: '', stopLoss: '', timeframe: 'Intraday', notes: '', isPublic: false });
+    setSignalForm({ groupId: signalForm.groupId, instrument: '', signalType: 'BUY', entryPrice: '', targetPrice: '', targetPrice2: '', stopLoss: '', timeframe: 'Intraday', notes: '', isPublic: false });
+    setShowTarget2(false);
     setPosting(false);
     fetchData();
   };
@@ -808,7 +812,7 @@ export default function AdvisorDashboard() {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div><Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Entry Price</Label><Input type="text" inputMode="decimal" placeholder="e.g. 240 or 240-245" value={signalForm.entryPrice} onChange={e => setSignalForm({ ...signalForm, entryPrice: e.target.value })} className="mt-1.5 border-[1.5px]" /></div>
-                    <div><Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Target Price</Label><Input type="text" inputMode="decimal" placeholder="e.g. 260" value={signalForm.targetPrice} onChange={e => setSignalForm({ ...signalForm, targetPrice: e.target.value })} className="mt-1.5 border-[1.5px]" /></div>
+                    <div><Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">{showTarget2 ? 'Target 1' : 'Target Price'}</Label><Input type="text" inputMode="decimal" placeholder="e.g. 260" value={signalForm.targetPrice} onChange={e => setSignalForm({ ...signalForm, targetPrice: e.target.value })} className="mt-1.5 border-[1.5px]" /></div>
                     <div><Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Stop Loss</Label><Input type="text" inputMode="decimal" placeholder="e.g. 235" value={signalForm.stopLoss} onChange={e => setSignalForm({ ...signalForm, stopLoss: e.target.value })} className="mt-1.5 border-[1.5px]" /></div>
                     <div>
                       <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Timeframe</Label>
@@ -820,7 +824,23 @@ export default function AdvisorDashboard() {
                           <SelectItem value="Positional">Positional</SelectItem>
                         </SelectContent>
                       </Select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="add-t2"
+                      type="checkbox"
+                      checked={showTarget2}
+                      onChange={e => { setShowTarget2(e.target.checked); if (!e.target.checked) setSignalForm(f => ({ ...f, targetPrice2: '' })); }}
+                      className="h-4 w-4 rounded border-border accent-primary"
+                    />
+                    <Label htmlFor="add-t2" className="text-xs font-semibold text-foreground cursor-pointer">Add second target (Target 2)</Label>
+                  </div>
+                  {showTarget2 && (
+                    <div>
+                      <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Target 2 (optional)</Label>
+                      <Input type="text" inputMode="decimal" placeholder="e.g. 275" value={signalForm.targetPrice2} onChange={e => setSignalForm({ ...signalForm, targetPrice2: e.target.value })} className="mt-1.5 border-[1.5px]" />
                     </div>
+                  )}
                   </div>
                   <div>
                     <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Notes (optional)</Label>

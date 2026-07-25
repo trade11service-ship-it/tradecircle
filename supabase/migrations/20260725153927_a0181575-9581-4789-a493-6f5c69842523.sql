@@ -1,0 +1,1 @@
+ALTER TABLE public.signals ADD COLUMN IF NOT EXISTS target_price_2 numeric;

@@ -989,6 +989,7 @@ export type Database = {
           signal_type: string | null
           stop_loss: number | null
           target_price: number | null
+          target_price_2: number | null
           timeframe: string | null
         }
         Insert: {
@@ -1008,6 +1009,7 @@ export type Database = {
           signal_type?: string | null
           stop_loss?: number | null
           target_price?: number | null
+          target_price_2?: number | null
           timeframe?: string | null
         }
         Update: {
@@ -1027,6 +1029,7 @@ export type Database = {
           signal_type?: string | null
           stop_loss?: number | null
           target_price?: number | null
+          target_price_2?: number | null
           timeframe?: string | null
         }
         Relationships: [

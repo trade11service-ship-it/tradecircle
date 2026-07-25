@@ -13,6 +13,7 @@ interface FeedPost {
   signal_type: string | null;
   entry_price: number | null;
   target_price: number | null;
+  target_price_2?: number | null;
   stop_loss: number | null;
   timeframe: string | null;
   notes: string | null;
@@ -158,15 +159,21 @@ function SignalBubble({ post, advisorName, advisorPhoto, blurred, freeBadge, isO
           </div>
 
           {/* Prices — blurred for non-subscribers */}
-          <div className={`grid grid-cols-3 gap-2 text-center rounded-lg bg-card/60 p-2 ${blurred ? 'blur-[6px] select-none pointer-events-none' : ''}`}>
+          <div className={`grid ${post.target_price_2 ? 'grid-cols-4' : 'grid-cols-3'} gap-2 text-center rounded-lg bg-card/60 p-2 ${blurred ? 'blur-[6px] select-none pointer-events-none' : ''}`}>
             <div>
               <p className="text-[10px] text-muted-foreground">Entry</p>
               <p className="text-[15px] font-bold text-foreground">₹{Number(post.entry_price).toLocaleString('en-IN')}</p>
             </div>
             <div>
-              <p className="text-[10px] text-muted-foreground">Target</p>
+              <p className="text-[10px] text-muted-foreground">{post.target_price_2 ? 'Target 1' : 'Target'}</p>
               <p className="text-[15px] font-bold text-primary">₹{Number(post.target_price).toLocaleString('en-IN')}</p>
             </div>
+            {post.target_price_2 && (
+              <div>
+                <p className="text-[10px] text-muted-foreground">Target 2</p>
+                <p className="text-[15px] font-bold text-primary">₹{Number(post.target_price_2).toLocaleString('en-IN')}</p>
+              </div>
+            )}
             <div>
               <p className="text-[10px] text-muted-foreground">Stop Loss</p>
               <p className="text-[15px] font-bold text-destructive">₹{Number(post.stop_loss).toLocaleString('en-IN')}</p>
