@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronDown, User, Rss, ShieldCheck, Lock } from "lucide-react";
+import { ChevronDown, User, Rss, ShieldCheck, Lock, ArrowDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { shouldShowFree } from "@/lib/accessControl";
 import { Button } from "@/components/ui/button";
@@ -137,6 +137,8 @@ function FeedRow({
 type PublicMixedFeedProps = {
   preview?: boolean;
   maxItems?: number;
+  /** When true, render as a live chat: oldest at top, newest at bottom, auto-stick to bottom. */
+  chatMode?: boolean;
 };
 
 export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedFeedProps) {
