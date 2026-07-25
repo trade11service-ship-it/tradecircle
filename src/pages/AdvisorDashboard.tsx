@@ -836,9 +836,9 @@ export default function AdvisorDashboard() {
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
-                    <div><Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Entry Price</Label><Input type="number" value={signalForm.entryPrice} onChange={e => setSignalForm({ ...signalForm, entryPrice: e.target.value })} className="mt-1.5 border-[1.5px]" /></div>
-                    <div><Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Target Price</Label><Input type="number" value={signalForm.targetPrice} onChange={e => setSignalForm({ ...signalForm, targetPrice: e.target.value })} className="mt-1.5 border-[1.5px]" /></div>
-                    <div><Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Stop Loss</Label><Input type="number" value={signalForm.stopLoss} onChange={e => setSignalForm({ ...signalForm, stopLoss: e.target.value })} className="mt-1.5 border-[1.5px]" /></div>
+                    <div><Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Entry Price</Label><Input type="text" inputMode="decimal" placeholder="e.g. 240 or 240-245" value={signalForm.entryPrice} onChange={e => setSignalForm({ ...signalForm, entryPrice: e.target.value })} className="mt-1.5 border-[1.5px]" /></div>
+                    <div><Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Target Price</Label><Input type="text" inputMode="decimal" placeholder="e.g. 260" value={signalForm.targetPrice} onChange={e => setSignalForm({ ...signalForm, targetPrice: e.target.value })} className="mt-1.5 border-[1.5px]" /></div>
+                    <div><Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Stop Loss</Label><Input type="text" inputMode="decimal" placeholder="e.g. 235" value={signalForm.stopLoss} onChange={e => setSignalForm({ ...signalForm, stopLoss: e.target.value })} className="mt-1.5 border-[1.5px]" /></div>
                     <div>
                       <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Timeframe</Label>
                       <Select value={signalForm.timeframe} onValueChange={v => setSignalForm({ ...signalForm, timeframe: v })}>
