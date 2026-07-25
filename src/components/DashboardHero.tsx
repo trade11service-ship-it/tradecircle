@@ -21,9 +21,9 @@ const greetingFor = () => {
 };
 
 const variantBg: Record<NonNullable<DashboardHeroProps["variant"]>, string> = {
-  trader: "from-secondary via-secondary to-primary",     // navy -> green
-  advisor: "from-primary via-primary to-secondary",      // green -> navy
-  admin: "from-[hsl(220,40%,15%)] via-[hsl(214,89%,22%)] to-secondary", // executive dark
+  trader: " via-secondary ",     // navy -> green
+  advisor: "bg-primary via-primary ",      // green -> navy
+  admin: "from-[hsl(220,40%,15%)] via-[hsl(214,89%,22%)] ", // executive dark
 };
 
 export function DashboardHero({
@@ -38,7 +38,7 @@ export function DashboardHero({
   const first = (name || "There").split(" ")[0];
   return (
     <section
-      className={`relative overflow-hidden rounded-3xl mb-6 text-white bg-gradient-to-br ${variantBg[variant]} shadow-[0_10px_30px_-12px_rgba(13,71,161,0.45)]`}
+      className={`relative overflow-hidden rounded-3xl mb-6 text-white 
     >
       {/* Decorative layers */}
       <div className="pointer-events-none absolute inset-0 opacity-[0.07]"

@@ -148,7 +148,7 @@ export default function About() {
         </section>
 
         {/* CTA Section */}
-        <section className="mt-16 relative overflow-hidden tc-gradient-cta rounded-2xl p-10 text-center text-white">
+        <section className="mt-16 relative overflow-hidden bg-primary rounded-2xl p-10 text-center text-white">
           <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)', backgroundSize: '40px 40px' }} />
           <div className="relative z-10">
             <h2 className="text-2xl font-extrabold mb-3" style={{ fontFamily: 'Outfit, sans-serif' }}>

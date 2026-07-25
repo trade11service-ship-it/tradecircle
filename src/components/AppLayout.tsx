@@ -91,7 +91,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           {user ? (
             <>
               <div className="flex items-center gap-3 px-4 py-3 mb-2 rounded-xl bg-muted/50 border border-border/50">
-                <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white font-bold shrink-0 shadow-inner">
+                <div className="h-10 w-10 rounded-full ">
                   {(profile?.full_name || "U").charAt(0).toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">

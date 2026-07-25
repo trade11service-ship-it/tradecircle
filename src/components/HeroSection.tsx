@@ -17,7 +17,7 @@ interface HeroSectionProps {
 
 export function HeroSection({ title, subtitle, cta, secondaryCta }: HeroSectionProps) {
   return (
-    <section className="relative overflow-hidden tc-gradient-hero py-20 md:py-28">
+    <section className="relative overflow-hidden bg-primary py-20 md:py-28">
       {/* Ambient orbs */}
       <div className="absolute top-20 left-[10%] w-[300px] h-[300px] rounded-full bg-primary/8 blur-[100px] pointer-events-none" />
       <div className="absolute bottom-10 right-[10%] w-[300px] h-[300px] rounded-full bg-secondary/8 blur-[100px] pointer-events-none" />

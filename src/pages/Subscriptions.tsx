@@ -210,7 +210,7 @@ export default function Subscriptions() {
         )}
 
         {/* CTA Section */}
-        <div className="mt-10 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded-lg p-8 text-center">
+        <div className="mt-10 ">
           <h2 className="text-2xl font-bold mb-3">
             Explore Premium Advisors
           </h2>
