@@ -309,43 +309,70 @@ export function PublicMixedFeed({ preview = false, maxItems = 12, chatMode = fal
     );
   }
 
+  const listBody = (
+    <div className="divide-y divide-border">
+      {visiblePosts.map((post) => {
+        let freeBadge: string | null = null;
+        if (post.post_type === 'signal') {
+          const freeCheck = shouldShowFree({
+            post_type: post.post_type,
+            timeframe: post.timeframe,
+            is_public: post.is_public,
+            created_at: post.created_at,
+            signal_type: post.signal_type,
+          });
+          freeBadge = freeCheck.reason === 'fno_expired' ? 'F&O signal · 24hr delay'
+            : freeCheck.reason === 'public_delayed' ? 'Free · signal expired'
+            : null;
+        }
+        return (
+          <Link key={post.id} to={`/group/${post.group_id}`} className="block transition-colors hover:bg-slate-50">
+            <FeedRow
+              post={post}
+              advisor={advisorMap[post.advisor_id]}
+              groupName={groupMap[post.group_id]?.name}
+              freeBadge={freeBadge}
+            />
+          </Link>
+        );
+      })}
+    </div>
+  );
+
+  if (chatMode) {
+    return (
+      <div className="relative flex flex-col h-full">
+        <div className="shrink-0 flex items-center gap-1.5 px-4 py-2.5 border-b border-border text-[12px] text-muted-foreground bg-card">
+          <Lock className="h-3 w-3" strokeWidth={1.75} />
+          Live feed · newest at the bottom. Subscriber data is masked end-to-end.
+        </div>
+        <div
+          ref={scrollWrapRef}
+          onScroll={onScroll}
+          className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-background"
+          style={{ WebkitOverflowScrolling: "touch" as any }}
+        >
+          {listBody}
+        </div>
+        {showNewPill && (
+          <button
+            onClick={jumpToBottom}
+            className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-primary text-primary-foreground text-[12px] font-semibold px-3.5 h-8 shadow-lg flex items-center gap-1.5"
+          >
+            <ArrowDown className="h-3.5 w-3.5" /> New signals
+          </button>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div>
-      {/* Top note — one line, no per-row PII badges */}
       <div className="flex items-center gap-1.5 px-4 py-2.5 border-b border-border text-[12px] text-muted-foreground">
         <Lock className="h-3 w-3" strokeWidth={1.75} />
         Subscriber data is masked end-to-end.
       </div>
-
-      <div className="divide-y divide-border">
-        {visiblePosts.map((post) => {
-          let freeBadge: string | null = null;
-          if (post.post_type === 'signal') {
-            const freeCheck = shouldShowFree({
-              post_type: post.post_type,
-              timeframe: post.timeframe,
-              is_public: post.is_public,
-              created_at: post.created_at,
-              signal_type: post.signal_type,
-            });
-            freeBadge = freeCheck.reason === 'fno_expired' ? 'F&O signal · 24hr delay'
-              : freeCheck.reason === 'public_delayed' ? 'Free · signal expired'
-              : null;
-          }
-
-          return (
-            <Link key={post.id} to={`/group/${post.group_id}`} className="block transition-colors hover:bg-slate-50">
-              <FeedRow
-                post={post}
-                advisor={advisorMap[post.advisor_id]}
-                groupName={groupMap[post.group_id]?.name}
-                freeBadge={freeBadge}
-              />
-            </Link>
-          );
-        })}
-      </div>
-
+      {listBody}
       {!preview && (
         <div className="p-4 flex items-center justify-center border-t border-border">
           <Button
