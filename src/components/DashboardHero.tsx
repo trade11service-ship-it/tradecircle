@@ -1,16 +1,16 @@
 import { ReactNode } from "react";
-import { Shield, Sparkles } from "lucide-react";
+import { Shield } from "lucide-react";
 
 type Stat = { label: string; value: string | number; accent?: "default" | "success" | "warn" };
 
 interface DashboardHeroProps {
   name: string;
-  roleLabel: string;          // e.g. "Trader" | "SEBI Advisor" | "Super Admin"
-  subtitle?: string;           // line under greeting
-  badge?: string;              // small pill (e.g. SEBI reg, "Platform Live")
+  roleLabel: string;
+  subtitle?: string;
+  badge?: string;
   variant?: "trader" | "advisor" | "admin";
-  stats?: Stat[];              // up to 4 inline KPIs
-  actions?: ReactNode;         // CTA buttons
+  stats?: Stat[];
+  actions?: ReactNode;
 }
 
 const greetingFor = () => {
@@ -20,52 +20,37 @@ const greetingFor = () => {
   return "Good evening";
 };
 
-const variantBg: Record<NonNullable<DashboardHeroProps["variant"]>, string> = {
-  trader: " via-secondary ",     // navy -> green
-  advisor: "bg-primary via-primary ",      // green -> navy
-  admin: "from-[hsl(220,40%,15%)] via-[hsl(214,89%,22%)] ", // executive dark
-};
-
+/**
+ * Flat, dense dashboard header — no gradients, no orbs, no glass blur.
+ * Solid navy surface, restrained KPI tiles.
+ */
 export function DashboardHero({
   name,
   roleLabel,
   subtitle,
   badge,
-  variant = "trader",
   stats = [],
   actions,
 }: DashboardHeroProps) {
   const first = (name || "There").split(" ")[0];
   return (
-    <section
-      className={`relative overflow-hidden rounded-3xl mb-6 text-white 
-    >
-      {/* Decorative layers */}
-      <div className="pointer-events-none absolute inset-0 opacity-[0.07]"
-        style={{
-          backgroundImage:
-            "radial-gradient(circle at 1px 1px, white 1px, transparent 0)",
-          backgroundSize: "22px 22px",
-        }} />
-      <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
-      <div className="pointer-events-none absolute -left-10 -bottom-16 h-56 w-56 rounded-full bg-white/5 blur-3xl" />
-
-      <div className="relative p-5 sm:p-7">
+    <section className="rounded-xl bg-primary text-primary-foreground mb-6 border border-primary">
+      <div className="p-5 sm:p-6">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div className="min-w-0 flex-1">
-            <div className="inline-flex items-center gap-1.5 rounded-full bg-white/15 backdrop-blur px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white/90 border border-white/15">
-              <Sparkles className="h-3 w-3" /> {roleLabel}
-            </div>
-            <h1 className="mt-3 text-[26px] sm:text-[32px] leading-tight font-black tracking-tight">
-              {greetingFor()}, <span className="text-white">{first}</span>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-white/60">
+              {roleLabel}
+            </p>
+            <h1 className="mt-1 text-[24px] sm:text-[28px] leading-tight font-bold tracking-tight text-white">
+              {greetingFor()}, {first}
             </h1>
             {subtitle && (
-              <p className="mt-1.5 text-[13px] sm:text-sm text-white/80 max-w-xl">
+              <p className="mt-2 text-[14px] text-white/70 max-w-xl leading-relaxed">
                 {subtitle}
               </p>
             )}
             {badge && (
-              <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/10 border border-white/20 backdrop-blur px-3 py-1 text-[11px] font-semibold text-white/95">
+              <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/10 border border-white/15 px-2.5 py-1 text-[11px] font-semibold text-white/90">
                 <Shield className="h-3 w-3" /> {badge}
               </div>
             )}
@@ -77,7 +62,7 @@ export function DashboardHero({
 
         {stats.length > 0 && (
           <div
-            className={`mt-6 grid gap-2.5 ${
+            className={`mt-5 grid gap-3 ${
               stats.length === 4
                 ? "grid-cols-2 sm:grid-cols-4"
                 : stats.length === 3
@@ -88,12 +73,12 @@ export function DashboardHero({
             {stats.map((s) => (
               <div
                 key={s.label}
-                className="rounded-2xl bg-white/10 backdrop-blur-sm border border-white/15 px-3 py-2.5 sm:px-4 sm:py-3 hover:bg-white/15 transition-colors"
+                className="rounded-[10px] bg-white/5 border border-white/10 px-3 py-3"
               >
-                <p className="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-white/70">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-white/60">
                   {s.label}
                 </p>
-                <p className="text-lg sm:text-2xl font-black tracking-tight mt-0.5 text-white">
+                <p className="mt-1 text-[20px] font-bold tabular-nums text-white">
                   {s.value}
                 </p>
               </div>
