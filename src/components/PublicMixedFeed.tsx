@@ -329,6 +329,7 @@ export function PublicMixedFeed({ preview = false, maxItems = 12, chatMode = fal
             signal_type: post.signal_type,
           });
           freeBadge = freeCheck.reason === 'fno_expired' ? 'F&O signal · 24hr delay'
+            : freeCheck.reason === 'public' ? 'Public signal'
             : freeCheck.reason === 'public_delayed' ? 'Free · signal expired'
             : null;
         }
