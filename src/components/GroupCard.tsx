@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom';
-import { ShieldCheck } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ShieldCheck, ArrowUpRight } from 'lucide-react';
 
 interface GroupCardProps {
   groupId: string;
@@ -21,11 +21,17 @@ interface GroupCardProps {
 const toTitleCase = (s: string) => s.replace(/\b\w/g, c => c.toUpperCase());
 
 export function GroupCard({
-  groupId, advisorName, advisorPhoto, sebiRegNo,
+  groupId, advisorId, advisorName, advisorPhoto, sebiRegNo,
   groupName, description, monthlyPrice,
   subCount, signalCount, winCount, resolvedCount,
   strategyType, compact,
 }: GroupCardProps) {
+  const navigate = useNavigate();
+  const goToAdvisor = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigate(`/advisor/${advisorId}`);
+  };
   const accuracy = resolvedCount > 0 ? Math.round((winCount / resolvedCount) * 100) : null;
 
   return (
