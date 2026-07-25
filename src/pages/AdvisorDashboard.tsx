@@ -359,6 +359,11 @@ export default function AdvisorDashboard() {
     fetchData();
   };
 
+  const parseFirstNumber = (s: string): number => {
+    const m = String(s || '').match(/-?\d+(\.\d+)?/);
+    return m ? parseFloat(m[0]) : 0;
+  };
+
   const postSignal = async () => {
     if (!advisor) return;
     setPosting(true);
@@ -368,9 +373,9 @@ export default function AdvisorDashboard() {
       post_type: 'signal',
       instrument: sanitizeText(signalForm.instrument),
       signal_type: signalForm.signalType,
-      entry_price: parseFloat(sanitizeNumeric(signalForm.entryPrice)) || 0,
-      target_price: parseFloat(sanitizeNumeric(signalForm.targetPrice)) || 0,
-      stop_loss: parseFloat(sanitizeNumeric(signalForm.stopLoss)) || 0,
+      entry_price: parseFirstNumber(signalForm.entryPrice),
+      target_price: parseFirstNumber(signalForm.targetPrice),
+      stop_loss: parseFirstNumber(signalForm.stopLoss),
       timeframe: signalForm.timeframe,
       notes: sanitizeTextarea(signalForm.notes),
       is_public: signalForm.isPublic,
@@ -518,35 +523,6 @@ export default function AdvisorDashboard() {
           }
         />
 
-        {/* Stats Row */}
-        <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {/* Subscribers — green gradient */}
-          <div className="rounded-2xl ">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20"><Users className="h-5 w-5" /></div>
-            <p className="mt-3 text-xs text-white/80">Active Subscribers</p>
-            <p className="text-4xl font-black tracking-tight">{totalSubs}</p>
-          </div>
-          {/* Groups */}
-          <div className="rounded-2xl border-[1.5px] border-border bg-card p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-light-blue"><BarChart3 className="h-5 w-5 text-secondary" /></div>
-            <p className="mt-3 text-xs text-[hsl(var(--small-text))]">Groups</p>
-            <p className="text-4xl font-black tracking-tight text-foreground">{groups.length}</p>
-          </div>
-          {/* Signals */}
-          <div className="rounded-2xl border-[1.5px] border-border bg-card p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[hsl(270,40%,94%)]"><Radio className="h-5 w-5 text-[hsl(270,50%,45%)]" /></div>
-            <p className="mt-3 text-xs text-[hsl(var(--small-text))]">Signals Posted</p>
-            <p className="text-4xl font-black tracking-tight text-foreground">{signalCount}</p>
-          </div>
-          {/* Earnings — navy gradient */}
-          <div className="relative overflow-hidden rounded-2xl ">
-            <span className="pointer-events-none absolute -bottom-5 -right-2.5 text-[120px] font-black leading-none text-white/[0.06]">₹</span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20"><IndianRupee className="h-5 w-5" /></div>
-            <p className="mt-3 text-xs text-white/80">Net · Last 30 Days</p>
-            <p className="text-[32px] font-black tracking-tight">₹{Math.round(rolling30Net).toLocaleString('en-IN')}</p>
-            <p className="text-[11px] text-white/60">Lifetime: ₹{Math.round(totalNetEarnings).toLocaleString('en-IN')}</p>
-          </div>
-        </div>
 
         {/* Navigation Tabs */}
         <div className="mb-5 flex gap-1 overflow-x-auto rounded-xl border-[1.5px] border-border bg-card p-1.5 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
@@ -831,9 +807,9 @@ export default function AdvisorDashboard() {
                     </div>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
-                    <div><Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Entry Price</Label><Input type="number" value={signalForm.entryPrice} onChange={e => setSignalForm({ ...signalForm, entryPrice: e.target.value })} className="mt-1.5 border-[1.5px]" /></div>
-                    <div><Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Target Price</Label><Input type="number" value={signalForm.targetPrice} onChange={e => setSignalForm({ ...signalForm, targetPrice: e.target.value })} className="mt-1.5 border-[1.5px]" /></div>
-                    <div><Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Stop Loss</Label><Input type="number" value={signalForm.stopLoss} onChange={e => setSignalForm({ ...signalForm, stopLoss: e.target.value })} className="mt-1.5 border-[1.5px]" /></div>
+                    <div><Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Entry Price</Label><Input type="text" inputMode="decimal" placeholder="e.g. 240 or 240-245" value={signalForm.entryPrice} onChange={e => setSignalForm({ ...signalForm, entryPrice: e.target.value })} className="mt-1.5 border-[1.5px]" /></div>
+                    <div><Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Target Price</Label><Input type="text" inputMode="decimal" placeholder="e.g. 260" value={signalForm.targetPrice} onChange={e => setSignalForm({ ...signalForm, targetPrice: e.target.value })} className="mt-1.5 border-[1.5px]" /></div>
+                    <div><Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Stop Loss</Label><Input type="text" inputMode="decimal" placeholder="e.g. 235" value={signalForm.stopLoss} onChange={e => setSignalForm({ ...signalForm, stopLoss: e.target.value })} className="mt-1.5 border-[1.5px]" /></div>
                     <div>
                       <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Timeframe</Label>
                       <Select value={signalForm.timeframe} onValueChange={v => setSignalForm({ ...signalForm, timeframe: v })}>
@@ -876,7 +852,7 @@ export default function AdvisorDashboard() {
                   <button
                     className="flex h-[42px] w-full items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground disabled:opacity-50"
                     onClick={postSignal}
-                    disabled={posting || !signalForm.groupId || !signalForm.instrument || !signalForm.entryPrice}
+                    disabled={posting || !signalForm.groupId || !signalForm.instrument.trim() || parseFirstNumber(signalForm.entryPrice) <= 0}
                   >
                     {posting ? 'Posting...' : '📊 Post Signal'}
                   </button>
