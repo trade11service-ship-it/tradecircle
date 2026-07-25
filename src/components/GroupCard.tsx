@@ -1,5 +1,5 @@
-import { Link } from 'react-router-dom';
-import { ShieldCheck } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ShieldCheck, ArrowUpRight } from 'lucide-react';
 
 interface GroupCardProps {
   groupId: string;
@@ -21,11 +21,17 @@ interface GroupCardProps {
 const toTitleCase = (s: string) => s.replace(/\b\w/g, c => c.toUpperCase());
 
 export function GroupCard({
-  groupId, advisorName, advisorPhoto, sebiRegNo,
+  groupId, advisorId, advisorName, advisorPhoto, sebiRegNo,
   groupName, description, monthlyPrice,
   subCount, signalCount, winCount, resolvedCount,
   strategyType, compact,
 }: GroupCardProps) {
+  const navigate = useNavigate();
+  const goToAdvisor = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    navigate(`/advisor/${advisorId}`);
+  };
   const accuracy = resolvedCount > 0 ? Math.round((winCount / resolvedCount) * 100) : null;
 
   return (
@@ -98,11 +104,21 @@ export function GroupCard({
           </p>
         )}
 
-        {/* CTA */}
+        {/* CTA row */}
         {!compact && (
-          <button className="mt-4 w-full h-10 rounded-[10px] bg-primary text-primary-foreground text-[13px] font-semibold transition-colors duration-150 group-hover:bg-primary/90">
-            View group
-          </button>
+          <div className="mt-4 flex items-center gap-2">
+            <button className="flex-1 h-10 rounded-[10px] bg-primary text-primary-foreground text-[13px] font-semibold transition-colors duration-150 group-hover:bg-primary/90">
+              View group
+            </button>
+            <button
+              onClick={goToAdvisor}
+              className="h-10 px-3 rounded-[10px] border border-border text-[12px] font-semibold text-foreground hover:bg-slate-50 inline-flex items-center gap-1 shrink-0"
+              aria-label={`View ${advisorName} profile`}
+              type="button"
+            >
+              Advisor <ArrowUpRight className="h-3.5 w-3.5" />
+            </button>
+          </div>
         )}
       </div>
     </Link>

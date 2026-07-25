@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import type { User } from '@supabase/supabase-js';
 import type { Tables } from '@/integrations/supabase/types';
+import { ConsentGate } from '@/components/ConsentGate';
 
 type Profile = Tables<'profiles'>;
 
@@ -127,6 +128,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [needsConsent, setNeedsConsent] = useState(false);
+
+  const checkConsent = async (userId: string) => {
+    try {
+      const { data } = await supabase
+        .from('user_legal_acceptances')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('acceptance_type', 'general_terms')
+        .limit(1)
+        .maybeSingle();
+      setNeedsConsent(!data);
+    } catch {
+      setNeedsConsent(false);
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -134,6 +151,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const setSignedOutState = () => {
       setUser(null);
       setProfile(null);
+      setNeedsConsent(false);
     };
 
     const acceptSession = async (event?: string) => {
@@ -161,6 +179,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           (p?.full_name as string) || (currentUser.user_metadata?.full_name as string) || ''
         );
       }
+
+      // One-time DPDP consent check for every authenticated session
+      await checkConsent(currentUser.id);
 
       if (mounted) setLoading(false);
     };
@@ -217,12 +238,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await clearLocalAuthSession();
       setUser(null);
       setProfile(null);
-      // Force navigate to home
+      setNeedsConsent(false);
       navigate('/', { replace: true });
     } catch (err) {
       console.error('Logout error:', err);
       setUser(null);
       setProfile(null);
+      setNeedsConsent(false);
       navigate('/', { replace: true });
     }
   };
@@ -230,6 +252,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return (
     <AuthContext.Provider value={{ user, profile, loading, signOut }}>
       {children}
+      {user && needsConsent && (
+        <ConsentGate
+          userId={user.id}
+          fullName={(profile?.full_name as string) || (user.user_metadata?.full_name as string) || ''}
+          email={user.email || ''}
+          onAccepted={() => setNeedsConsent(false)}
+          onDecline={() => { void signOut(); }}
+        />
+      )}
     </AuthContext.Provider>
   );
 }

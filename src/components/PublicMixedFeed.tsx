@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { ChevronDown, User, Rss, ShieldCheck, Lock } from "lucide-react";
+import { ChevronDown, User, Rss, ShieldCheck, Lock, ArrowDown } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { shouldShowFree } from "@/lib/accessControl";
 import { Button } from "@/components/ui/button";
@@ -137,9 +137,11 @@ function FeedRow({
 type PublicMixedFeedProps = {
   preview?: boolean;
   maxItems?: number;
+  /** When true, render as a live chat: oldest at top, newest at bottom, auto-stick to bottom. */
+  chatMode?: boolean;
 };
 
-export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedFeedProps) {
+export function PublicMixedFeed({ preview = false, maxItems = 12, chatMode = false }: PublicMixedFeedProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState<FeedPost[]>([]);
@@ -149,6 +151,11 @@ export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedF
   const [offset, setOffset] = useState(0);
   const pageSize = 12;
   const [hasMore, setHasMore] = useState(true);
+
+  // Chat-mode scroll helpers
+  const scrollWrapRef = useRef<HTMLDivElement>(null);
+  const [showNewPill, setShowNewPill] = useState(false);
+  const nearBottomRef = useRef(true);
 
   const hydrateMapsForPosts = async (items: FeedPost[]) => {
     const advisorIds = [...new Set(items.map((p) => p.advisor_id))].filter((id) => !advisorMap[id]);
@@ -222,6 +229,7 @@ export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedF
           const incoming = payload.new as FeedPost;
           setPosts((prev) => (prev.some((p) => p.id === incoming.id) ? prev : [incoming, ...prev]));
           await hydrateMapsForPosts([incoming]);
+          if (chatMode && !nearBottomRef.current) setShowNewPill(true);
         })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "signals", filter: "is_public=eq.true" },
         async (payload) => {
@@ -231,16 +239,46 @@ export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedF
         })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, []);
+  }, [chatMode]);
 
   const visiblePosts = useMemo(() => {
-    const sorted = [...posts].sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
-    if (!preview) return sorted;
-    if (followedGroupIds.size === 0) return sorted.slice(0, maxItems);
-    const followed = sorted.filter((p) => followedGroupIds.has(p.group_id));
-    const rest = sorted.filter((p) => !followedGroupIds.has(p.group_id));
-    return [...followed, ...rest].slice(0, maxItems);
-  }, [posts, preview, maxItems, followedGroupIds]);
+    const sortedDesc = [...posts].sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+    if (preview) {
+      if (followedGroupIds.size === 0) return sortedDesc.slice(0, maxItems);
+      const followed = sortedDesc.filter((p) => followedGroupIds.has(p.group_id));
+      const rest = sortedDesc.filter((p) => !followedGroupIds.has(p.group_id));
+      return [...followed, ...rest].slice(0, maxItems);
+    }
+    // Chat mode: newest at bottom (ascending). Normal list: newest at top (descending).
+    return chatMode ? [...sortedDesc].reverse() : sortedDesc;
+  }, [posts, preview, maxItems, followedGroupIds, chatMode]);
+
+  // Chat mode: auto-stick to bottom when new items arrive and user is already near bottom.
+  useEffect(() => {
+    if (!chatMode) return;
+    const el = scrollWrapRef.current;
+    if (!el) return;
+    if (nearBottomRef.current) {
+      el.scrollTop = el.scrollHeight;
+      setShowNewPill(false);
+    }
+  }, [visiblePosts.length, chatMode]);
+
+  const onScroll = () => {
+    const el = scrollWrapRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - (el.scrollTop + el.clientHeight);
+    nearBottomRef.current = distanceFromBottom < 80;
+    if (nearBottomRef.current) setShowNewPill(false);
+  };
+
+  const jumpToBottom = () => {
+    const el = scrollWrapRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    setShowNewPill(false);
+  };
+
 
   if (loading && posts.length === 0) {
     return (
@@ -271,43 +309,70 @@ export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedF
     );
   }
 
+  const listBody = (
+    <div className="divide-y divide-border">
+      {visiblePosts.map((post) => {
+        let freeBadge: string | null = null;
+        if (post.post_type === 'signal') {
+          const freeCheck = shouldShowFree({
+            post_type: post.post_type,
+            timeframe: post.timeframe,
+            is_public: post.is_public,
+            created_at: post.created_at,
+            signal_type: post.signal_type,
+          });
+          freeBadge = freeCheck.reason === 'fno_expired' ? 'F&O signal · 24hr delay'
+            : freeCheck.reason === 'public_delayed' ? 'Free · signal expired'
+            : null;
+        }
+        return (
+          <Link key={post.id} to={`/group/${post.group_id}`} className="block transition-colors hover:bg-slate-50">
+            <FeedRow
+              post={post}
+              advisor={advisorMap[post.advisor_id]}
+              groupName={groupMap[post.group_id]?.name}
+              freeBadge={freeBadge}
+            />
+          </Link>
+        );
+      })}
+    </div>
+  );
+
+  if (chatMode) {
+    return (
+      <div className="relative flex flex-col h-full">
+        <div className="shrink-0 flex items-center gap-1.5 px-4 py-2.5 border-b border-border text-[12px] text-muted-foreground bg-card">
+          <Lock className="h-3 w-3" strokeWidth={1.75} />
+          Live feed · newest at the bottom. Subscriber data is masked end-to-end.
+        </div>
+        <div
+          ref={scrollWrapRef}
+          onScroll={onScroll}
+          className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden bg-background"
+          style={{ WebkitOverflowScrolling: "touch" as any }}
+        >
+          {listBody}
+        </div>
+        {showNewPill && (
+          <button
+            onClick={jumpToBottom}
+            className="absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-primary text-primary-foreground text-[12px] font-semibold px-3.5 h-8 shadow-lg flex items-center gap-1.5"
+          >
+            <ArrowDown className="h-3.5 w-3.5" /> New signals
+          </button>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div>
-      {/* Top note — one line, no per-row PII badges */}
       <div className="flex items-center gap-1.5 px-4 py-2.5 border-b border-border text-[12px] text-muted-foreground">
         <Lock className="h-3 w-3" strokeWidth={1.75} />
         Subscriber data is masked end-to-end.
       </div>
-
-      <div className="divide-y divide-border">
-        {visiblePosts.map((post) => {
-          let freeBadge: string | null = null;
-          if (post.post_type === 'signal') {
-            const freeCheck = shouldShowFree({
-              post_type: post.post_type,
-              timeframe: post.timeframe,
-              is_public: post.is_public,
-              created_at: post.created_at,
-              signal_type: post.signal_type,
-            });
-            freeBadge = freeCheck.reason === 'fno_expired' ? 'F&O signal · 24hr delay'
-              : freeCheck.reason === 'public_delayed' ? 'Free · signal expired'
-              : null;
-          }
-
-          return (
-            <Link key={post.id} to={`/group/${post.group_id}`} className="block transition-colors hover:bg-slate-50">
-              <FeedRow
-                post={post}
-                advisor={advisorMap[post.advisor_id]}
-                groupName={groupMap[post.group_id]?.name}
-                freeBadge={freeBadge}
-              />
-            </Link>
-          );
-        })}
-      </div>
-
+      {listBody}
       {!preview && (
         <div className="p-4 flex items-center justify-center border-t border-border">
           <Button

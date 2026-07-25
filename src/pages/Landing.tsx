@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Footer } from '@/components/Footer';
 import { GroupCard } from '@/components/GroupCard';
+import { PublicMixedFeed } from '@/components/PublicMixedFeed';
 import { Button } from '@/components/ui/button';
-import { ShieldCheck, ArrowRight, Lock, EyeOff, Bell, FileCheck, Users, ArrowUpRight } from 'lucide-react';
+import { ShieldCheck, ArrowRight, Lock, EyeOff, Bell, FileCheck, Users, ArrowUpRight, Rss } from 'lucide-react';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { useAuth } from '@/lib/auth';
 import { setMetaTags, SEO_CONFIG } from '@/lib/seo';
@@ -208,7 +209,28 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ===== FEATURED ADVISORS ===== */}
+      {/* ===== PUBLIC FEED TEASER ===== */}
+      <section className="border-b border-border">
+        <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-16">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
+            <div className="max-w-[640px]">
+              <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Live public feed</p>
+              <h2 className="mt-2 text-[28px] font-bold text-foreground tracking-tight">Real signals, in real time</h2>
+              <p className="mt-2 text-[15px] text-[hsl(var(--body))]">A preview of the latest free posts from SEBI-verified advisors.</p>
+            </div>
+            <Link to="/explore">
+              <Button variant="outline" className="h-10 rounded-[10px] border-border text-[13px] font-semibold">
+                <Rss className="mr-1.5 h-3.5 w-3.5" /> Open public feed
+              </Button>
+            </Link>
+          </div>
+          <div className="overflow-hidden rounded-2xl border border-border bg-card">
+            <PublicMixedFeed preview maxItems={6} />
+          </div>
+        </div>
+      </section>
+
+
       {featuredAdvisors.length > 0 && (
         <section className="surface-alt border-y border-border">
           <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-16">
