@@ -359,6 +359,11 @@ export default function AdvisorDashboard() {
     fetchData();
   };
 
+  const parseFirstNumber = (s: string): number => {
+    const m = String(s || '').match(/-?\d+(\.\d+)?/);
+    return m ? parseFloat(m[0]) : 0;
+  };
+
   const postSignal = async () => {
     if (!advisor) return;
     setPosting(true);
