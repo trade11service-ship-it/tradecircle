@@ -881,7 +881,7 @@ export default function AdvisorDashboard() {
                   <button
                     className="flex h-[42px] w-full items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground disabled:opacity-50"
                     onClick={postSignal}
-                    disabled={posting || !signalForm.groupId || !signalForm.instrument || !signalForm.entryPrice}
+                    disabled={posting || !signalForm.groupId || !signalForm.instrument.trim() || parseFirstNumber(signalForm.entryPrice) <= 0}
                   >
                     {posting ? 'Posting...' : '📊 Post Signal'}
                   </button>
