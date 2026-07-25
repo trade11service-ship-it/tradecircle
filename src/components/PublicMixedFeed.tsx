@@ -141,7 +141,7 @@ type PublicMixedFeedProps = {
   chatMode?: boolean;
 };
 
-export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedFeedProps) {
+export function PublicMixedFeed({ preview = false, maxItems = 12, chatMode = false }: PublicMixedFeedProps) {
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState<FeedPost[]>([]);
@@ -151,6 +151,11 @@ export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedF
   const [offset, setOffset] = useState(0);
   const pageSize = 12;
   const [hasMore, setHasMore] = useState(true);
+
+  // Chat-mode scroll helpers
+  const scrollWrapRef = useRef<HTMLDivElement>(null);
+  const [showNewPill, setShowNewPill] = useState(false);
+  const nearBottomRef = useRef(true);
 
   const hydrateMapsForPosts = async (items: FeedPost[]) => {
     const advisorIds = [...new Set(items.map((p) => p.advisor_id))].filter((id) => !advisorMap[id]);
@@ -224,6 +229,7 @@ export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedF
           const incoming = payload.new as FeedPost;
           setPosts((prev) => (prev.some((p) => p.id === incoming.id) ? prev : [incoming, ...prev]));
           await hydrateMapsForPosts([incoming]);
+          if (chatMode && !nearBottomRef.current) setShowNewPill(true);
         })
       .on("postgres_changes", { event: "UPDATE", schema: "public", table: "signals", filter: "is_public=eq.true" },
         async (payload) => {
@@ -233,16 +239,46 @@ export function PublicMixedFeed({ preview = false, maxItems = 12 }: PublicMixedF
         })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, []);
+  }, [chatMode]);
 
   const visiblePosts = useMemo(() => {
-    const sorted = [...posts].sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
-    if (!preview) return sorted;
-    if (followedGroupIds.size === 0) return sorted.slice(0, maxItems);
-    const followed = sorted.filter((p) => followedGroupIds.has(p.group_id));
-    const rest = sorted.filter((p) => !followedGroupIds.has(p.group_id));
-    return [...followed, ...rest].slice(0, maxItems);
-  }, [posts, preview, maxItems, followedGroupIds]);
+    const sortedDesc = [...posts].sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
+    if (preview) {
+      if (followedGroupIds.size === 0) return sortedDesc.slice(0, maxItems);
+      const followed = sortedDesc.filter((p) => followedGroupIds.has(p.group_id));
+      const rest = sortedDesc.filter((p) => !followedGroupIds.has(p.group_id));
+      return [...followed, ...rest].slice(0, maxItems);
+    }
+    // Chat mode: newest at bottom (ascending). Normal list: newest at top (descending).
+    return chatMode ? [...sortedDesc].reverse() : sortedDesc;
+  }, [posts, preview, maxItems, followedGroupIds, chatMode]);
+
+  // Chat mode: auto-stick to bottom when new items arrive and user is already near bottom.
+  useEffect(() => {
+    if (!chatMode) return;
+    const el = scrollWrapRef.current;
+    if (!el) return;
+    if (nearBottomRef.current) {
+      el.scrollTop = el.scrollHeight;
+      setShowNewPill(false);
+    }
+  }, [visiblePosts.length, chatMode]);
+
+  const onScroll = () => {
+    const el = scrollWrapRef.current;
+    if (!el) return;
+    const distanceFromBottom = el.scrollHeight - (el.scrollTop + el.clientHeight);
+    nearBottomRef.current = distanceFromBottom < 80;
+    if (nearBottomRef.current) setShowNewPill(false);
+  };
+
+  const jumpToBottom = () => {
+    const el = scrollWrapRef.current;
+    if (!el) return;
+    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
+    setShowNewPill(false);
+  };
+
 
   if (loading && posts.length === 0) {
     return (
