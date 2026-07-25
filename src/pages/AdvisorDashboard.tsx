@@ -824,7 +824,23 @@ export default function AdvisorDashboard() {
                           <SelectItem value="Positional">Positional</SelectItem>
                         </SelectContent>
                       </Select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="add-t2"
+                      type="checkbox"
+                      checked={showTarget2}
+                      onChange={e => { setShowTarget2(e.target.checked); if (!e.target.checked) setSignalForm(f => ({ ...f, targetPrice2: '' })); }}
+                      className="h-4 w-4 rounded border-border accent-primary"
+                    />
+                    <Label htmlFor="add-t2" className="text-xs font-semibold text-foreground cursor-pointer">Add second target (Target 2)</Label>
+                  </div>
+                  {showTarget2 && (
+                    <div>
+                      <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Target 2 (optional)</Label>
+                      <Input type="text" inputMode="decimal" placeholder="e.g. 275" value={signalForm.targetPrice2} onChange={e => setSignalForm({ ...signalForm, targetPrice2: e.target.value })} className="mt-1.5 border-[1.5px]" />
                     </div>
+                  )}
                   </div>
                   <div>
                     <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Notes (optional)</Label>
