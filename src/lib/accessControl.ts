@@ -119,6 +119,7 @@ export function getPostVisibility(
   if (freeCheck.isFree) {
     const badge = freeCheck.reason === 'fno_expired' ? 'F&O Signal — 24hr delay'
       : freeCheck.reason === 'public_delayed' ? 'Free — Signal expired'
+      : freeCheck.reason === 'public' ? 'Public Signal'
       : null;
     return { showFully: true, blurNumbers: false, hideCompletely: false, showLockOverlay: false, freeBadge: badge };
   }
