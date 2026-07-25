@@ -13,6 +13,7 @@ type FeedPost = {
   signal_type: string | null;
   entry_price: number | null;
   target_price: number | null;
+  target_price_2?: number | null;
   stop_loss: number | null;
   timeframe: string | null;
   notes: string | null;
