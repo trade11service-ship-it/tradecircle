@@ -1,5 +1,4 @@
 import { ReactNode } from 'react';
-import { Logo } from './Logo';
 
 interface PageHeaderProps {
   eyebrow?: string;
@@ -10,47 +9,38 @@ interface PageHeaderProps {
 }
 
 /**
- * Unified in-page header used across primary routes (Discover, Explore, etc.).
- * Keeps RA Circle branding consistent: white surface, navy monogram logo,
- * concise title + subtitle, and optional trust badges beneath.
+ * Unified page header — white surface, left-aligned, no dark hero card.
+ * Eyebrow (uppercase slate-500) · Title (navy) · Subtitle (slate-600) · optional pill row.
  */
 export function PageHeader({ eyebrow, title, subtitle, badges, right }: PageHeaderProps) {
   return (
-    <header className="w-full border-b border-border bg-card">
-      <div className="container mx-auto max-w-5xl px-4 py-5 md:py-6">
+    <header className="w-full border-b border-border bg-background">
+      <div className="mx-auto w-full max-w-5xl px-4 py-8 md:py-10">
         <div className="flex items-start justify-between gap-4">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="hidden sm:flex h-11 w-11 items-center justify-center rounded-xl border border-border bg-background shrink-0">
-              <Logo size={26} />
-            </div>
-            <div className="min-w-0">
-              {eyebrow && (
-                <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
-                  {eyebrow}
-                </p>
-              )}
-              <h1
-                className="truncate text-xl md:text-2xl font-extrabold tracking-tight text-foreground"
-                style={{ fontFamily: 'Outfit, sans-serif' }}
-              >
-                {title}
-              </h1>
-              {subtitle && (
-                <p className="mt-0.5 text-xs md:text-sm text-muted-foreground line-clamp-2">
-                  {subtitle}
-                </p>
-              )}
-            </div>
+          <div className="min-w-0 max-w-[720px]">
+            {eyebrow && (
+              <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+                {eyebrow}
+              </p>
+            )}
+            <h1 className="mt-1 text-2xl md:text-[32px] font-bold tracking-tight text-foreground">
+              {title}
+            </h1>
+            {subtitle && (
+              <p className="mt-2 text-[15px] text-[hsl(var(--body))] leading-relaxed">
+                {subtitle}
+              </p>
+            )}
           </div>
           {right && <div className="shrink-0">{right}</div>}
         </div>
 
         {badges && badges.length > 0 && (
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-4 flex flex-wrap gap-2">
             {badges.map((b) => (
               <span
                 key={b.label}
-                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1 text-[11px] font-semibold text-muted-foreground"
+                className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-700"
               >
                 {b.icon}
                 {b.label}

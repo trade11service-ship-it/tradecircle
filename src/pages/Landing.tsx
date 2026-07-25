@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Footer } from '@/components/Footer';
 import { GroupCard } from '@/components/GroupCard';
 import { Button } from '@/components/ui/button';
-import { Shield, ShieldCheck, ArrowRight, Bell, CreditCard, Search, Users, CheckCircle, TrendingUp, BookOpen, MessageSquare, Lock, Eye, Zap, BarChart3, AlertTriangle, UserCircle } from 'lucide-react';
+import { ShieldCheck, ArrowRight, Lock, EyeOff, Bell, FileCheck, Users, ArrowUpRight } from 'lucide-react';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { useAuth } from '@/lib/auth';
 import { setMetaTags, SEO_CONFIG } from '@/lib/seo';
@@ -29,22 +29,16 @@ interface FeaturedAdvisor {
 
 export default function Landing() {
   const { user, loading: authLoading } = useAuth();
-  const navigate = useNavigate();
   const [groups, setGroups] = useState<GroupData[]>([]);
   const [featuredAdvisors, setFeaturedAdvisors] = useState<FeaturedAdvisor[]>([]);
-  const [publicSignals, setPublicSignals] = useState<any[]>([]);
-  const [signalsLoading, setSignalsLoading] = useState(true);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => { setMetaTags(SEO_CONFIG.landing); }, []);
 
-  // Landing is the same public Home for guests AND logged-in users.
-  // Logged-in users get a Dashboard tab in the bottom nav (rendered below) to reach /home or /advisor/dashboard.
   useEffect(() => {
     if (!authLoading) {
       fetchGroups();
       fetchFeaturedAdvisors();
-      fetchPublicSignals();
     }
   }, [authLoading]);
 
@@ -84,230 +78,84 @@ export default function Landing() {
     setFeaturedAdvisors((data || []) as FeaturedAdvisor[]);
   };
 
-  const fetchPublicSignals = async () => {
-    setSignalsLoading(true);
-    const { data } = await supabase
-      .from('signals')
-      .select('*, advisors!inner(full_name, profile_photo_url)')
-      .eq('is_public', true)
-      .order('created_at', { ascending: false })
-      .limit(8);
-    setPublicSignals(data || []);
-    setSignalsLoading(false);
-  };
-
   const getValidBio = (tagline: string | null, description: string | null): string => {
     const text = tagline || description || '';
-    if (text.length < 50) return 'SEBI registered Research Analyst providing verified trading signals with transparent track records.';
-    const lowerText = text.toLowerCase();
-    const badPatterns = ['we r', 'r the', 'dvisor', 'experince', 'yars', 'registerd'];
-    if (badPatterns.some(p => lowerText.includes(p)) || /^[a-z\s]+$/.test(text)) {
-      return 'SEBI registered Research Analyst providing verified trading signals with transparent track records.';
+    if (text.length < 50) return 'SEBI-registered Research Analyst providing verified trading signals with a transparent track record.';
+    const lower = text.toLowerCase();
+    const bad = ['we r', 'r the', 'dvisor', 'experince', 'yars', 'registerd'];
+    if (bad.some(p => lower.includes(p)) || /^[a-z\s]+$/.test(text)) {
+      return 'SEBI-registered Research Analyst providing verified trading signals with a transparent track record.';
     }
     return text;
   };
 
+  const trustPills = [
+    { icon: ShieldCheck, label: 'SEBI verified' },
+    { icon: Lock, label: 'Tamper-proof' },
+    { icon: EyeOff, label: 'PII masked' },
+    { icon: Bell, label: 'Live alerts' },
+  ];
+
+  const features = [
+    { icon: ShieldCheck, title: 'SEBI-verified only', desc: 'Every advisor is manually checked against SEBI records. No exceptions, no self-serve listings.' },
+    { icon: Lock, title: 'Tamper-proof records', desc: 'Signals are permanently timestamped. Advisors cannot edit or delete bad calls after publishing.' },
+    { icon: FileCheck, title: 'Full transparency', desc: 'See complete win/loss history before subscribing. No hidden track records, no cherry-picked wins.' },
+  ];
+
   return (
-    <div className={`min-h-screen bg-background`}>
-      
-
-      {/* ===== TWO-SIDED HERO ===== */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-background via-background to-muted/30 border-b border-border">
-        <div
-          className="absolute inset-0 opacity-[0.08] pointer-events-none"
-          style={{
-            backgroundImage:
-              'radial-gradient(circle at 50% 0%, hsl(var(--sky)) 0, transparent 45%)',
-          }}
-        />
-        <div className="relative mx-auto w-full max-w-5xl px-4 sm:px-6 pt-12 pb-14">
-          <div className="text-center animate-slide-up">
-            <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald/30 bg-emerald/10 px-3 py-1 text-[11px] font-bold text-emerald mb-5">
-              <ShieldCheck className="h-3.5 w-3.5" /> 100% SEBI Verified · Tamper-proof Track Records
-            </div>
-            <h1
-              className="text-3xl md:text-5xl font-extrabold tracking-tight leading-[1.1] text-foreground"
-              style={{ fontFamily: 'Inter, sans-serif' }}
-            >
-              India’s Secure Network for{' '}
-              <span className="text-sky">Certified Advisors</span>{' '}
-              & <span className="text-primary">Smart Traders</span>.
+    <div className="min-h-screen bg-background">
+      {/* ===== HERO ===== */}
+      <section className="bg-background border-b border-border">
+        <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 pt-16 pb-16 md:pt-20 md:pb-20">
+          <div className="max-w-[640px]">
+            <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+              India's first SEBI-only advisory marketplace
+            </p>
+            <h1 className="mt-4 text-[32px] md:text-[40px] font-bold tracking-tight leading-[1.15] text-foreground">
+              Trade with verified advisors.{' '}
+              <span className="text-slate-400 line-through decoration-[1.5px]">Not random tips.</span>
             </h1>
-            <p className="mt-4 text-muted-foreground text-sm md:text-base max-w-2xl mx-auto">
-              Stop trusting random tips on Telegram. Follow SEBI-registered Research Analysts with
-              verifiable win-rates, real accountability, and live alerts — all in one secure workspace.
+            <p className="mt-5 text-[18px] leading-relaxed text-[hsl(var(--body))]">
+              Every advisor is manually checked against SEBI records. Every signal is permanently timestamped.
             </p>
 
-            <div className="mt-7 flex flex-col sm:flex-row justify-center gap-3">
+            <div className="mt-7 flex flex-wrap items-center gap-3">
               <Link to="/discover">
-                <Button className="h-12 w-full sm:w-auto rounded-full px-7 font-bold text-[14px] bg-primary hover:bg-primary/90 text-white shadow-lg shadow-primary/20">
-                  Browse Verified Advisors
+                <Button className="h-11 px-5 rounded-[10px] bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-[14px]">
+                  Browse advisors
                 </Button>
               </Link>
-              <Link to="/advisor-register">
-                <Button
-                  variant="outline"
-                  className="h-12 w-full sm:w-auto rounded-full px-7 font-bold text-[14px] border-sky/40 text-sky hover:bg-sky/5 hover:text-sky"
-                >
-                  Join as Research Analyst
+              <a href="#how">
+                <Button variant="outline" className="h-11 px-5 rounded-[10px] border-border bg-background hover:bg-slate-50 text-foreground font-semibold text-[14px]">
+                  How it works
                 </Button>
-              </Link>
+              </a>
             </div>
 
-
-            <div className="mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[11px] text-muted-foreground">
-              <span className="inline-flex items-center gap-1"><Lock className="h-3 w-3" /> Tamper-proof signals</span>
-              <span className="inline-flex items-center gap-1"><Eye className="h-3 w-3" /> Public win/loss history</span>
-              <span className="inline-flex items-center gap-1"><BarChart3 className="h-3 w-3" /> SEBI SCORES accountable</span>
+            <div className="mt-8 flex flex-wrap gap-2">
+              {trustPills.map(p => (
+                <span key={p.label} className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-700">
+                  <p.icon className="h-3 w-3 text-emerald" strokeWidth={1.75} />
+                  {p.label}
+                </span>
+              ))}
             </div>
           </div>
         </div>
       </section>
-
-      {/* ===== PUBLIC FEED PREVIEW (visible to unlogged users) ===== */}
-      <section className="bg-muted/40 border-b border-border">
-        <div className="mx-auto w-full max-w-5xl px-4 sm:px-6 py-12">
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-6">
-            <div>
-              <p className="text-[11px] font-bold text-sky uppercase tracking-[2px]">LIVE PUBLIC FEED</p>
-              <h2 className="mt-1 text-2xl font-extrabold text-foreground tracking-tight" style={{ fontFamily: 'Inter, sans-serif' }}>
-                Real signals. Real advisors. Zero data leaks.
-              </h2>
-              <p className="mt-1 text-sm text-muted-foreground">
-                Browse what verified advisors are posting right now — subscriber data is masked end-to-end.
-              </p>
-            </div>
-            <Link to="/explore">
-              <Button variant="outline" className="mt-3 sm:mt-0 border-sky text-sky hover:bg-sky/5 rounded-lg font-semibold">
-                Open Public Feed <ArrowRight className="ml-1 h-3.5 w-3.5" />
-              </Button>
-            </Link>
-          </div>
-
-          {signalsLoading ? (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {[0, 1, 2].map((i) => (
-                <div key={i} className="rounded-2xl border border-border bg-card p-4 shadow-sm animate-pulse">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="h-9 w-9 rounded-full bg-muted" />
-                    <div className="flex-1 space-y-2">
-                      <div className="h-3 w-2/3 bg-muted rounded" />
-                      <div className="h-2 w-1/2 bg-muted rounded" />
-                    </div>
-                  </div>
-                  <div className="h-4 w-1/2 bg-muted rounded mb-3" />
-                  <div className="grid grid-cols-3 gap-1.5">
-                    <div className="h-10 bg-muted rounded" />
-                    <div className="h-10 bg-muted rounded" />
-                    <div className="h-10 bg-muted rounded" />
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : publicSignals.length === 0 ? (
-            <div className="rounded-2xl border border-dashed border-border bg-card/50 py-12 px-6 text-center">
-              <Lock className="mx-auto h-8 w-8 text-muted-foreground/40 mb-3" />
-              <p className="text-sm font-semibold text-foreground">No active signals available at the moment.</p>
-              <p className="mt-1 text-xs text-muted-foreground">Check back shortly — verified advisors post throughout market hours.</p>
-            </div>
-          ) : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {publicSignals.slice(0, 3).map((s: any) => ({
-                advisor: s.advisors?.full_name || 'Verified Advisor',
-                photo: s.advisors?.profile_photo_url || null,
-                instrument: s.instrument || 'UPDATE',
-                side: s.signal_type || 'INFO',
-                entry: s.entry_price,
-                target: s.target_price,
-                sl: s.stop_loss,
-                note: s.message_text || s.notes || '',
-              })).map((c, i) => (
-                <div
-                  key={i}
-                  className="rounded-2xl border border-border bg-card p-4 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all"
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <div className="h-9 w-9 rounded-full bg-gradient-to-br from-primary to-sky flex items-center justify-center overflow-hidden shrink-0">
-                        {c.photo ? (
-                          <img src={c.photo} alt="" className="h-full w-full object-cover" />
-                        ) : (
-                          <span className="text-white font-bold text-sm">{c.advisor.charAt(0)}</span>
-                        )}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-[13px] font-bold text-foreground truncate">{c.advisor}</p>
-                        <p className="text-[10px] text-muted-foreground">SEBI verified advisor</p>
-                      </div>
-                    </div>
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald/10 border border-emerald/30 px-2 py-0.5 text-[10px] font-bold text-emerald shrink-0">
-                      <ShieldCheck className="h-3 w-3" /> SEBI ✓
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-[14px] font-extrabold text-foreground truncate">{c.instrument}</span>
-                    {c.side && c.side !== 'INFO' && (
-                      <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-bold ${c.side === 'BUY' ? 'bg-emerald/15 text-emerald' : 'bg-destructive/15 text-destructive'}`}>
-                        {c.side}
-                      </span>
-                    )}
-                  </div>
-
-                  {c.entry ? (
-                    <div className="grid grid-cols-3 gap-1.5 text-center">
-                      <div className="rounded-md bg-muted/50 p-1.5">
-                        <p className="text-[9px] text-muted-foreground uppercase">Entry</p>
-                        <p className="text-[12px] font-bold text-foreground">₹{c.entry}</p>
-                      </div>
-                      <div className="rounded-md bg-emerald/10 p-1.5">
-                        <p className="text-[9px] text-muted-foreground uppercase">Target</p>
-                        <p className="text-[12px] font-bold text-emerald">₹{c.target}</p>
-                      </div>
-                      <div className="rounded-md bg-destructive/10 p-1.5">
-                        <p className="text-[9px] text-muted-foreground uppercase">SL</p>
-                        <p className="text-[12px] font-bold text-destructive">₹{c.sl}</p>
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {c.note && (
-                    <p className="mt-3 text-[12px] text-muted-foreground italic leading-relaxed line-clamp-2">“{c.note}”</p>
-                  )}
-
-                  <div className="mt-3 flex items-center justify-between text-[10px] text-muted-foreground">
-                    <span className="inline-flex items-center gap-1"><Lock className="h-3 w-3" /> PII masked</span>
-                    <span>Live now</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {!user && (
-            <p className="mt-6 text-center text-[12px] text-muted-foreground">
-              Sample preview — subscriber phone numbers and emails are always masked on public pages.
-              <Link to="/register" className="ml-1 font-semibold text-sky hover:underline">Create a free account →</Link>
-            </p>
-          )}
-        </div>
-      </section>
-
-
-
 
       {/* ===== POPULAR GROUPS ===== */}
-      <section id="pricing" className="border-y border-border bg-muted/30 scroll-mt-20">
-        <div className="mx-auto w-full max-w-6xl px-4 py-14 sm:px-6">
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between mb-8">
-            <div>
-              <p className="text-[11px] font-bold text-primary uppercase tracking-[2px]">DISCOVER</p>
-              <h2 className="mt-1 text-2xl font-extrabold text-foreground tracking-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>Popular Advisor Groups</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Transparent pricing, verified advisors, and real win-rate data.</p>
+      <section id="pricing" className="surface-alt border-b border-border scroll-mt-16">
+        <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-16">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+            <div className="max-w-[640px]">
+              <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Discover</p>
+              <h2 className="mt-2 text-[28px] font-bold text-foreground tracking-tight">Popular advisor groups</h2>
+              <p className="mt-2 text-[15px] text-[hsl(var(--body))]">Transparent pricing. Verified analysts. Real win-rate data.</p>
             </div>
             <Link to="/discover">
-              <Button variant="outline" className="mt-3 sm:mt-0 border-primary text-primary hover:bg-primary/5 rounded-lg font-semibold">
-                View All <ArrowRight className="ml-1 h-3.5 w-3.5" />
+              <Button variant="outline" className="h-10 rounded-[10px] border-border text-[13px] font-semibold">
+                View all <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
               </Button>
             </Link>
           </div>
@@ -315,19 +163,19 @@ export default function Landing() {
           {loading ? (
             <div className="grid gap-4 sm:grid-cols-2">
               {[1, 2, 3, 4].map(i => (
-                <div key={i} className="rounded-xl border border-border bg-card p-5 animate-pulse">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="h-10 w-10 rounded-full bg-muted" />
-                    <div className="flex-1 space-y-2"><div className="h-4 w-24 rounded bg-muted" /><div className="h-3 w-16 rounded bg-muted" /></div>
+                <div key={i} className="rounded-xl border border-border bg-card p-6 animate-pulse">
+                  <div className="flex items-center gap-3 mb-4">
+                    <div className="h-10 w-10 rounded-full bg-slate-100" />
+                    <div className="flex-1 space-y-2"><div className="h-3 w-24 rounded bg-slate-100" /><div className="h-2 w-16 rounded bg-slate-100" /></div>
                   </div>
-                  <div className="h-8 rounded bg-muted" />
+                  <div className="h-10 rounded bg-slate-100" />
                 </div>
               ))}
             </div>
           ) : groups.length === 0 ? (
-            <div className="rounded-xl border border-border bg-card py-12 text-center">
-              <Users className="mx-auto h-10 w-10 text-muted-foreground/30 mb-3" />
-              <p className="text-muted-foreground">Advisors are being onboarded. Check back soon!</p>
+            <div className="rounded-xl border border-border bg-card py-16 text-center">
+              <Users className="mx-auto h-8 w-8 text-muted-foreground mb-3" strokeWidth={1.5} />
+              <p className="text-[14px] text-muted-foreground">Advisors are being onboarded. Check back soon.</p>
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2">
@@ -343,27 +191,18 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* ===== WHY RA Circle ===== */}
-      <section className="mx-auto w-full max-w-6xl px-4 py-16 sm:px-6">
-        <div className="text-center mb-10">
-          <p className="text-[11px] font-bold text-primary uppercase tracking-[2px]">WHY RA Circle</p>
-          <h2 className="mt-2 text-3xl font-extrabold text-foreground tracking-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>
-            Built for trust. Designed for traders.
-          </h2>
+      {/* ===== WHY RA CIRCLE — clean 3-col, no card containers ===== */}
+      <section id="how" className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-16">
+        <div className="max-w-[640px] mb-10">
+          <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Why RA Circle</p>
+          <h2 className="mt-2 text-[28px] font-bold text-foreground tracking-tight">Built for trust. Designed for traders.</h2>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          {[
-            { icon: ShieldCheck, title: 'SEBI Verified Only', desc: 'Every advisor is manually checked against SEBI records. No exceptions.' },
-            { icon: Lock, title: 'Tamper-Proof Records', desc: 'Signals are permanently timestamped. Advisors cannot delete or edit bad calls.' },
-            { icon: Eye, title: 'Full Transparency', desc: 'See complete win/loss history before subscribing. No hidden track records.' },
-            { icon: BarChart3, title: 'Real Accountability', desc: 'File complaints via SEBI SCORES. Every advisor is legally accountable.' },
-          ].map((f, i) => (
-            <div key={i} className="group rounded-xl border border-border bg-card p-5 transition-all duration-300 hover:border-primary/30 hover:shadow-lg hover:-translate-y-1">
-              <div className="flex h-11 w-11 items-center justify-center rounded-lg bg-primary/10 text-primary mb-3 group-hover:bg-primary group-hover:text-white transition-colors duration-300">
-                <f.icon className="h-5 w-5" />
-              </div>
-              <h3 className="text-[15px] font-bold text-foreground mb-1">{f.title}</h3>
-              <p className="text-[13px] text-muted-foreground leading-relaxed">{f.desc}</p>
+        <div className="grid gap-10 md:grid-cols-3">
+          {features.map(f => (
+            <div key={f.title}>
+              <f.icon className="h-6 w-6 text-foreground" strokeWidth={1.5} />
+              <h3 className="mt-4 text-[16px] font-semibold text-foreground">{f.title}</h3>
+              <p className="mt-2 text-[14px] leading-relaxed text-[hsl(var(--body))]">{f.desc}</p>
             </div>
           ))}
         </div>
@@ -371,52 +210,52 @@ export default function Landing() {
 
       {/* ===== FEATURED ADVISORS ===== */}
       {featuredAdvisors.length > 0 && (
-        <section className="border-y border-border bg-muted/30">
-          <div className="mx-auto w-full max-w-6xl px-4 py-14 sm:px-6">
-            <div className="mb-8">
-              <p className="text-[11px] font-bold text-primary uppercase tracking-[2px]">VERIFIED MENTORS</p>
-              <h2 className="mt-1 text-2xl font-extrabold text-foreground tracking-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>Meet Our SEBI-Registered Advisors</h2>
-              <p className="mt-1 text-sm text-muted-foreground">Every advisor below is manually verified and SEBI-registered.</p>
+        <section className="surface-alt border-y border-border">
+          <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-16">
+            <div className="mb-8 max-w-[640px]">
+              <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Verified analysts</p>
+              <h2 className="mt-2 text-[28px] font-bold text-foreground tracking-tight">Meet the RA Circle roster</h2>
+              <p className="mt-2 text-[15px] text-[hsl(var(--body))]">Every advisor below is manually verified and SEBI-registered.</p>
             </div>
 
-            <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {featuredAdvisors.slice(0, 6).map((a) => (
-                <Link key={a.id} to={`/advisor/${a.id}`} className="group h-full">
-                  <div className="h-full rounded-2xl border border-border bg-card p-5 transition-all duration-300 hover:-translate-y-1 hover:border-primary/30 hover:shadow-xl">
-                    <div className="mb-4 flex items-start justify-between">
-                      <div className="flex h-14 w-14 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-primary to-secondary text-xl font-bold text-primary-foreground ring-2 ring-primary/20">
-                        {a.profile_photo_url ? (
-                          <img src={a.profile_photo_url} alt={a.full_name} className="h-full w-full object-cover" />
-                        ) : a.full_name.charAt(0).toUpperCase()}
-                      </div>
-                      <div className="flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1">
-                        <CheckCircle className="h-3 w-3 text-primary" />
-                        <span className="text-[10px] font-bold text-primary">SEBI ✓</span>
+                <Link key={a.id} to={`/advisor/${a.id}`} className="group">
+                  <div className="h-full rounded-xl border border-border bg-card p-6 transition-colors group-hover:border-slate-300">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-start gap-3 min-w-0">
+                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-100 text-[15px] font-semibold text-slate-700 overflow-hidden">
+                          {a.profile_photo_url ? (
+                            <img src={a.profile_photo_url} alt={a.full_name} className="h-full w-full object-cover" />
+                          ) : a.full_name.charAt(0).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-[15px] font-semibold text-foreground truncate">{a.full_name}</p>
+                          <div className="mt-1 inline-flex items-center gap-1 rounded-full bg-emerald/10 px-2 py-0.5 text-[11px] font-semibold text-emerald">
+                            <ShieldCheck className="h-3 w-3" /> SEBI {a.sebi_reg_no}
+                          </div>
+                        </div>
                       </div>
                     </div>
-                    <h3 className="text-base font-bold text-foreground mb-0.5">{a.full_name}</h3>
-                    {a.strategy_type && <p className="text-xs font-semibold text-primary mb-2">{a.strategy_type}</p>}
-                    <p className="line-clamp-2 text-[13px] text-muted-foreground mb-4 leading-relaxed">{getValidBio(a.public_tagline, a.public_description)}</p>
-                    <div className="flex gap-2 mb-4">
-                      {a.public_years_experience && (
-                        <span className="rounded-full bg-secondary/10 px-3 py-1 text-[11px] font-semibold text-secondary border border-secondary/10">
-                          {a.public_years_experience}+ Years
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-between pt-3 border-t border-border text-muted-foreground group-hover:text-primary transition-colors">
-                      <span className="text-xs font-medium">View profile</span>
-                      <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                    {a.strategy_type && (
+                      <p className="mt-3 text-[12px] font-medium text-slate-700">{a.strategy_type}</p>
+                    )}
+                    <p className="mt-3 text-[13px] text-[hsl(var(--body))] leading-relaxed line-clamp-3">
+                      {getValidBio(a.public_tagline, a.public_description)}
+                    </p>
+                    <div className="mt-4 pt-3 border-t border-border flex items-center justify-between text-[12px] text-muted-foreground group-hover:text-foreground transition-colors">
+                      <span>View profile</span>
+                      <ArrowUpRight className="h-4 w-4" strokeWidth={1.75} />
                     </div>
                   </div>
                 </Link>
               ))}
             </div>
 
-            <div className="mt-6 text-center">
+            <div className="mt-8">
               <Link to="/featured-advisors">
-                <Button variant="outline" className="rounded-full px-6 border-primary text-primary hover:bg-primary/5 font-semibold">
-                  View All Advisors <ArrowRight className="ml-1 h-4 w-4" />
+                <Button variant="outline" className="h-10 rounded-[10px] border-border text-[13px] font-semibold">
+                  View all advisors <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
                 </Button>
               </Link>
             </div>
@@ -425,69 +264,52 @@ export default function Landing() {
       )}
 
       {/* ===== FAQ ===== */}
-      <section className="mx-auto w-full max-w-3xl px-4 py-16 sm:px-6">
-        <div className="text-center mb-8">
-          <p className="text-[11px] font-bold text-primary uppercase tracking-[2px]">FAQ</p>
-          <h2 className="mt-2 text-2xl font-extrabold text-foreground tracking-tight" style={{ fontFamily: 'Outfit, sans-serif' }}>Frequently Asked Questions</h2>
+      <section className="mx-auto w-full max-w-3xl px-4 sm:px-6 py-16">
+        <div className="mb-8">
+          <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">FAQ</p>
+          <h2 className="mt-2 text-[28px] font-bold text-foreground tracking-tight">Frequently asked questions</h2>
         </div>
         <div className="rounded-xl border border-border bg-card overflow-hidden">
           <Accordion type="single" collapsible defaultValue="faq-0">
             {[
-              { q: 'Is RA Circle a SEBI registered advisor?', a: "No. RA Circle is a technology marketplace operated by STREZONIC PRIVATE LIMITED. We verify SEBI-registered advisors (INH holders) but do not give investment advice ourselves." },
+              { q: 'Is RA Circle a SEBI-registered advisor?', a: 'No. RA Circle is a technology marketplace operated by STREZONIC PRIVATE LIMITED. We verify SEBI-registered advisors (INH holders) but do not give investment advice ourselves.' },
               { q: 'How do you verify advisors?', a: "We manually check each advisor's SEBI registration number (INH number) on sebi.gov.in before approval. Unverified advisors are never listed." },
-              { q: 'Can I cancel my subscription?', a: 'Yes. Cancel anytime from your profile. Monthly billing, no lock-in, no questions asked.' },
-              { q: 'How do I receive signals?', a: 'After subscribing, you will be added to the advisor\'s private Telegram group. All signals arrive instantly with entry, target, and stop loss.' },
+              { q: 'Can I cancel my subscription?', a: 'Yes. Cancel anytime from your profile. No lock-in, no questions asked.' },
+              { q: 'How do I receive signals?', a: "After subscribing, you are added to the advisor's private group. All signals arrive instantly with entry, target, and stop loss." },
               { q: 'What makes this different from Telegram channels?', a: 'RA Circle only allows SEBI-registered advisors. Every signal is permanently timestamped — advisors cannot delete bad calls. You can see full win/loss history before subscribing.' },
             ].map((faq, i) => (
               <AccordionItem key={i} value={`faq-${i}`} className="border-b border-border last:border-0">
-                <AccordionTrigger className="px-5 py-4 text-[14px] font-semibold text-foreground hover:text-primary transition-colors">{faq.q}</AccordionTrigger>
-                <AccordionContent className="px-5 pb-4 text-[13px] text-muted-foreground leading-relaxed">{faq.a}</AccordionContent>
+                <AccordionTrigger className="px-5 py-4 text-[14px] font-semibold text-foreground hover:no-underline">{faq.q}</AccordionTrigger>
+                <AccordionContent className="px-5 pb-4 text-[13px] text-[hsl(var(--body))] leading-relaxed">{faq.a}</AccordionContent>
               </AccordionItem>
             ))}
           </Accordion>
         </div>
       </section>
 
-      {/* ===== FINAL CTA ===== */}
-      <section className="relative overflow-hidden tc-gradient-hero px-4 py-16 sm:px-6">
-        <div className="absolute inset-0 opacity-[0.03]" style={{
-          backgroundImage: 'linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)',
-          backgroundSize: '40px 40px'
-        }} />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full bg-primary/10 blur-[120px] pointer-events-none" />
-
-        <div className="relative z-10 mx-auto max-w-xl text-center">
-          <div className="rounded-2xl border border-white/10 bg-white/[0.04] backdrop-blur-xl p-8 md:p-10">
-            <h2 className="text-2xl font-extrabold text-white md:text-3xl" style={{ fontFamily: 'Outfit, sans-serif' }}>
-              Trade with verified advisors.<br />
-              <span className="tc-gradient-text">Not random Telegram tips.</span>
-            </h2>
-            <p className="mt-3 text-sm text-white/50">
-              Browse SEBI-registered advisors. Check track records. Subscribe only when you're ready.
+      {/* ===== FINAL CTA — solid navy, no gradients ===== */}
+      <section className="bg-primary text-primary-foreground">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6 py-16 text-center">
+          <h2 className="text-[28px] md:text-[32px] font-bold tracking-tight">
+            Trade with verified advisors.
+          </h2>
+          <p className="mt-3 text-[15px] text-white/70">
+            Browse SEBI-registered analysts. Check track records. Subscribe only when you're ready.
+          </p>
+          <Link to="/discover">
+            <Button className="mt-6 h-11 px-6 rounded-[10px] bg-background text-foreground hover:bg-slate-50 font-semibold text-[14px]">
+              Browse advisors <ArrowRight className="ml-1.5 h-4 w-4" />
+            </Button>
+          </Link>
+          {!user && (
+            <p className="mt-4 text-[12px] text-white/50">
+              New here? <Link to="/register" className="text-white hover:underline">Create a free account</Link>
             </p>
-            <Link to="/discover">
-              <Button className="mt-6 h-12 px-8 rounded-full bg-white text-foreground font-bold hover:bg-white/90 hover:scale-[1.02] transition-all duration-200 shadow-lg">
-                Browse Verified Advisors <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
+          )}
         </div>
       </section>
 
-      {/* ===== SEBI DISCLAIMER ===== */}
-      <div className="border-t bg-card px-5 py-5 text-center">
-        <div className="container mx-auto max-w-2xl">
-          <div className="rounded-lg border border-border bg-muted/50 px-4 py-3">
-            <p className="text-[11px] text-muted-foreground">
-              <Shield className="inline h-3 w-3 text-primary mr-1" />
-              All advisors on RA Circle are SEBI registered (INH holders). RA Circle is not a SEBI registered entity. Investment in securities involves market risk.
-            </p>
-          </div>
-        </div>
-      </div>
-
       <Footer />
-      
     </div>
   );
 }
