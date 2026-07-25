@@ -60,7 +60,8 @@ export default function AdvisorDashboard() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [posting, setPosting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [signalForm, setSignalForm] = useState({ groupId: '', instrument: '', signalType: 'BUY', entryPrice: '', targetPrice: '', stopLoss: '', timeframe: 'Intraday', notes: '', isPublic: false });
+  const [signalForm, setSignalForm] = useState({ groupId: '', instrument: '', signalType: 'BUY', entryPrice: '', targetPrice: '', targetPrice2: '', stopLoss: '', timeframe: 'Intraday', notes: '', isPublic: false });
+  const [showTarget2, setShowTarget2] = useState(false);
 
   // Feed view
   const [feedGroupId, setFeedGroupId] = useState<string | null>(null);
