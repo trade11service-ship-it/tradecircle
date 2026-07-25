@@ -523,35 +523,6 @@ export default function AdvisorDashboard() {
           }
         />
 
-        {/* Stats Row */}
-        <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {/* Subscribers — green gradient */}
-          <div className="rounded-2xl ">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20"><Users className="h-5 w-5" /></div>
-            <p className="mt-3 text-xs text-white/80">Active Subscribers</p>
-            <p className="text-4xl font-black tracking-tight">{totalSubs}</p>
-          </div>
-          {/* Groups */}
-          <div className="rounded-2xl border-[1.5px] border-border bg-card p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-light-blue"><BarChart3 className="h-5 w-5 text-secondary" /></div>
-            <p className="mt-3 text-xs text-[hsl(var(--small-text))]">Groups</p>
-            <p className="text-4xl font-black tracking-tight text-foreground">{groups.length}</p>
-          </div>
-          {/* Signals */}
-          <div className="rounded-2xl border-[1.5px] border-border bg-card p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[hsl(270,40%,94%)]"><Radio className="h-5 w-5 text-[hsl(270,50%,45%)]" /></div>
-            <p className="mt-3 text-xs text-[hsl(var(--small-text))]">Signals Posted</p>
-            <p className="text-4xl font-black tracking-tight text-foreground">{signalCount}</p>
-          </div>
-          {/* Earnings — navy gradient */}
-          <div className="relative overflow-hidden rounded-2xl ">
-            <span className="pointer-events-none absolute -bottom-5 -right-2.5 text-[120px] font-black leading-none text-white/[0.06]">₹</span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20"><IndianRupee className="h-5 w-5" /></div>
-            <p className="mt-3 text-xs text-white/80">Net · Last 30 Days</p>
-            <p className="text-[32px] font-black tracking-tight">₹{Math.round(rolling30Net).toLocaleString('en-IN')}</p>
-            <p className="text-[11px] text-white/60">Lifetime: ₹{Math.round(totalNetEarnings).toLocaleString('en-IN')}</p>
-          </div>
-        </div>
 
         {/* Navigation Tabs */}
         <div className="mb-5 flex gap-1 overflow-x-auto rounded-xl border-[1.5px] border-border bg-card p-1.5 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
