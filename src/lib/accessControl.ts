@@ -58,26 +58,25 @@ export function shouldShowFree(post: {
   is_public: boolean;
   created_at: string | null;
   signal_type: string | null;
-}): { isFree: boolean; reason: 'fno_expired' | 'public_delayed' | 'analysis' | null } {
+}): { isFree: boolean; reason: 'fno_expired' | 'public_delayed' | 'analysis' | 'public' | null } {
   // Analysis/message posts: only free if explicitly marked public by advisor
   if (post.post_type === 'message') {
     if (post.is_public) return { isFree: true, reason: 'analysis' };
     return { isFree: false, reason: null };
   }
 
+  // Signals explicitly marked public by the advisor → free immediately
+  if (post.is_public) {
+    return { isFree: true, reason: 'public' };
+  }
+
   const createdAt = post.created_at ? new Date(post.created_at) : null;
   const hoursSincePost = createdAt ? (Date.now() - createdAt.getTime()) / (1000 * 60 * 60) : 0;
 
-  // F&O check - timeframe or signal_type contains FNO/F&O/Options
+  // F&O premium signals become free after 24h
   const isFnO = isFnOSignal(post.timeframe, post.signal_type);
-
   if (isFnO && hoursSincePost > 24) {
     return { isFree: true, reason: 'fno_expired' };
-  }
-
-  // Non-F&O: check is_public toggle (public_after_24h)
-  if (post.is_public && hoursSincePost > 24) {
-    return { isFree: true, reason: 'public_delayed' };
   }
 
   return { isFree: false, reason: null };
