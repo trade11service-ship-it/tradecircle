@@ -368,6 +368,7 @@ export default function AdvisorDashboard() {
   const postSignal = async () => {
     if (!advisor) return;
     setPosting(true);
+    const t2 = showTarget2 && signalForm.targetPrice2.trim() ? parseFirstNumber(signalForm.targetPrice2) : null;
     const { data: newSignal, error } = await supabase.from('signals').insert({
       group_id: signalForm.groupId,
       advisor_id: advisor.id,
@@ -376,11 +377,12 @@ export default function AdvisorDashboard() {
       signal_type: signalForm.signalType,
       entry_price: parseFirstNumber(signalForm.entryPrice),
       target_price: parseFirstNumber(signalForm.targetPrice),
+      target_price_2: t2,
       stop_loss: parseFirstNumber(signalForm.stopLoss),
       timeframe: signalForm.timeframe,
       notes: sanitizeTextarea(signalForm.notes),
       is_public: signalForm.isPublic,
-    }).select().single();
+    } as any).select().single();
 
     if (error) { toast.error(error.message); setPosting(false); return; }
     toast.success('Signal posted! Sending Telegram alerts...');
@@ -396,7 +398,8 @@ export default function AdvisorDashboard() {
     } catch (err) {
       console.error('Telegram send error:', err);
     }
-    setSignalForm({ groupId: signalForm.groupId, instrument: '', signalType: 'BUY', entryPrice: '', targetPrice: '', stopLoss: '', timeframe: 'Intraday', notes: '', isPublic: false });
+    setSignalForm({ groupId: signalForm.groupId, instrument: '', signalType: 'BUY', entryPrice: '', targetPrice: '', targetPrice2: '', stopLoss: '', timeframe: 'Intraday', notes: '', isPublic: false });
+    setShowTarget2(false);
     setPosting(false);
     fetchData();
   };
