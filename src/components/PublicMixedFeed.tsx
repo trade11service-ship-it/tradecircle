@@ -191,7 +191,7 @@ export function PublicMixedFeed({ preview = false, maxItems = 12, chatMode = fal
     setLoading(true);
     const { data: rows } = await supabase
       .from("signals")
-      .select("id,post_type,instrument,signal_type,entry_price,target_price,stop_loss,timeframe,notes,message_text,image_url,created_at,group_id,advisor_id,is_public,result,signal_date")
+      .select("id,post_type,instrument,signal_type,entry_price,target_price,target_price_2,stop_loss,timeframe,notes,message_text,image_url,created_at,group_id,advisor_id,is_public,result,signal_date")
       .eq("is_public", true)
       .order("created_at", { ascending: false })
       .range(nextOffset, nextOffset + pageSize - 1);
