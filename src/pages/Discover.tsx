@@ -231,7 +231,7 @@ export default function Groups() {
                     <div className="p-4 md:p-5">
                       {/* Row 1: Identity */}
                       <div className="flex items-center gap-3 mb-3">
-                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary to-secondary text-lg font-bold text-primary-foreground overflow-hidden">
+                        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full ">
                           {g.advisor_photo ? (
                             <img src={g.advisor_photo} alt={g.advisor_name} className="h-full w-full object-cover" />
                           ) : toTitleCase(g.advisor_name).charAt(0)}

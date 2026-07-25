@@ -249,7 +249,7 @@ export default function AdvisorProfile() {
 
       <main className="pb-20">
         {/* HERO — dark premium */}
-        <section className="relative overflow-hidden bg-gradient-to-b from-slate-950 via-slate-900 to-slate-900 text-white pt-12 md:pt-20 pb-10">
+        <section className="relative overflow-hidden ">
           <div className="absolute inset-0 opacity-[0.06] pointer-events-none" style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.8) 1px, transparent 1px)', backgroundSize: '40px 40px' }}></div>
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-primary/30 blur-[120px] rounded-full pointer-events-none"></div>
 
@@ -260,7 +260,7 @@ export default function AdvisorProfile() {
           <div className="container mx-auto max-w-5xl px-4 relative z-10">
             <div className="flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-8">
               <div className="relative shrink-0">
-                <div className="h-28 w-28 md:h-36 md:w-36 rounded-full border-[5px] border-white/10 ring-2 ring-primary/40 shadow-2xl overflow-hidden bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-5xl font-extrabold">
+                <div className="h-28 w-28 md:h-36 md:w-36 rounded-full border-[5px] border-white/10 ring-2 ring-primary/40 shadow-2xl overflow-hidden ">
                   {advisor.profile_photo_url
                     ? <img src={advisor.profile_photo_url} alt={advisor.full_name} className="h-full w-full object-cover" />
                     : toTitleCase(advisor.full_name).charAt(0)}

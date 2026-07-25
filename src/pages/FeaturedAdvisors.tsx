@@ -145,7 +145,7 @@ export default function FeaturedAdvisors() {
                 >
                   <div className="rounded-2xl bg-card border border-border shadow-md overflow-hidden hover:shadow-xl hover:border-primary/30 transition-all duration-300 hover:-translate-y-1">
                     {/* Top banner strip */}
-                    <div className="h-1.5 w-full bg-gradient-to-r from-primary via-primary/80 to-secondary" />
+                    <div className="h-1.5 w-full " />
 
                     {/* Card body */}
                     <div className="p-4 sm:p-5">
@@ -157,7 +157,7 @@ export default function FeaturedAdvisors() {
                             {advisor.profile_photo_url ? (
                               <img src={advisor.profile_photo_url} alt={advisor.full_name} className="h-full w-full object-cover" />
                             ) : (
-                              <div className="h-full w-full flex items-center justify-center text-white text-2xl font-bold bg-gradient-to-br from-primary to-secondary">
+                              <div className="h-full w-full flex items-center justify-center text-white text-2xl font-bold ">
                                 {advisor.full_name.charAt(0).toUpperCase()}
                               </div>
                             )}

@@ -184,11 +184,11 @@ export default function GroupDetails() {
         {/* Unified Header (desktop + mobile). Compact on mobile; rich on desktop. */}
         <div className="shrink-0 bg-card border-b border-border z-20 relative">
           {/* Cover strip — desktop only */}
-          <div className="hidden md:block relative h-28 lg:h-36 w-full overflow-hidden bg-gradient-to-r from-primary/15 via-primary/5 to-secondary/15">
+          <div className="hidden md:block relative h-28 lg:h-36 w-full overflow-hidden ">
             {group.advisor?.cover_image_url && (
               <img src={group.advisor.cover_image_url} alt="" className="absolute inset-0 h-full w-full object-cover" />
             )}
-            <div className="absolute inset-0 bg-gradient-to-b from-transparent to-card"></div>
+            <div className="absolute inset-0 "></div>
           </div>
 
           {/* Mobile compact chat-style header */}
@@ -226,7 +226,7 @@ export default function GroupDetails() {
 
           {/* Desktop rich header row */}
           <div className="hidden md:flex items-end gap-5 px-6 lg:px-8 pb-5 -mt-12 lg:-mt-14 relative">
-            <div className="h-24 w-24 lg:h-28 lg:w-28 rounded-2xl border-4 border-card shadow-xl overflow-hidden bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-white text-3xl font-bold shrink-0">
+            <div className="h-24 w-24 lg:h-28 lg:w-28 rounded-2xl border-4 border-card shadow-xl overflow-hidden ">
               {group.dp_url ? (
                 <img src={group.dp_url} alt={group.name} className="h-full w-full object-cover" />
               ) : group.advisor?.profile_photo_url ? (

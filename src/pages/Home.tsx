@@ -269,7 +269,7 @@ export default function Home() {
                 {featuredAdvisors.map(adv => (
                   <Link key={adv.id} to={`/advisor/${adv.id}`}>
                     <div className="rounded-xl border border-border bg-card p-4 hover:border-primary/30 transition-all hover:shadow-md flex items-center gap-3">
-                      <div className="h-12 w-12 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center overflow-hidden shrink-0 text-white font-bold">
+                      <div className="h-12 w-12 rounded-full ">
                         {adv.profile_photo_url ? <img src={adv.profile_photo_url} className="h-full w-full object-cover" /> : adv.full_name.charAt(0)}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -307,7 +307,7 @@ export default function Home() {
                 <div className="flex gap-2.5 pb-1.5">
                   {subscribedGroups.map(g => (
                     <Link key={g.id} to={`/group/${g.id}`} className="shrink-0 w-[150px] rounded-2xl border border-border bg-card p-3 hover:border-primary/40 hover:shadow-md transition shadow-sm">
-                      <div className="h-10 w-10 rounded-full bg-gradient-to-br from-primary to-secondary text-white font-bold flex items-center justify-center mb-2">
+                      <div className="h-10 w-10 rounded-full ">
                         {g.name?.charAt(0)?.toUpperCase() || 'G'}
                       </div>
                       <p className="text-[13px] font-bold text-foreground line-clamp-2 leading-snug">{g.name}</p>

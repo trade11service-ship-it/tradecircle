@@ -521,7 +521,7 @@ export default function AdvisorDashboard() {
         {/* Stats Row */}
         <div className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
           {/* Subscribers — green gradient */}
-          <div className="rounded-2xl bg-gradient-to-br from-primary to-[hsl(123,40%,35%)] p-5 text-primary-foreground">
+          <div className="rounded-2xl ">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20"><Users className="h-5 w-5" /></div>
             <p className="mt-3 text-xs text-white/80">Active Subscribers</p>
             <p className="text-4xl font-black tracking-tight">{totalSubs}</p>
@@ -539,7 +539,7 @@ export default function AdvisorDashboard() {
             <p className="text-4xl font-black tracking-tight text-foreground">{signalCount}</p>
           </div>
           {/* Earnings — navy gradient */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-secondary to-[hsl(214,70%,40%)] p-5 text-secondary-foreground">
+          <div className="relative overflow-hidden rounded-2xl ">
             <span className="pointer-events-none absolute -bottom-5 -right-2.5 text-[120px] font-black leading-none text-white/[0.06]">₹</span>
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-white/20"><IndianRupee className="h-5 w-5" /></div>
             <p className="mt-3 text-xs text-white/80">Net · Last 30 Days</p>
@@ -609,7 +609,7 @@ export default function AdvisorDashboard() {
                 return (
                   <div key={g.id} className="rounded-2xl border-[1.5px] border-border bg-card p-5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] hover:shadow-md transition-shadow cursor-pointer" onClick={() => { setFeedGroupId(g.id); setTab('post'); setPostMode('choose'); }}>
                     <div className="flex items-center gap-3 mb-4">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary to-secondary text-lg font-bold text-primary-foreground overflow-hidden">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl ">
                         {g.dp_url ? <img src={g.dp_url} alt={g.name} className="h-full w-full object-cover" /> : g.name.charAt(0)}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -984,7 +984,7 @@ export default function AdvisorDashboard() {
           <div>
             {/* SEBI Compliance Audit Log download */}
             {advisor && (
-              <div className="mb-6 rounded-2xl border-[1.5px] border-slate-200 bg-gradient-to-br from-slate-50 to-white p-5 shadow-[0_2px_8px_rgba(15,23,42,0.04)]">
+              <div className="mb-6 rounded-2xl border-[1.5px] border-slate-200 ">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex items-start gap-3">
                     <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-white">
@@ -1016,12 +1016,12 @@ export default function AdvisorDashboard() {
               const past = subscribers.filter(s => (s.status === 'cancelled' || s.status === 'expired') || (s.end_date && new Date(s.end_date).getTime() <= now));
               return (
                 <div className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2">
-                  <div className="rounded-2xl border-[1.5px] border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-5">
+                  <div className="rounded-2xl border-[1.5px] border-emerald-200 ">
                     <p className="text-[11px] font-bold uppercase tracking-wider text-emerald-700">Present Subscribers</p>
                     <p className="mt-1 text-3xl font-extrabold text-emerald-900">{present.length}</p>
                     <p className="mt-1 text-xs text-emerald-800/70">Active with a valid end date in the future.</p>
                   </div>
-                  <div className="rounded-2xl border-[1.5px] border-slate-200 bg-gradient-to-br from-slate-50 to-white p-5">
+                  <div className="rounded-2xl border-[1.5px] border-slate-200 ">
                     <p className="text-[11px] font-bold uppercase tracking-wider text-slate-600">Past Subscribers</p>
                     <p className="mt-1 text-3xl font-extrabold text-slate-900">{past.length}</p>
                     <p className="mt-1 text-xs text-slate-600">Cancelled, expired, or end date has passed.</p>
@@ -1086,7 +1086,7 @@ export default function AdvisorDashboard() {
         {tab === 'revenue' && (
           <div className="max-w-2xl space-y-4 animate-in fade-in duration-300">
             {/* Rolling 30-day hero */}
-            <div className="rounded-2xl bg-gradient-to-br from-primary to-[hsl(160,84%,30%)] p-6 text-primary-foreground">
+            <div className="rounded-2xl ">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs uppercase tracking-wider text-white/70">Last 30 Days · Net Earnings</p>
@@ -1202,7 +1202,7 @@ export default function AdvisorDashboard() {
             {/* Cover + Avatar card */}
             <div className="rounded-2xl border-[1.5px] border-border bg-card overflow-hidden shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
               {/* Cover */}
-              <div className="relative h-32 md:h-40 w-full bg-gradient-to-r from-primary/15 via-primary/5 to-secondary/15">
+              <div className="relative h-32 md:h-40 w-full ">
                 {(advisor as any).cover_image_url && (
                   <img src={(advisor as any).cover_image_url} alt="" className="absolute inset-0 h-full w-full object-cover" />
                 )}
@@ -1229,7 +1229,7 @@ export default function AdvisorDashboard() {
               {/* Avatar + name */}
               <div className="px-6 pb-6 -mt-10 flex items-end gap-4">
                 <label className="relative cursor-pointer group shrink-0">
-                  <div className="flex h-[88px] w-[88px] items-center justify-center rounded-full bg-gradient-to-br from-primary to-secondary text-3xl font-bold text-primary-foreground overflow-hidden border-4 border-card shadow-lg">
+                  <div className="flex h-[88px] w-[88px] items-center justify-center rounded-full ">
                     {advisor.profile_photo_url ? <img src={advisor.profile_photo_url} alt="" className="h-full w-full object-cover" /> : advisor.full_name.charAt(0).toUpperCase()}
                   </div>
                   <div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">

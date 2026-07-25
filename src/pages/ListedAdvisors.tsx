@@ -120,7 +120,7 @@ export default function ListedAdvisors() {
   };
 
   return (
-    <div className="min-h-full h-full bg-gradient-to-b from-slate-50 to-white">
+    <div className="min-h-full h-full ">
       
       <main className="container mx-auto px-4 py-12">
         {/* Header */}
@@ -149,7 +149,7 @@ export default function ListedAdvisors() {
             {advisors.map((advisor) => (
               <div key={advisor.id} className="rounded-2xl border border-slate-300 bg-white shadow-lg overflow-hidden hover:shadow-2xl transition-shadow">
                 {/* Header Section with Name and Photo */}
-                <div className="relative h-48 bg-gradient-to-r from-slate-100 to-slate-50 px-8 py-8">
+                <div className="relative h-48 ">
                   <div className="flex items-end gap-6 h-full">
                     {/* Left: Name Box */}
                     <div className="flex-1">
@@ -165,11 +165,11 @@ export default function ListedAdvisors() {
 
                     {/* Right: Circular Photo */}
                     <div className="relative h-40 w-40 flex-shrink-0 -mb-8">
-                      <div className="h-full w-full rounded-full border-4 border-white bg-gradient-to-br from-primary to-secondary shadow-xl overflow-hidden">
+                      <div className="h-full w-full rounded-full border-4 border-white ">
                         {advisor.profile_photo_url ? (
                           <img src={advisor.profile_photo_url} alt={advisor.full_name} className="h-full w-full object-cover" />
                         ) : (
-                          <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-primary to-secondary text-white text-5xl font-bold">
+                          <div className="h-full w-full flex items-center justify-center ">
                             {advisor.full_name.charAt(0).toUpperCase()}
                           </div>
                         )}
@@ -299,7 +299,7 @@ export default function ListedAdvisors() {
                               <Link
                                 key={group.id}
                                 to={`/advisor/${advisor.id}#group-${group.id}`}
-                                className="block p-3 rounded-lg bg-gradient-to-r from-primary/10 to-secondary/10 border border-primary/20 hover:border-primary/50 hover:bg-primary/15 transition-all"
+                                className="block p-3 rounded-lg "
                               >
                                 <p className="font-semibold text-sm text-foreground truncate">{group.name}</p>
                                 <p className="text-xs text-primary font-semibold mt-1">₹{group.monthly_price}/month</p>
@@ -315,7 +315,7 @@ export default function ListedAdvisors() {
                       </div>
 
                       <div className="block">
-                        <Button onClick={() => navigate(`/advisor/${advisor.id}`)} className="w-full bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-white font-bold py-6 rounded-lg gap-2 text-base">
+                        <Button onClick={() => navigate(`/advisor/${advisor.id}`)} className="w-full ">
                           View Full Profile & Groups
                           <ArrowRight size={18} />
                         </Button>
