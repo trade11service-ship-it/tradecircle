@@ -102,7 +102,7 @@ export default function CreatorStudio() {
   const [courses, setCourses] = useState<Course[]>([]);
   const [modules, setModules] = useState<Module[]>([]);
   const [ledger, setLedger] = useState<LedgerRow[]>([]);
-  const [sales, setSales] = useState<{ gross: number; count: number }>({ gross: 0, count: 0 });
+  const [sales, setSales] = useState<{ gross: number; net: number; count: number }>({ gross: 0, net: 0, count: 0 });
 
   // onboarding form
   const [legalName, setLegalName] = useState('');
@@ -147,13 +147,17 @@ export default function CreatorStudio() {
       supabase.from('courses').select('*').eq('creator_id', creatorId).order('created_at', { ascending: false }),
       supabase.from('course_modules').select('id, course_id, title, content_type, duration_label, sort_order'),
       supabase.from('creator_payout_ledger').select('id, amount, status, created_at').eq('creator_id', creatorId).order('created_at', { ascending: false }),
-      supabase.from('course_purchases').select('amount_paid').eq('creator_id', creatorId).eq('payment_status', 'captured'),
+      supabase.from('course_purchases').select('total_amount, creator_payout_amount').eq('creator_id', creatorId).eq('payment_status', 'captured'),
     ]);
     setCourses((cs as Course[]) ?? []);
     setModules((ms as Module[]) ?? []);
     setLedger((lg as LedgerRow[]) ?? []);
-    const rows = (ps as { amount_paid: number }[]) ?? [];
-    setSales({ gross: rows.reduce((s, r) => s + Number(r.amount_paid || 0), 0), count: rows.length });
+    const rows = (ps as { total_amount: number; creator_payout_amount: number }[]) ?? [];
+    setSales({
+      gross: rows.reduce((s, r) => s + Number(r.total_amount || 0), 0),
+      net: rows.reduce((s, r) => s + Number(r.creator_payout_amount || 0), 0),
+      count: rows.length,
+    });
   };
 
   useEffect(() => {
@@ -401,7 +405,7 @@ export default function CreatorStudio() {
     );
   }
 
-  const netEarnings = splitAmount(sales.gross).creatorNet;
+  const netEarnings = sales.net;
   const pendingPayout = ledger.filter((l) => l.status === 'accrued').reduce((s, l) => s + Number(l.amount), 0);
 
   return (
