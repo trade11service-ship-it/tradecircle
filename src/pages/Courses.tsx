@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { COURSE_CATEGORIES, EDU_DISCLAIMER, formatINR } from '@/lib/courses';
 import { BookOpen, PlayCircle, FileText, Search, ShieldCheck, GraduationCap } from 'lucide-react';
-import { setSeo } from '@/lib/seo';
+import { setMetaTags } from "@/lib/seo";
 
 type PublicCourse = {
   id: string;
@@ -36,7 +36,7 @@ export default function Courses() {
   const [band, setBand] = useState('all');
 
   useEffect(() => {
-    setSeo({
+    setMetaTags({
       title: 'Trading Courses by Verified Educators | RA Circle',
       description:
         'Browse structured, education-only trading and markets courses from verified educators on RA Circle. No live tips, no investment advice.',
