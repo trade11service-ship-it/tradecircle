@@ -5,6 +5,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { GroupFeed } from '@/components/GroupFeed';
 import { ReferralLinkCard } from '@/components/ReferralLinkCard';
 import { ReferralStatsTab } from '@/components/ReferralStatsTab';
+import { ComplianceLogTab } from '@/components/advisor/ComplianceLogTab';
+import { GroupPaymentSettings } from '@/components/advisor/GroupPaymentSettings';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
