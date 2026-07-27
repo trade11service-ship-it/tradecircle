@@ -1195,6 +1195,12 @@ export default function AdvisorDashboard() {
           <ReferralStatsTab advisorId={advisor.id} />
         )}
 
+        {/* COMPLIANCE TAB */}
+        {tab === 'compliance' && (
+          <ComplianceLogTab advisorId={advisor.id} />
+        )}
+
+
         {/* PROFILE TAB */}
         {tab === 'profile' && (
           <div className="max-w-2xl space-y-4">
