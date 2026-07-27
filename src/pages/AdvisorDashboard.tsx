@@ -269,12 +269,9 @@ export default function AdvisorDashboard() {
     const refCode = `TC-${namePrefix}-${newGroup.id.substring(0, 4).toUpperCase()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
     await supabase.from('referral_links').insert({ advisor_id: advisor.id, group_id: newGroup.id, referral_code: refCode } as any);
 
-    toast.info('Creating payment link...');
-    const { data: session } = await supabase.auth.getSession();
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-payment-link`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.session?.access_token}` }, body: JSON.stringify({ group_id: newGroup.id, group_name: groupForm.name, amount: parseInt(groupForm.monthlyPrice) }) });
-    const result = await res.json();
-    if (res.ok) toast.success('Group created with payment link!');
-    else toast.warning('Group created but payment link generation failed: ' + (result.error || 'Unknown error'));
+    // Fees are collected directly by the analyst — no platform payment link is created.
+    toast.success('Group created. Add your payment link or gateway keys under Edit → How subscribers pay you.');
+
     setShowGroupForm(false);
     setGroupForm({ name: '', description: '', monthlyPrice: '', strategyCategory: 'All' });
     fetchData();
