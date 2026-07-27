@@ -482,6 +482,7 @@ export default function AdvisorDashboard() {
     { key: 'subscribers' as const, label: 'Subscribers', icon: Users },
     { key: 'revenue' as const, label: 'Revenue', icon: IndianRupee },
     { key: 'referrals' as const, label: 'Referrals', icon: Gift },
+    { key: 'compliance' as const, label: 'Compliance', icon: Shield },
     { key: 'profile' as const, label: 'Profile', icon: UserCircle },
   ];
 
@@ -492,8 +493,10 @@ export default function AdvisorDashboard() {
     subscribers: '/advisor/dashboard/subscribers',
     revenue: '/advisor/dashboard/earnings',
     referrals: '/advisor/dashboard',
+    compliance: '/advisor/dashboard',
     profile: '/advisor/dashboard',
   };
+
 
   const signalCount = signals.filter(s => (s as any).post_type !== 'message').length;
   const greeting = new Date().getHours() < 12 ? 'Good morning' : new Date().getHours() < 17 ? 'Good afternoon' : 'Good evening';
