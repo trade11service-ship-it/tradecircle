@@ -9,18 +9,19 @@ import { RejectApplicationModal } from '@/components/RejectApplicationModal';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
 import { AdminReferralTab } from '@/components/AdminReferralTab';
+import { CourseReviewTab } from '@/components/admin/CourseReviewTab';
 import { Link } from 'react-router-dom';
 import type { Tables } from '@/integrations/supabase/types';
 import {
   LayoutDashboard, Clock, UserCheck, Users, CreditCard, Gift, FileText, Mail,
   ShieldAlert, IndianRupee, Search, Download, CheckCircle, UserPlus, BarChart3,
-  ChevronRight, Lock, Shield, Eye, ExternalLink, Trash2, Radio, Menu, X,
+  ChevronRight, Lock, Shield, Eye, ExternalLink, Trash2, Radio, Menu, X, GraduationCap,
 } from 'lucide-react';
 import { DashboardHero } from '@/components/DashboardHero';
 
 type Advisor = Tables<'advisors'>;
 
-type TabKey = 'dashboard' | 'pending' | 'advisors' | 'users' | 'payments' | 'referrals' | 'legal' | 'requests' | 'content';
+type TabKey = 'dashboard' | 'pending' | 'advisors' | 'users' | 'payments' | 'referrals' | 'legal' | 'requests' | 'content' | 'courses';
 
 const NAV_SECTIONS = [
   {
@@ -33,6 +34,7 @@ const NAV_SECTIONS = [
       { key: 'pending' as TabKey, label: 'Pending', icon: Clock, hasBadge: true },
       { key: 'advisors' as TabKey, label: 'All Advisors', icon: UserCheck },
       { key: 'content' as TabKey, label: 'Content Manager', icon: Radio },
+      { key: 'courses' as TabKey, label: 'Course Review', icon: GraduationCap },
       { key: 'users' as TabKey, label: 'All Users', icon: Users },
       { key: 'payments' as TabKey, label: 'Payments', icon: CreditCard },
       { key: 'referrals' as TabKey, label: 'Referrals', icon: Gift },
@@ -52,6 +54,7 @@ const PAGE_TITLES: Record<TabKey, string> = {
   pending: 'Pending Approvals',
   advisors: 'All Advisors',
   content: 'Content Manager',
+  courses: 'Course Review Queue',
   users: 'All Users',
   payments: 'Payments',
   referrals: 'Referral Program',
@@ -1193,6 +1196,8 @@ export default function AdminDashboard() {
             </div>
           </div>
         )}
+
+        {tab === 'courses' && !loading && <CourseReviewTab />}
 
         {/* ===== CONTENT MANAGER TAB ===== */}
         {tab === 'content' && !loading && (

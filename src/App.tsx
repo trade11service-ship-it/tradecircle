@@ -36,6 +36,10 @@ import ListedAdvisors from "./pages/ListedAdvisors";
 import FeaturedAdvisors from "./pages/FeaturedAdvisors";
 import GroupDetails from "./pages/GroupDetails";
 import Dashboard from "./pages/Dashboard";
+import Courses from "./pages/Courses";
+import CourseDetail from "./pages/CourseDetail";
+import CourseLearn from "./pages/CourseLearn";
+import CreatorStudio from "./pages/CreatorStudio";
 import { useAuth } from "@/lib/auth";
 
 const queryClient = new QueryClient();
@@ -97,6 +101,10 @@ const App = () => (
                 <Route path="/featured-advisors" element={<FeaturedAdvisors />} />
                 <Route path="/groups" element={<Discover />} />
                 <Route path="/explore" element={<Explore />} />
+                <Route path="/courses" element={<Courses />} />
+                <Route path="/courses/:id" element={<CourseDetail />} />
+                <Route path="/courses/:id/learn" element={<ProtectedRoute><CourseLearn /></ProtectedRoute>} />
+                <Route path="/creator-studio" element={<ProtectedRoute><CreatorStudio /></ProtectedRoute>} />
                 <Route path="/advisor/:id" element={<AdvisorProfile />} />
                 <Route path="/group/:id" element={<GroupDetails />} />
                 <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />

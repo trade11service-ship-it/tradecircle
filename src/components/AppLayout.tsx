@@ -8,6 +8,7 @@ import {
   LogOut,
   Radio,
   Rss,
+  GraduationCap,
   ChevronDown,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -54,6 +55,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     { name: "Discover", path: "/discover", icon: Compass, show: true, exact: false },
     feedItem,
     { name: "Public", path: "/explore", icon: Rss, show: true, exact: false },
+    { name: "Courses", path: "/courses", icon: GraduationCap, show: true, exact: false },
   ].filter(i => i.show);
 
   const initial = (profile?.full_name || user?.email || "U").charAt(0).toUpperCase();
