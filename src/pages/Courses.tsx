@@ -23,9 +23,9 @@ type PublicCourse = {
 const PRICE_BANDS = [
   { key: 'all', label: 'Any price', test: () => true },
   { key: 'free', label: 'Free', test: (p: number) => p === 0 },
-  { key: 'low', label: 'Under \u20B91,000', test: (p: number) => p > 0 && p < 1000 },
-  { key: 'mid', label: '\u20B91,000 \u2013 \u20B95,000', test: (p: number) => p >= 1000 && p <= 5000 },
-  { key: 'high', label: 'Above \u20B95,000', test: (p: number) => p > 5000 },
+  { key: 'low', label: 'Under ₹1,000', test: (p: number) => p > 0 && p < 1000 },
+  { key: 'mid', label: '₹1,000 – ₹5,000', test: (p: number) => p >= 1000 && p <= 5000 },
+  { key: 'high', label: 'Above ₹5,000', test: (p: number) => p > 5000 },
 ];
 
 export default function Courses() {
@@ -73,7 +73,7 @@ export default function Courses() {
           <p className="text-[11px] font-bold uppercase tracking-[0.16em] text-background/60">
             Education marketplace
           </p>
-          <h1 className="mt-2 text-[26px] md:text-[34px] font-extrabold leading-tight">
+          <h1 className="mt-2 text-[26px] md:text-[34px] font-extrabold leading-tight text-background">
             Learn the craft before you risk the capital
           </h1>
           <p className="mt-2 max-w-xl text-[14px] text-background/70">
@@ -210,7 +210,7 @@ export default function Courses() {
         {/* Compliance banner */}
         <div className="mt-8 rounded-xl border border-border bg-muted/40 px-4 py-3">
           <p className="text-[12px] leading-relaxed text-muted-foreground">
-            <span className="font-bold text-foreground">Educational purpose only \u2014 no live tips. </span>
+            <span className="font-bold text-foreground">Educational purpose only — no live tips. </span>
             {EDU_DISCLAIMER}
           </p>
         </div>

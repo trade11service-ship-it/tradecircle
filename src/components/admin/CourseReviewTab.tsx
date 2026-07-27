@@ -111,7 +111,7 @@ export function CourseReviewTab() {
               <div className="min-w-[220px] flex-1">
                 <h3 className="text-[15.5px] font-extrabold leading-snug text-foreground">{c.title}</h3>
                 <p className="mt-0.5 text-[12px] text-muted-foreground">
-                  {creators[c.creator_id] ?? 'Creator'} \u00b7 {c.category || 'General'} \u00b7 {c.price === 0 ? 'Free' : formatINR(c.price)} \u00b7 {mods.length} lesson{mods.length === 1 ? '' : 's'}
+                  {creators[c.creator_id] ?? 'Creator'} · {c.category || 'General'} · {c.price === 0 ? 'Free' : formatINR(c.price)} · {mods.length} lesson{mods.length === 1 ? '' : 's'}
                 </p>
                 {c.description && (
                   <p className="mt-2 whitespace-pre-wrap text-[13px] leading-relaxed text-foreground/90">{c.description}</p>

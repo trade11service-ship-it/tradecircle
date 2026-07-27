@@ -371,7 +371,7 @@ export default function CreatorStudio() {
           </h1>
           <p className="mt-2 text-[13.5px] text-muted-foreground">
             Creator accounts are completely separate from SEBI advisor registration. You may publish education
-            only \u2014 never live calls, tips, or portfolio advice.
+            only — never live calls, tips, or portfolio advice.
           </p>
 
           <div className="mt-6 space-y-4">
@@ -455,7 +455,7 @@ export default function CreatorStudio() {
                   <div className="min-w-0">
                     <h2 className="text-[15.5px] font-extrabold leading-snug text-foreground">{c.title}</h2>
                     <p className="mt-0.5 text-[12px] text-muted-foreground">
-                      {c.category || 'General'} \u00b7 {c.price === 0 ? 'Free' : formatINR(c.price)} \u00b7 {mods.length} lesson{mods.length === 1 ? '' : 's'}
+                      {c.category || 'General'} · {c.price === 0 ? 'Free' : formatINR(c.price)} · {mods.length} lesson{mods.length === 1 ? '' : 's'}
                     </p>
                   </div>
                   <span className={`rounded-md border px-2 py-1 text-[10.5px] font-bold uppercase tracking-wide ${STATUS_STYLES[c.review_status] ?? STATUS_STYLES.unverified}`}>
@@ -639,7 +639,7 @@ export default function CreatorStudio() {
             {creator.kyc_status === 'approved' ? (
               <p className="mt-3 flex items-center gap-2 text-[13px] text-foreground">
                 <BadgeCheck className="h-4 w-4 text-emerald" />
-                Verified{creator.pan_masked ? ` \u00b7 PAN ${creator.pan_masked}` : ''}. Settlements run on a
+                Verified{creator.pan_masked ? ` · PAN ${creator.pan_masked}` : ''}. Settlements run on a
                 weekly cycle.
               </p>
             ) : (

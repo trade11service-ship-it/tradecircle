@@ -89,7 +89,7 @@ function ProtectedPdf({ url, watermark }: { url: string; watermark: string }) {
           <ChevronLeft className="h-4 w-4" />
         </Button>
         <span className="text-[12px] font-semibold text-muted-foreground">
-          Page {page} of {pages || '\u2014'}
+          Page {page} of {pages || '—'}
         </span>
         <Button
           variant="outline"

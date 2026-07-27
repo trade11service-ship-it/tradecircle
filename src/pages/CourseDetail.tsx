@@ -230,7 +230,7 @@ export default function CourseDetail() {
           <p className="flex gap-2 text-[12px] leading-relaxed text-muted-foreground">
             <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
             <span>
-              <span className="font-bold text-foreground">Educational purpose only \u2014 no live tips. </span>
+              <span className="font-bold text-foreground">Educational purpose only — no live tips. </span>
               {EDU_DISCLAIMER}
             </span>
           </p>
