@@ -424,6 +424,277 @@ export type Database = {
           },
         ]
       }
+      course_modules: {
+        Row: {
+          content_type: string
+          course_id: string
+          created_at: string
+          duration_label: string | null
+          file_storage_path: string
+          id: string
+          sort_order: number
+          title: string
+        }
+        Insert: {
+          content_type: string
+          course_id: string
+          created_at?: string
+          duration_label?: string | null
+          file_storage_path: string
+          id?: string
+          sort_order?: number
+          title: string
+        }
+        Update: {
+          content_type?: string
+          course_id?: string
+          created_at?: string
+          duration_label?: string | null
+          file_storage_path?: string
+          id?: string
+          sort_order?: number
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_modules_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      course_purchases: {
+        Row: {
+          course_id: string
+          creator_id: string | null
+          creator_payout_amount: number
+          id: string
+          payment_reference_id: string | null
+          payment_status: string
+          platform_fee_amount: number
+          purchase_ip_address: string | null
+          purchase_timestamp: string
+          split_transfer_id: string | null
+          total_amount: number
+          user_id: string
+        }
+        Insert: {
+          course_id: string
+          creator_id?: string | null
+          creator_payout_amount: number
+          id?: string
+          payment_reference_id?: string | null
+          payment_status?: string
+          platform_fee_amount: number
+          purchase_ip_address?: string | null
+          purchase_timestamp?: string
+          split_transfer_id?: string | null
+          total_amount: number
+          user_id: string
+        }
+        Update: {
+          course_id?: string
+          creator_id?: string | null
+          creator_payout_amount?: number
+          id?: string
+          payment_reference_id?: string | null
+          payment_status?: string
+          platform_fee_amount?: number
+          purchase_ip_address?: string | null
+          purchase_timestamp?: string
+          split_transfer_id?: string | null
+          total_amount?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_purchases_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "course_purchases_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creator_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      courses: {
+        Row: {
+          category: string | null
+          course_type: string
+          cover_image_url: string | null
+          created_at: string
+          creator_id: string
+          description: string | null
+          id: string
+          is_visible: boolean
+          platform_commission_percent: number
+          price: number
+          rejection_reason: string | null
+          review_status: Database["public"]["Enums"]["course_review_status"]
+          reviewed_at: string | null
+          reviewed_by: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          course_type?: string
+          cover_image_url?: string | null
+          created_at?: string
+          creator_id: string
+          description?: string | null
+          id?: string
+          is_visible?: boolean
+          platform_commission_percent?: number
+          price?: number
+          rejection_reason?: string | null
+          review_status?: Database["public"]["Enums"]["course_review_status"]
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          course_type?: string
+          cover_image_url?: string | null
+          created_at?: string
+          creator_id?: string
+          description?: string | null
+          id?: string
+          is_visible?: boolean
+          platform_commission_percent?: number
+          price?: number
+          rejection_reason?: string | null
+          review_status?: Database["public"]["Enums"]["course_review_status"]
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "courses_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creator_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      creator_payout_ledger: {
+        Row: {
+          amount: number
+          created_at: string
+          creator_id: string
+          id: string
+          purchase_id: string | null
+          settled_at: string | null
+          status: Database["public"]["Enums"]["payout_ledger_status"]
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          creator_id: string
+          id?: string
+          purchase_id?: string | null
+          settled_at?: string | null
+          status?: Database["public"]["Enums"]["payout_ledger_status"]
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          creator_id?: string
+          id?: string
+          purchase_id?: string | null
+          settled_at?: string | null
+          status?: Database["public"]["Enums"]["payout_ledger_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creator_payout_ledger_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creator_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "creator_payout_ledger_purchase_id_fkey"
+            columns: ["purchase_id"]
+            isOneToOne: false
+            referencedRelation: "course_purchases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      creator_profiles: {
+        Row: {
+          bank_account_holder_name: string | null
+          bank_account_number: string | null
+          bank_ifsc: string | null
+          created_at: string
+          email: string | null
+          encrypted_pan: string | null
+          full_legal_name: string
+          id: string
+          instagram_handle: string | null
+          kyc_status: Database["public"]["Enums"]["creator_kyc_status"]
+          pan_masked: string | null
+          payout_vendor_id: string | null
+          phone: string | null
+          rejection_reason: string | null
+          updated_at: string
+          user_id: string
+          youtube_channel: string | null
+        }
+        Insert: {
+          bank_account_holder_name?: string | null
+          bank_account_number?: string | null
+          bank_ifsc?: string | null
+          created_at?: string
+          email?: string | null
+          encrypted_pan?: string | null
+          full_legal_name: string
+          id?: string
+          instagram_handle?: string | null
+          kyc_status?: Database["public"]["Enums"]["creator_kyc_status"]
+          pan_masked?: string | null
+          payout_vendor_id?: string | null
+          phone?: string | null
+          rejection_reason?: string | null
+          updated_at?: string
+          user_id: string
+          youtube_channel?: string | null
+        }
+        Update: {
+          bank_account_holder_name?: string | null
+          bank_account_number?: string | null
+          bank_ifsc?: string | null
+          created_at?: string
+          email?: string | null
+          encrypted_pan?: string | null
+          full_legal_name?: string
+          id?: string
+          instagram_handle?: string | null
+          kyc_status?: Database["public"]["Enums"]["creator_kyc_status"]
+          pan_masked?: string | null
+          payout_vendor_id?: string | null
+          phone?: string | null
+          rejection_reason?: string | null
+          updated_at?: string
+          user_id?: string
+          youtube_channel?: string | null
+        }
+        Relationships: []
+      }
       deletion_requests: {
         Row: {
           admin_notes: string | null
@@ -1474,6 +1745,33 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      admin_list_pending_courses: {
+        Args: never
+        Returns: {
+          category: string | null
+          course_type: string
+          cover_image_url: string | null
+          created_at: string
+          creator_id: string
+          description: string | null
+          id: string
+          is_visible: boolean
+          platform_commission_percent: number
+          price: number
+          rejection_reason: string | null
+          review_status: Database["public"]["Enums"]["course_review_status"]
+          reviewed_at: string | null
+          reviewed_by: string | null
+          title: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "courses"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       admin_list_rejected_applications: {
         Args: never
         Returns: {
@@ -1508,6 +1806,11 @@ export type Database = {
         Args: { _app_id: string; _reason: string }
         Returns: undefined
       }
+      admin_review_course: {
+        Args: { _approve: boolean; _course_id: string; _reason?: string }
+        Returns: undefined
+      }
+      current_creator_id: { Args: never; Returns: string }
       delete_email: {
         Args: { message_id: number; queue_name: string }
         Returns: boolean
@@ -1608,6 +1911,16 @@ export type Database = {
         Args: { _advisor_id: string }
         Returns: number
       }
+      get_course_syllabus: {
+        Args: { _course_id: string }
+        Returns: {
+          content_type: string
+          duration_label: string
+          id: string
+          sort_order: number
+          title: string
+        }[]
+      }
       get_group_feed_posts: {
         Args: { _group_id: string; _limit?: number }
         Returns: {
@@ -1628,6 +1941,23 @@ export type Database = {
           stop_loss: number
           target_price: number
           timeframe: string
+        }[]
+      }
+      get_public_course: {
+        Args: { _course_id: string }
+        Returns: {
+          category: string
+          course_type: string
+          cover_image_url: string
+          created_at: string
+          creator_id: string
+          creator_name: string
+          description: string
+          id: string
+          instagram_handle: string
+          price: number
+          title: string
+          youtube_channel: string
         }[]
       }
       get_referral_link_by_code: {
@@ -1653,6 +1983,23 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      list_public_courses: {
+        Args: never
+        Returns: {
+          category: string
+          course_type: string
+          cover_image_url: string
+          created_at: string
+          creator_id: string
+          creator_name: string
+          description: string
+          id: string
+          module_count: number
+          price: number
+          purchase_count: number
+          title: string
+        }[]
+      }
       move_to_dlq: {
         Args: {
           dlq_name: string
@@ -1672,7 +2019,9 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      course_review_status: "pending_review" | "approved" | "rejected"
+      creator_kyc_status: "unverified" | "pending" | "approved" | "rejected"
+      payout_ledger_status: "accrued" | "paid"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1799,6 +2148,10 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      course_review_status: ["pending_review", "approved", "rejected"],
+      creator_kyc_status: ["unverified", "pending", "approved", "rejected"],
+      payout_ledger_status: ["accrued", "paid"],
+    },
   },
 } as const
