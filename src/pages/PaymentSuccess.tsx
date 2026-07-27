@@ -2,204 +2,149 @@ import { useEffect, useState } from 'react';
 import { useSearchParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useAuth } from '@/lib/auth';
-import { CheckCircle, XCircle } from 'lucide-react';
+import { CheckCircle, Loader2, ShieldCheck, XCircle } from 'lucide-react';
 
+/**
+ * Return handshake from the analyst's own payment page.
+ * If the gateway sends a payment reference we activate immediately; otherwise
+ * the client enters the UTR / payment reference themselves.
+ */
 export default function PaymentSuccess() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { user, loading: authLoading } = useAuth();
-  const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying');
-  const [errorReason, setErrorReason] = useState<string>('');
+
+  const [status, setStatus] = useState<'resolving' | 'need_reference' | 'confirming' | 'success' | 'error'>('resolving');
+  const [errorReason, setErrorReason] = useState('');
   const [groupName, setGroupName] = useState('');
-  const [advisorName, setAdvisorName] = useState('');
+  const [groupId, setGroupId] = useState('');
+  const [reference, setReference] = useState('');
+  const [onboardingId, setOnboardingId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (authLoading) return; // wait for auth to resolve before deciding
-
-    const groupId = searchParams.get('group_id');
-    // Razorpay payment_link callback returns these params after redirect:
-    //  razorpay_payment_id, razorpay_payment_link_id, razorpay_payment_link_reference_id,
-    //  razorpay_payment_link_status, razorpay_signature
-    // Our edge function ALSO appends status=paid to the callback URL.
-    const paymentId = searchParams.get('razorpay_payment_id') || searchParams.get('payment_id') || '';
-    const linkStatus = searchParams.get('razorpay_payment_link_status');
-    const ourStatus = searchParams.get('status');
-    const isPaid = linkStatus === 'paid' || ourStatus === 'paid';
-
-    if (!groupId) { setErrorReason('Missing group reference.'); setStatus('error'); return; }
-    if (!user) { setErrorReason('Please sign in to confirm your subscription.'); setStatus('error'); return; }
-    if (!isPaid) {
-      setErrorReason(linkStatus === 'expired' ? 'This payment link has expired.' : 'Payment was not completed.');
+    if (authLoading) return;
+    if (!user) {
+      setErrorReason('Please sign in to confirm your subscription.');
       setStatus('error');
       return;
     }
-    if (!paymentId) {
-      setErrorReason('We could not find a payment reference. If money was deducted, contact support with the time of payment.');
+
+    const id = searchParams.get('onboarding_id') || sessionStorage.getItem('ra_onboarding_id');
+    if (!id) {
+      setErrorReason('We could not match this payment to a subscription request. Please start the subscription again.');
       setStatus('error');
       return;
     }
-    createSubscription(groupId, paymentId);
+    setOnboardingId(id);
+
+    const txn =
+      searchParams.get('razorpay_payment_id') ||
+      searchParams.get('payment_id') ||
+      searchParams.get('txn_id') ||
+      '';
+
+    if (txn) confirmPayment(id, txn);
+    else setStatus('need_reference');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user, authLoading, searchParams]);
 
-  const createSubscription = async (groupId: string, paymentId: string) => {
-    const isSandbox = paymentId.startsWith('sandbox_') || searchParams.get('sandbox') === '1';
-    const panNumber = sessionStorage.getItem('subscription_pan');
-    const consentGiven = sessionStorage.getItem('subscription_consent') === 'true';
-    const consentTimestamp = sessionStorage.getItem('subscription_consent_timestamp');
-    const consentVersion = sessionStorage.getItem('subscription_consent_version');
-    const riskText = sessionStorage.getItem('subscription_risk_text');
-    const dataText = sessionStorage.getItem('subscription_data_text');
+  const confirmPayment = async (id: string, txn: string) => {
+    setStatus('confirming');
+    setErrorReason('');
+    const { data, error } = await supabase.functions.invoke('payment-confirm', {
+      body: { onboarding_id: id, txn_id: txn },
+    });
 
-    // Sandbox: ask the server (service role) to materialize the subscription.
-    if (isSandbox) {
-      try {
-        await supabase.functions.invoke('sandbox-confirm-subscription', {
-          body: {
-            group_id: groupId,
-            payment_id: paymentId,
-            pan_number: panNumber,
-            consent_given: consentGiven,
-            consent_timestamp: consentTimestamp,
-            consent_version: consentVersion,
-            consent_user_agent: navigator.userAgent,
-            risk_consent_text: riskText,
-            data_consent_text: dataText,
-          },
-        });
-      } catch (e) {
-        console.error('Sandbox confirm failed', e);
-      }
-    }
-
-    // Poll up to 10s for the subscription row (created by webhook or sandbox fn).
-    for (let i = 0; i < 10; i++) {
-      const { data: existingByPayment } = await supabase
-        .from('subscriptions')
-        .select('id, group_id, groups(name, advisors(full_name))')
-        .eq('razorpay_payment_id', paymentId)
-        .maybeSingle();
-
-      if (existingByPayment) {
-        const group = existingByPayment.groups as any;
-        setGroupName(group?.name || '');
-        setAdvisorName(group?.advisors?.full_name || '');
-        setStatus('success');
-        // Persist both consent acceptances (idempotent per subscription)
-        if (user && panNumber && consentGiven && riskText && dataText) {
-          const base = {
-            user_id: user.id,
-            email: user.email || null,
-            accepted: true,
-            page_url: window.location.href,
-            user_agent: navigator.userAgent,
-            device_info: navigator.platform,
-          };
-          await Promise.all([
-            supabase.from('user_legal_acceptances').insert({
-              ...base,
-              acceptance_type: 'subscription_risk_disclosure',
-              checkbox_text: riskText,
-            }),
-            supabase.from('user_legal_acceptances').insert({
-              ...base,
-              acceptance_type: 'subscription_data_sharing',
-              checkbox_text: `${dataText} [PAN: ${panNumber}] [group: ${groupId}]`,
-            }),
-          ]);
-        }
-        // Cleanup
-        sessionStorage.removeItem('subscription_pan');
-        sessionStorage.removeItem('subscription_consent');
-        sessionStorage.removeItem('subscription_consent_timestamp');
-        sessionStorage.removeItem('subscription_consent_version');
-        sessionStorage.removeItem('subscription_risk_text');
-        sessionStorage.removeItem('subscription_data_text');
-        return;
-      }
-      await new Promise(r => setTimeout(r, 1000));
-    }
-
-    // Fallback: maybe user already had an active sub for this group
-    const now = new Date().toISOString();
-    const { data: existing } = await supabase.from('subscriptions')
-      .select('id, groups(name, advisors(full_name))')
-      .eq('user_id', user!.id)
-      .eq('group_id', groupId)
-      .eq('status', 'active')
-      .gte('end_date', now)
-      .maybeSingle();
-
-    if (existing) {
-      const group = (existing as any).groups;
-      setGroupName(group?.name || '');
-      setAdvisorName(group?.advisors?.full_name || '');
-      setStatus('success');
+    if (error || data?.error) {
+      setErrorReason(data?.error || 'We could not confirm this payment. Your money is safe — contact the analyst with your reference.');
+      setStatus('need_reference');
       return;
     }
 
-    setErrorReason('Your payment is being processed. If this persists, contact support — your payment is safe.');
-    setStatus('error');
-
-    sessionStorage.removeItem('subscription_pan');
-    sessionStorage.removeItem('subscription_consent');
-    sessionStorage.removeItem('subscription_consent_timestamp');
-    sessionStorage.removeItem('subscription_consent_version');
-    sessionStorage.removeItem('subscription_risk_text');
-    sessionStorage.removeItem('subscription_data_text');
+    sessionStorage.removeItem('ra_onboarding_id');
+    sessionStorage.removeItem('ra_onboarding_group');
+    setGroupName(data.group_name || '');
+    setGroupId(data.group_id || '');
+    setStatus('success');
   };
-
 
   return (
     <div className="min-h-full h-full flex flex-col bg-muted">
-            <div className="flex-1 flex items-center justify-center px-4">
-        <div className="rounded-2xl border border-border bg-card p-8 text-center max-w-md shadow-sm">
-          {status === 'verifying' && (
+      <div className="flex-1 flex items-center justify-center p-4">
+        <div className="w-full max-w-md rounded-xl border bg-background p-6 text-center">
+          {(status === 'resolving' || status === 'confirming') && (
             <>
-              <div className="h-10 w-10 mx-auto animate-spin rounded-full border-4 border-primary border-t-transparent mb-4" />
-              <h1 className="text-2xl font-bold text-foreground">Verifying Payment...</h1>
-              <p className="mt-2 text-muted-foreground">Please wait while we confirm your payment.</p>
+              <Loader2 className="mx-auto h-10 w-10 animate-spin text-primary" />
+              <h1 className="mt-4 text-lg font-semibold">Confirming your payment</h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Hold on while we verify the reference and activate your access.
+              </p>
             </>
           )}
+
+          {status === 'need_reference' && (
+            <>
+              <ShieldCheck className="mx-auto h-10 w-10 text-primary" />
+              <h1 className="mt-4 text-lg font-semibold">Enter your payment reference</h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                The analyst collected this payment directly. Enter the UTR / transaction reference from your bank or
+                payment receipt to activate access.
+              </p>
+              {errorReason && <p className="mt-3 text-xs text-destructive">{errorReason}</p>}
+              <div className="mt-4 space-y-2 text-left">
+                <Label htmlFor="utr" className="text-xs">Payment reference / UTR</Label>
+                <Input
+                  id="utr"
+                  value={reference}
+                  onChange={(e) => setReference(e.target.value)}
+                  placeholder="e.g. pay_QxYz123 or 402512345678"
+                />
+              </div>
+              <Button
+                className="mt-4 w-full"
+                disabled={reference.trim().length < 6 || !onboardingId}
+                onClick={() => confirmPayment(onboardingId!, reference.trim())}
+              >
+                Activate my subscription
+              </Button>
+              <p className="mt-3 text-[11px] text-muted-foreground">
+                Reference numbers are verified and can only be used once.
+              </p>
+            </>
+          )}
+
           {status === 'success' && (
             <>
-              <CheckCircle className="mx-auto h-16 w-16 text-primary mb-4" />
-              <h1 className="text-2xl font-bold text-foreground">You're now subscribed! 🎉</h1>
-              {groupName && <p className="mt-2 text-[15px] font-semibold text-foreground">{groupName}</p>}
-              {advisorName && <p className="text-[13px] text-muted-foreground">by {advisorName}</p>}
-              <div className="mt-4 rounded-xl bg-primary/5 border border-primary/20 p-4 text-left space-y-2">
-                <p className="text-[13px] text-foreground">✅ Access to all signals in the feed</p>
-                <p className="text-[13px] text-foreground">✅ Market analysis & commentary</p>
-                <p className="text-[13px] text-foreground">✅ Set up Telegram alerts for instant notifications</p>
-              </div>
-              <p className="mt-3 text-[12px] text-muted-foreground">Your subscription is valid for 30 days.</p>
-              <div className="mt-4 flex gap-2">
-                <Link to="/home" className="flex-1">
-                  <Button className="w-full rounded-xl bg-primary font-bold">Go to Feed</Button>
-                </Link>
-                <Link to="/subscriptions" className="flex-1">
-                  <Button variant="outline" className="w-full rounded-xl font-bold">My Subscriptions</Button>
-                </Link>
+              <CheckCircle className="mx-auto h-10 w-10 text-primary" />
+              <h1 className="mt-4 text-lg font-semibold">You're subscribed</h1>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Access to {groupName || 'your research package'} is now active. A signed copy of your agreement has been
+                emailed to you and archived in your account.
+              </p>
+              <div className="mt-5 space-y-2">
+                {groupId && (
+                  <Button className="w-full" onClick={() => navigate(`/group/${groupId}`)}>
+                    Open the research feed
+                  </Button>
+                )}
+                <Button variant="outline" className="w-full" asChild>
+                  <Link to="/profile">View my subscriptions</Link>
+                </Button>
               </div>
             </>
           )}
+
           {status === 'error' && (
             <>
-              <XCircle className="mx-auto h-16 w-16 text-destructive mb-4" />
-              <h1 className="text-2xl font-bold text-foreground">Payment Not Confirmed</h1>
-              <p className="mt-2 text-[14px] text-muted-foreground">{errorReason || 'We could not verify your payment.'}</p>
-              <div className="mt-4 rounded-xl bg-muted/50 border border-border p-3 text-left">
-                <p className="text-[12px] text-foreground font-semibold mb-1">What to do next</p>
-                <ul className="text-[12px] text-muted-foreground space-y-1 list-disc pl-4">
-                  <li>If money was deducted, it will auto-refund within 5–7 working days.</li>
-                  <li>Check your bank/UPI app for the payment status before retrying.</li>
-                  <li>Email <strong className="text-foreground">support@racircle.in</strong> with your payment reference.</li>
-                </ul>
-              </div>
-              <div className="mt-4 flex gap-2">
-                <Button variant="outline" className="flex-1 rounded-xl" onClick={() => navigate(-1)}>Try Again</Button>
-                <Link to="/discover" className="flex-1"><Button className="w-full rounded-xl">Browse Advisors</Button></Link>
-              </div>
+              <XCircle className="mx-auto h-10 w-10 text-destructive" />
+              <h1 className="mt-4 text-lg font-semibold">We hit a snag</h1>
+              <p className="mt-1 text-sm text-muted-foreground">{errorReason}</p>
+              <Button variant="outline" className="mt-5 w-full" asChild>
+                <Link to="/discover">Back to discover</Link>
+              </Button>
             </>
           )}
         </div>

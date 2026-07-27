@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { GroupFeed } from "@/components/GroupFeed";
-import { SubscriptionModal } from "@/components/SubscriptionModal";
+import { SubscribeFlow } from "@/components/SubscribeFlow";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { ShieldCheck, Users, Activity, ArrowLeft, CheckCircle2, TrendingUp, AlertCircle, User as UserIcon } from "lucide-react";
@@ -118,40 +118,16 @@ export default function GroupDetails() {
     setLoading(false);
   };
 
-  const handleSubscribe = async (data: { panNumber: string; riskConsentText: string; dataConsentText: string; consentVersion: string }) => {
-    if (!group) return;
+  // Subscription is handled end-to-end by <SubscribeFlow />: KRA identity check,
+  // MITC acceptance, then payment collected directly by the research analyst.
+  const openSubscribe = () => {
     if (!user) {
       navigate("/login");
       return;
     }
-
-    setSubscribing(true);
-    try {
-      sessionStorage.setItem("subscription_pan", data.panNumber);
-      sessionStorage.setItem("subscription_consent", "true");
-      sessionStorage.setItem("subscription_consent_timestamp", new Date().toISOString());
-      sessionStorage.setItem("subscription_consent_version", data.consentVersion);
-      sessionStorage.setItem("subscription_risk_text", data.riskConsentText);
-      sessionStorage.setItem("subscription_data_text", data.dataConsentText);
-
-      const { data: session } = await supabase.auth.getSession();
-      const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/initiate-payment`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${session?.session?.access_token}`,
-        },
-        body: JSON.stringify({ group_id: group.id, origin_url: window.location.origin }),
-      });
-      const result = await res.json();
-      if (!res.ok || !result.payment_url) {
-        throw new Error(result.error || "Failed to start payment");
-      }
-      window.location.href = result.payment_url;
-    } finally {
-      setSubscribing(false);
-    }
+    setModalOpen(true);
   };
+
 
 
   const advisorName = useMemo(() => group?.advisor?.full_name || "Advisor", [group]);
@@ -269,7 +245,7 @@ export default function GroupDetails() {
                 </Button>
               </Link>
               {!isSubscribed ? (
-                <Button size="sm" className="rounded-full h-9 px-5 font-bold shadow-md" onClick={() => setModalOpen(true)}>
+                <Button size="sm" className="rounded-full h-9 px-5 font-bold shadow-md" onClick={openSubscribe}>
                   Subscribe ₹{group.monthly_price}/mo
                 </Button>
               ) : (
@@ -299,7 +275,7 @@ export default function GroupDetails() {
               advisorPhoto={group.advisor?.profile_photo_url || undefined}
               isSubscribed={isSubscribed}
               isOwner={!!user && group.advisor?.user_id === user.id}
-              onSubscribe={() => setModalOpen(true)}
+              onSubscribe={openSubscribe}
               subscribePrice={group.monthly_price}
             />
           </div>
@@ -316,7 +292,7 @@ export default function GroupDetails() {
               <Button
                 size="lg"
                 className="flex-1 h-12 rounded-xl text-[15px] font-bold shadow-md"
-                onClick={() => setModalOpen(true)}
+                onClick={openSubscribe}
                 disabled={subscribing}
               >
                 {subscribing ? 'Processing…' : 'Subscribe Now'}
@@ -327,14 +303,15 @@ export default function GroupDetails() {
       </div>
 
 
-      <SubscriptionModal
+      <SubscribeFlow
         open={modalOpen}
         onOpenChange={setModalOpen}
         group={group}
         advisorName={advisorName}
-        onConfirm={handleSubscribe}
-        isLoading={subscribing}
+        sebiRegNo={group.advisor?.sebi_reg_no}
+        onActivated={fetchGroup}
       />
+
     </div>
   );
 }

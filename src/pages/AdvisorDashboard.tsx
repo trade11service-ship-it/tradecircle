@@ -5,6 +5,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { GroupFeed } from '@/components/GroupFeed';
 import { ReferralLinkCard } from '@/components/ReferralLinkCard';
 import { ReferralStatsTab } from '@/components/ReferralStatsTab';
+import { ComplianceLogTab } from '@/components/advisor/ComplianceLogTab';
+import { GroupPaymentSettings } from '@/components/advisor/GroupPaymentSettings';
+
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -36,7 +39,7 @@ export default function AdvisorDashboard() {
   const [signals, setSignals] = useState<Signal[]>([]);
   const [dailyEarnings, setDailyEarnings] = useState<DailyEarning[]>([]);
   const [earningsSummary, setEarningsSummary] = useState<any>(null);
-  const [tab, setTab] = useState<'groups' | 'post' | 'signals_history' | 'subscribers' | 'revenue' | 'referrals' | 'profile'>('groups');
+  const [tab, setTab] = useState<'groups' | 'post' | 'signals_history' | 'subscribers' | 'revenue' | 'referrals' | 'compliance' | 'profile'>('groups');
   const [loading, setLoading] = useState(true);
   const [groupForm, setGroupForm] = useState({ name: '', description: '', monthlyPrice: '', strategyCategory: 'All' });
   const [groupDp, setGroupDp] = useState<File | null>(null);
@@ -266,12 +269,9 @@ export default function AdvisorDashboard() {
     const refCode = `TC-${namePrefix}-${newGroup.id.substring(0, 4).toUpperCase()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
     await supabase.from('referral_links').insert({ advisor_id: advisor.id, group_id: newGroup.id, referral_code: refCode } as any);
 
-    toast.info('Creating payment link...');
-    const { data: session } = await supabase.auth.getSession();
-    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-payment-link`, { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session?.session?.access_token}` }, body: JSON.stringify({ group_id: newGroup.id, group_name: groupForm.name, amount: parseInt(groupForm.monthlyPrice) }) });
-    const result = await res.json();
-    if (res.ok) toast.success('Group created with payment link!');
-    else toast.warning('Group created but payment link generation failed: ' + (result.error || 'Unknown error'));
+    // Fees are collected directly by the analyst — no platform payment link is created.
+    toast.success('Group created. Add your payment link or gateway keys under Edit → How subscribers pay you.');
+
     setShowGroupForm(false);
     setGroupForm({ name: '', description: '', monthlyPrice: '', strategyCategory: 'All' });
     fetchData();
@@ -482,6 +482,7 @@ export default function AdvisorDashboard() {
     { key: 'subscribers' as const, label: 'Subscribers', icon: Users },
     { key: 'revenue' as const, label: 'Revenue', icon: IndianRupee },
     { key: 'referrals' as const, label: 'Referrals', icon: Gift },
+    { key: 'compliance' as const, label: 'Compliance', icon: Shield },
     { key: 'profile' as const, label: 'Profile', icon: UserCircle },
   ];
 
@@ -492,8 +493,10 @@ export default function AdvisorDashboard() {
     subscribers: '/advisor/dashboard/subscribers',
     revenue: '/advisor/dashboard/earnings',
     referrals: '/advisor/dashboard',
+    compliance: '/advisor/dashboard',
     profile: '/advisor/dashboard',
   };
+
 
   const signalCount = signals.filter(s => (s as any).post_type !== 'message').length;
   const greeting = new Date().getHours() < 12 ? 'Good morning' : new Date().getHours() < 17 ? 'Good afternoon' : 'Good evening';
@@ -631,7 +634,7 @@ export default function AdvisorDashboard() {
 
         {/* EDIT GROUP DIALOG */}
         <Dialog open={!!editingGroup} onOpenChange={(o) => !o && setEditingGroup(null)}>
-          <DialogContent className="sm:max-w-lg">
+          <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Edit Group</DialogTitle>
             </DialogHeader>
@@ -662,7 +665,14 @@ export default function AdvisorDashboard() {
                   </SelectContent>
                 </Select>
               </div>
+              <div>
+                <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">How subscribers pay you</Label>
+                <div className="mt-1.5">
+                  {editingGroup && <GroupPaymentSettings groupId={editingGroup.id} />}
+                </div>
+              </div>
             </div>
+
             <DialogFooter className="gap-2">
               <Button variant="outline" onClick={() => setEditingGroup(null)} disabled={editSaving}>Cancel</Button>
               <Button onClick={saveEditGroup} disabled={editSaving}>{editSaving ? 'Saving…' : 'Save changes'}</Button>
@@ -1191,6 +1201,12 @@ export default function AdvisorDashboard() {
         {tab === 'referrals' && (
           <ReferralStatsTab advisorId={advisor.id} />
         )}
+
+        {/* COMPLIANCE TAB */}
+        {tab === 'compliance' && (
+          <ComplianceLogTab advisorId={advisor.id} />
+        )}
+
 
         {/* PROFILE TAB */}
         {tab === 'profile' && (

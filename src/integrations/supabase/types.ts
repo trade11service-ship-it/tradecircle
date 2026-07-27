@@ -309,6 +309,121 @@ export type Database = {
           },
         ]
       }
+      client_onboarding: {
+        Row: {
+          advisor_id: string | null
+          consent_given: boolean
+          consent_ip_address: string | null
+          consent_timestamp: string | null
+          consent_user_agent: string | null
+          created_at: string
+          encrypted_pan: string | null
+          group_id: string
+          id: string
+          kra_status: string | null
+          kyc_reference_id: string | null
+          kyc_verified: boolean
+          mitc_version: string | null
+          pan_masked: string | null
+          payment_reference_id: string | null
+          payment_status: string
+          pdf_vault_url: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          advisor_id?: string | null
+          consent_given?: boolean
+          consent_ip_address?: string | null
+          consent_timestamp?: string | null
+          consent_user_agent?: string | null
+          created_at?: string
+          encrypted_pan?: string | null
+          group_id: string
+          id?: string
+          kra_status?: string | null
+          kyc_reference_id?: string | null
+          kyc_verified?: boolean
+          mitc_version?: string | null
+          pan_masked?: string | null
+          payment_reference_id?: string | null
+          payment_status?: string
+          pdf_vault_url?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          advisor_id?: string | null
+          consent_given?: boolean
+          consent_ip_address?: string | null
+          consent_timestamp?: string | null
+          consent_user_agent?: string | null
+          created_at?: string
+          encrypted_pan?: string | null
+          group_id?: string
+          id?: string
+          kra_status?: string | null
+          kyc_reference_id?: string | null
+          kyc_verified?: boolean
+          mitc_version?: string | null
+          pan_masked?: string | null
+          payment_reference_id?: string | null
+          payment_status?: string
+          pdf_vault_url?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_onboarding_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      compliance_logs: {
+        Row: {
+          client_email: string | null
+          created_at: string
+          event_type: string
+          id: string
+          metadata_json: Json
+          onboarding_id: string | null
+          ra_id: string | null
+          user_id: string | null
+        }
+        Insert: {
+          client_email?: string | null
+          created_at?: string
+          event_type: string
+          id?: string
+          metadata_json?: Json
+          onboarding_id?: string | null
+          ra_id?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          client_email?: string | null
+          created_at?: string
+          event_type?: string
+          id?: string
+          metadata_json?: Json
+          onboarding_id?: string | null
+          ra_id?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "compliance_logs_onboarding_id_fkey"
+            columns: ["onboarding_id"]
+            isOneToOne: false
+            referencedRelation: "client_onboarding"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deletion_requests: {
         Row: {
           admin_notes: string | null
@@ -560,37 +675,52 @@ export type Database = {
       groups: {
         Row: {
           advisor_id: string
+          advisor_merchant_key_id: string | null
+          advisor_merchant_key_secret: string | null
+          advisor_payment_url: string | null
           created_at: string | null
           description: string | null
           dp_url: string | null
+          duration_days: number
           id: string
           is_active: boolean | null
           monthly_price: number
           name: string
+          payment_mode: string
           razorpay_payment_link: string | null
           strategy_category: string | null
         }
         Insert: {
           advisor_id: string
+          advisor_merchant_key_id?: string | null
+          advisor_merchant_key_secret?: string | null
+          advisor_payment_url?: string | null
           created_at?: string | null
           description?: string | null
           dp_url?: string | null
+          duration_days?: number
           id?: string
           is_active?: boolean | null
           monthly_price: number
           name: string
+          payment_mode?: string
           razorpay_payment_link?: string | null
           strategy_category?: string | null
         }
         Update: {
           advisor_id?: string
+          advisor_merchant_key_id?: string | null
+          advisor_merchant_key_secret?: string | null
+          advisor_payment_url?: string | null
           created_at?: string | null
           description?: string | null
           dp_url?: string | null
+          duration_days?: number
           id?: string
           is_active?: boolean | null
           monthly_price?: number
           name?: string
+          payment_mode?: string
           razorpay_payment_link?: string | null
           strategy_category?: string | null
         }
@@ -1063,6 +1193,7 @@ export type Database = {
           from_referral: boolean | null
           group_id: string
           id: string
+          onboarding_id: string | null
           pan_number: string | null
           platform_fee_percent: number | null
           razorpay_payment_id: string | null
@@ -1085,6 +1216,7 @@ export type Database = {
           from_referral?: boolean | null
           group_id: string
           id?: string
+          onboarding_id?: string | null
           pan_number?: string | null
           platform_fee_percent?: number | null
           razorpay_payment_id?: string | null
@@ -1107,6 +1239,7 @@ export type Database = {
           from_referral?: boolean | null
           group_id?: string
           id?: string
+          onboarding_id?: string | null
           pan_number?: string | null
           platform_fee_percent?: number | null
           razorpay_payment_id?: string | null
@@ -1129,6 +1262,13 @@ export type Database = {
             columns: ["group_id"]
             isOneToOne: false
             referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "subscriptions_onboarding_id_fkey"
+            columns: ["onboarding_id"]
+            isOneToOne: false
+            referencedRelation: "client_onboarding"
             referencedColumns: ["id"]
           },
           {
