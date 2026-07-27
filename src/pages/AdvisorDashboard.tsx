@@ -668,7 +668,14 @@ export default function AdvisorDashboard() {
                   </SelectContent>
                 </Select>
               </div>
+              <div>
+                <Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">How subscribers pay you</Label>
+                <div className="mt-1.5">
+                  {editingGroup && <GroupPaymentSettings groupId={editingGroup.id} />}
+                </div>
+              </div>
             </div>
+
             <DialogFooter className="gap-2">
               <Button variant="outline" onClick={() => setEditingGroup(null)} disabled={editSaving}>Cancel</Button>
               <Button onClick={saveEditGroup} disabled={editSaving}>{editSaving ? 'Saving…' : 'Save changes'}</Button>
