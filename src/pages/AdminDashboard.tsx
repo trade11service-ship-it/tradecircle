@@ -15,7 +15,7 @@ import type { Tables } from '@/integrations/supabase/types';
 import {
   LayoutDashboard, Clock, UserCheck, Users, CreditCard, Gift, FileText, Mail,
   ShieldAlert, IndianRupee, Search, Download, CheckCircle, UserPlus, BarChart3,
-  ChevronRight, Lock, Shield, Eye, ExternalLink, Trash2, Radio, Menu, X,
+  ChevronRight, Lock, Shield, Eye, ExternalLink, Trash2, Radio, Menu, X, GraduationCap,
 } from 'lucide-react';
 import { DashboardHero } from '@/components/DashboardHero';
 
