@@ -1,7 +1,9 @@
 /**
  * SEO Meta Tags Manager
- * Helps set dynamic meta tags for different pages
+ * Sets per-route title, description, canonical, og:url and JSON-LD.
  */
+
+import { getCanonicalOrigin } from './canonicalOrigin';
 
 interface MetaTagConfig {
   title: string;
@@ -13,38 +15,46 @@ interface MetaTagConfig {
   canonicalUrl?: string;
 }
 
+function currentUrl(): string {
+  if (typeof window === 'undefined') return getCanonicalOrigin();
+  return `${getCanonicalOrigin()}${window.location.pathname}`;
+}
+
 export function setMetaTags(config: MetaTagConfig) {
-  // Set title
+  const url = config.canonicalUrl || currentUrl();
+
+  // Title
   document.title = config.title;
   updateMeta('og:title', config.ogTitle || config.title);
   updateMeta('twitter:title', config.ogTitle || config.title);
 
-  // Set description
+  // Description
   updateMeta('description', config.description);
   updateMeta('og:description', config.ogDescription || config.description);
   updateMeta('twitter:description', config.ogDescription || config.description);
 
-  // Set keywords
   if (config.keywords) {
     updateMeta('keywords', config.keywords);
   }
 
-  // Set og:image
   if (config.ogImage) {
     updateMeta('og:image', config.ogImage);
     updateMeta('twitter:image', config.ogImage);
   }
 
-  // Set canonical URL
-  if (config.canonicalUrl) {
-    let canonicalLink = document.querySelector("link[rel='canonical']") as HTMLLinkElement;
-    if (!canonicalLink) {
-      canonicalLink = document.createElement('link');
-      canonicalLink.rel = 'canonical';
-      document.head.appendChild(canonicalLink);
-    }
-    canonicalLink.href = config.canonicalUrl;
+  // Self-referencing og:url + canonical
+  updateMeta('og:url', url);
+  setCanonical(url);
+}
+
+function setCanonical(url: string) {
+  let canonicalLink = document.querySelector("link[rel='canonical']") as HTMLLinkElement | null;
+  if (!canonicalLink) {
+    canonicalLink = document.createElement('link');
+    canonicalLink.rel = 'canonical';
+    document.head.appendChild(canonicalLink);
   }
+  canonicalLink.href = url;
 }
 
 function updateMeta(name: string, content: string) {
@@ -64,20 +74,48 @@ function updateMeta(name: string, content: string) {
   element.content = content;
 }
 
+/**
+ * Inject (or replace) a JSON-LD block, keyed by id so routes can swap theirs.
+ */
+export function setJsonLd(id: string, data: Record<string, unknown> | null) {
+  const existing = document.getElementById(id);
+  if (existing) existing.remove();
+  if (!data) return;
+  const script = document.createElement('script');
+  script.type = 'application/ld+json';
+  script.id = id;
+  script.textContent = JSON.stringify(data);
+  document.head.appendChild(script);
+}
+
 export const SEO_CONFIG = {
   home: {
-    title: 'Home — RA Circle | SEBI-Verified Trading Advisors',
+    title: 'Your Signal Feed | RA Circle',
     description:
-      'Get verified trading signals from SEBI-registered advisors. Tamper-proof track records. Cancel anytime. No lock-in.',
+      'Live trading signals from the SEBI-registered advisors you subscribe to, with entry, target and stop loss on every call.',
     keywords:
       'trading signals, SEBI verified advisor, stock advisory, F&O trading, intraday signals, swing trading, SEBI registered analyst',
   },
   landing: {
-    title: 'RA Circle | India’s Secure Network for SEBI Advisors & Smart Traders',
+    title: 'RA Circle | SEBI-Verified Trading Advisors in India',
     description:
-      "India's Secure Network for Certified Advisors & Smart Traders. SEBI-verified Research Analysts, tamper-proof signals, masked subscriber data — all in one secure workspace.",
+      'Subscribe to SEBI-registered research analysts with tamper-proof, timestamped track records. See full win/loss history before you pay. Cancel anytime.',
     keywords:
       'SEBI registered advisor, trading signals India, verified stock advisor, F&O signals, intraday trading, research analyst INH, RA Circle',
+  },
+  featuredAdvisors: {
+    title: 'Featured SEBI-Registered Advisors | RA Circle',
+    description:
+      'Hand-picked SEBI-registered research analysts on RA Circle, with verified INH numbers, subscriber counts and published win rates.',
+    keywords:
+      'featured SEBI advisors, top research analysts India, verified trading advisors, INH registered analyst',
+  },
+  listedAdvisors: {
+    title: 'All Listed SEBI Advisors | RA Circle',
+    description:
+      'Browse every SEBI-registered advisor listed on RA Circle. Compare INH registration, strategy, accuracy and subscriber numbers side by side.',
+    keywords:
+      'listed SEBI advisors, SEBI registered analyst list, compare trading advisors India',
   },
   discover: {
     title: 'Browse SEBI Verified Trading Advisors | RA Circle',
@@ -87,7 +125,7 @@ export const SEO_CONFIG = {
       'SEBI verified trading advisors, best intraday signals, swing trading advisors, F&O trading signals, stock market advisory',
   },
   explore: {
-    title: 'Free Trading Insights from SEBI Verified Advisors | RA Circle',
+    title: 'Free Trading Insights from SEBI Advisors | RA Circle',
     description:
       'Discover free analysis and public posts from SEBI verified trading advisors. Follow advisors to get free insights in your feed.',
     keywords:
@@ -101,7 +139,7 @@ export const SEO_CONFIG = {
       'SEBI verified advisors, trading advisor verification, how to find verified stock advisor, SEBI registered analyst',
   },
   subscriptions: {
-    title: 'My Subscriptions — Manage Your Trading Advisor Plans',
+    title: 'My Subscriptions — Manage Your Advisor Plans',
     description:
       'Manage your active trading advisor subscriptions. Cancel anytime with no penalties. Real-time signal delivery to Telegram.',
     keywords:
