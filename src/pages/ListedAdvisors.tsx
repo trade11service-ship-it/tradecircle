@@ -59,7 +59,7 @@ export default function ListedAdvisors() {
 
   // Set meta tags
   useEffect(() => {
-    setMetaTags(SEO_CONFIG.landing);
+    setMetaTags(SEO_CONFIG.listedAdvisors);
   }, []);
 
   useEffect(() => {

@@ -114,7 +114,7 @@ export default function Landing() {
             </p>
             <h1 className="mt-4 text-[32px] md:text-[40px] font-bold tracking-tight leading-[1.15] text-foreground">
               Trade with verified advisors.{' '}
-              <span className="text-slate-400 line-through decoration-[1.5px]">Not random tips.</span>
+              <span className="text-slate-600 line-through decoration-[1.5px]">Not random tips.</span>
             </h1>
             <p className="mt-5 text-[18px] leading-relaxed text-[hsl(var(--body))]">
               Every advisor is manually checked against SEBI records. Every signal is permanently timestamped.

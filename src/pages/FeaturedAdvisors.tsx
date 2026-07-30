@@ -37,7 +37,7 @@ export default function FeaturedAdvisors() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setMetaTags(SEO_CONFIG.landing);
+    setMetaTags(SEO_CONFIG.featuredAdvisors);
   }, []);
 
   useEffect(() => {
