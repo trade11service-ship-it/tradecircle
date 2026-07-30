@@ -315,13 +315,8 @@ export default function Landing() {
         </div>
         <div className="rounded-xl border border-border bg-card overflow-hidden">
           <Accordion type="single" collapsible defaultValue="faq-0">
-            {[
-              { q: 'Is RA Circle a SEBI-registered advisor?', a: 'No. RA Circle is a technology marketplace operated by STREZONIC PRIVATE LIMITED. We verify SEBI-registered advisors (INH holders) but do not give investment advice ourselves.' },
-              { q: 'How do you verify advisors?', a: "We manually check each advisor's SEBI registration number (INH number) on sebi.gov.in before approval. Unverified advisors are never listed." },
-              { q: 'Can I cancel my subscription?', a: 'Yes. Cancel anytime from your profile. No lock-in, no questions asked.' },
-              { q: 'How do I receive signals?', a: "After subscribing, you are added to the advisor's private group. All signals arrive instantly with entry, target, and stop loss." },
-              { q: 'What makes this different from Telegram channels?', a: 'RA Circle only allows SEBI-registered advisors. Every signal is permanently timestamped — advisors cannot delete bad calls. You can see full win/loss history before subscribing.' },
-            ].map((faq, i) => (
+            {FAQ_ITEMS.map((faq, i) => (
+
               <AccordionItem key={i} value={`faq-${i}`} className="border-b border-border last:border-0">
                 <AccordionTrigger className="px-5 py-4 text-[14px] font-semibold text-foreground hover:no-underline">{faq.q}</AccordionTrigger>
                 <AccordionContent className="px-5 pb-4 text-[13px] text-[hsl(var(--body))] leading-relaxed">{faq.a}</AccordionContent>
