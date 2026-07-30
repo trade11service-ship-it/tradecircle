@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { EDU_DISCLAIMER, formatINR, PLATFORM_COMMISSION_PERCENT } from '@/lib/courses';
-import { setMetaTags } from '@/lib/seo';
+import { setMetaTags, setJsonLd } from '@/lib/seo';
 import {
   ArrowLeft,
   BookOpen,
@@ -65,11 +65,29 @@ export default function CourseDetail() {
         setMetaTags({
           title: `${record.title} | RA Circle Courses`,
           description: (record.description ?? EDU_DISCLAIMER).slice(0, 155),
+          ogImage: record.cover_image_url ?? undefined,
+        });
+        setJsonLd('ld-course', {
+          '@context': 'https://schema.org',
+          '@type': 'Course',
+          name: record.title,
+          description: (record.description ?? EDU_DISCLAIMER).slice(0, 300),
+          image: record.cover_image_url ?? undefined,
+          provider: { '@type': 'Organization', name: 'RA Circle', url: 'https://racircle.in/' },
+          instructor: { '@type': 'Person', name: record.creator_name },
+          offers: {
+            '@type': 'Offer',
+            price: record.price,
+            priceCurrency: 'INR',
+            availability: 'https://schema.org/InStock',
+          },
         });
       }
       setLoading(false);
     })();
+    return () => setJsonLd('ld-course', null);
   }, [id]);
+
 
   useEffect(() => {
     if (!user || !id) { setOwned(false); return; }
