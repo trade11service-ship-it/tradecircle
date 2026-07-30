@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { EDU_DISCLAIMER, formatINR, PLATFORM_COMMISSION_PERCENT } from '@/lib/courses';
-import { setMetaTags } from '@/lib/seo';
+import { setMetaTags, setJsonLd } from '@/lib/seo';
 import {
   ArrowLeft,
   BookOpen,
