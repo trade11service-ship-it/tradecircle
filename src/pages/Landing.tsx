@@ -43,7 +43,20 @@ export default function Landing() {
   const [featuredAdvisors, setFeaturedAdvisors] = useState<FeaturedAdvisor[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => { setMetaTags(SEO_CONFIG.landing); }, []);
+  useEffect(() => {
+    setMetaTags(SEO_CONFIG.landing);
+    setJsonLd('ld-faq', {
+      '@context': 'https://schema.org',
+      '@type': 'FAQPage',
+      mainEntity: FAQ_ITEMS.map(f => ({
+        '@type': 'Question',
+        name: f.q,
+        acceptedAnswer: { '@type': 'Answer', text: f.a },
+      })),
+    });
+    return () => setJsonLd('ld-faq', null);
+  }, []);
+
 
   useEffect(() => {
     if (!authLoading) {
