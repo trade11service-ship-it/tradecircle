@@ -131,7 +131,7 @@ export default function Landing() {
       <section className="bg-background border-b border-border">
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 pt-16 pb-16 md:pt-20 md:pb-20">
           <div className="max-w-[640px]">
-            <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">
+            <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-slate-600">
               India's first SEBI-only advisory marketplace
             </p>
             <h1 className="mt-4 text-[32px] md:text-[40px] font-bold tracking-tight leading-[1.15] text-foreground">
@@ -172,7 +172,7 @@ export default function Landing() {
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-16">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
             <div className="max-w-[640px]">
-              <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Discover</p>
+              <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-slate-600">Discover</p>
               <h2 className="mt-2 text-[28px] font-bold text-foreground tracking-tight">Popular advisor groups</h2>
               <p className="mt-2 text-[15px] text-[hsl(var(--body))]">Transparent pricing. Verified analysts. Real win-rate data.</p>
             </div>
@@ -217,7 +217,7 @@ export default function Landing() {
       {/* ===== WHY RA CIRCLE — clean 3-col, no card containers ===== */}
       <section id="how" className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-16">
         <div className="max-w-[640px] mb-10">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Why RA Circle</p>
+          <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-slate-600">Why RA Circle</p>
           <h2 className="mt-2 text-[28px] font-bold text-foreground tracking-tight">Built for trust. Designed for traders.</h2>
         </div>
         <div className="grid gap-10 md:grid-cols-3">
@@ -236,7 +236,7 @@ export default function Landing() {
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-16">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
             <div className="max-w-[640px]">
-              <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Live public feed</p>
+              <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-slate-600">Live public feed</p>
               <h2 className="mt-2 text-[28px] font-bold text-foreground tracking-tight">Real signals, in real time</h2>
               <p className="mt-2 text-[15px] text-[hsl(var(--body))]">A preview of the latest free posts from SEBI-verified advisors.</p>
             </div>
@@ -257,7 +257,7 @@ export default function Landing() {
         <section className="surface-alt border-y border-border">
           <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-16">
             <div className="mb-8 max-w-[640px]">
-              <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">Verified analysts</p>
+              <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-slate-600">Verified analysts</p>
               <h2 className="mt-2 text-[28px] font-bold text-foreground tracking-tight">Meet the RA Circle roster</h2>
               <p className="mt-2 text-[15px] text-[hsl(var(--body))]">Every advisor below is manually verified and SEBI-registered.</p>
             </div>
@@ -310,7 +310,7 @@ export default function Landing() {
       {/* ===== FAQ ===== */}
       <section className="mx-auto w-full max-w-3xl px-4 sm:px-6 py-16">
         <div className="mb-8">
-          <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-muted-foreground">FAQ</p>
+          <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-slate-600">FAQ</p>
           <h2 className="mt-2 text-[28px] font-bold text-foreground tracking-tight">Frequently asked questions</h2>
         </div>
         <div className="rounded-xl border border-border bg-card overflow-hidden">
