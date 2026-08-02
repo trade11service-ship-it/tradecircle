@@ -18,7 +18,10 @@ import {
 } from '@/lib/courses';
 import { sanitizeAlphanumeric, sanitizeName, sanitizeText, sanitizeTextarea } from '@/lib/sanitize';
 import { acceptFor, checkUpload, UPLOAD_RULES } from '@/lib/uploadGuard';
+import LessonUploader, { type LessonDraft } from '@/components/creator/LessonUploader';
+import CourseEditor, { type CourseEditValues } from '@/components/creator/CourseEditor';
 import { setMetaTags } from '@/lib/seo';
+
 import {
   AlertTriangle,
   BadgeCheck,
@@ -79,6 +82,7 @@ const TABS = [
 type TabKey = (typeof TABS)[number]['key'];
 
 const STATUS_STYLES: Record<string, string> = {
+  draft: 'bg-slate-500/10 text-slate-600 border-slate-500/30',
   approved: 'bg-emerald/10 text-emerald border-emerald/30',
   pending_review: 'bg-amber-500/10 text-amber-700 border-amber-500/30',
   rejected: 'bg-destructive/10 text-destructive border-destructive/30',
@@ -86,11 +90,13 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 const STATUS_LABELS: Record<string, string> = {
+  draft: 'Draft',
   approved: 'Approved',
   pending_review: 'Under review',
   rejected: 'Rejected',
   unverified: 'Not verified',
 };
+
 
 export default function CreatorStudio() {
   const { user, profile, loading: authLoading } = useAuth();
@@ -122,12 +128,10 @@ export default function CreatorStudio() {
   const [eduConfirm, setEduConfirm] = useState(false);
   const [creating, setCreating] = useState(false);
 
-  // module upload
-  const [uploadCourseId, setUploadCourseId] = useState('');
-  const [moduleTitle, setModuleTitle] = useState('');
-  const [moduleDuration, setModuleDuration] = useState('');
-  const [moduleFile, setModuleFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
+  // per-course inline panels
+  const [lessonPanelId, setLessonPanelId] = useState<string | null>(null);
+  const [editPanelId, setEditPanelId] = useState<string | null>(null);
+
 
   // payout form
   const [pan, setPan] = useState('');
@@ -266,6 +270,8 @@ export default function CreatorStudio() {
         price: Math.max(0, parseInt(price.replace(/[^\d]/g, ''), 10) || 0),
         course_type: courseType,
         cover_image_url: coverUrl,
+        review_status: 'draft',
+        is_visible: false,
         platform_commission_percent: PLATFORM_COMMISSION_PERCENT,
       })
       .select('*')
@@ -276,66 +282,98 @@ export default function CreatorStudio() {
       return;
     }
     setCourses((prev) => [data as Course, ...prev]);
-    setUploadCourseId((data as Course).id);
+    setLessonPanelId((data as Course).id);
     setTitle(''); setDescription(''); setCoverFile(null); setEduConfirm(false);
     toast({ title: 'Draft created', description: 'Now upload lessons, then submit for review.' });
     setTab('courses');
+
   };
 
-  const uploadModule = async () => {
-    if (!creator || !uploadCourseId || !moduleFile) {
-      toast({ title: 'Pick a course and a file', variant: 'destructive' });
-      return;
-    }
-    const cleanTitle = sanitizeText(moduleTitle) || moduleFile.name.replace(/\.[^.]+$/, '');
-    const check = await checkUpload(moduleFile, 'course-media');
+  const uploadModule = async (courseId: string, draft: LessonDraft): Promise<boolean> => {
+    if (!creator) return false;
+    const course = courses.find((c) => c.id === courseId);
+    const cleanTitle = sanitizeText(draft.title) || draft.file.name.replace(/\.[^.]+$/, '');
+    const check = await checkUpload(draft.file, 'course-media');
     if (!check.ok) {
       toast({ title: 'File rejected', description: check.error, variant: 'destructive' });
-      return;
+      return false;
     }
     const isPdf = check.detected === 'application/pdf';
-    if (isPdf && moduleFile.size > UPLOAD_RULES.pdf.maxBytes) {
+    if (isPdf && draft.file.size > UPLOAD_RULES.pdf.maxBytes) {
       toast({ title: 'PDF too large', description: 'E-books must be under 50MB.', variant: 'destructive' });
-      return;
+      return false;
     }
-    setUploading(true);
     const { data: liveCreator } = await supabase
       .from('creator_profiles')
       .select('id')
       .eq('user_id', user!.id)
       .maybeSingle();
     const creatorId = (liveCreator as { id: string } | null)?.id ?? creator.id;
-    const path = `${creatorId}/${uploadCourseId}/${crypto.randomUUID()}.${check.ext}`;
+    const path = `${creatorId}/${courseId}/${crypto.randomUUID()}.${check.ext}`;
     const { error: upErr } = await supabase.storage
       .from('courses-content')
-      .upload(path, moduleFile, { upsert: false, contentType: check.detected ?? moduleFile.type });
+      .upload(path, draft.file, { upsert: false, contentType: check.detected ?? draft.file.type });
 
     if (upErr) {
-      setUploading(false);
       toast({ title: 'Upload failed', description: upErr.message, variant: 'destructive' });
-      return;
+      return false;
     }
-    const nextOrder = modules.filter((m) => m.course_id === uploadCourseId).length;
+    const nextOrder = modules.filter((m) => m.course_id === courseId).length;
     const { data, error } = await supabase
       .from('course_modules')
       .insert({
-        course_id: uploadCourseId,
+        course_id: courseId,
         title: cleanTitle,
         content_type: isPdf ? 'pdf_ebook' : 'video',
         file_storage_path: path,
-        duration_label: moduleDuration ? sanitizeText(moduleDuration).slice(0, 20) : null,
+        duration_label: draft.duration ? sanitizeText(draft.duration).slice(0, 20) : null,
         sort_order: nextOrder,
       })
       .select('id, course_id, title, content_type, duration_label, sort_order')
       .single();
-    setUploading(false);
     if (error) {
       toast({ title: 'Could not save lesson', description: error.message, variant: 'destructive' });
-      return;
+      return false;
     }
     setModules((prev) => [...prev, data as Module]);
-    setModuleTitle(''); setModuleDuration(''); setModuleFile(null);
-    toast({ title: 'Lesson uploaded' });
+
+    // Any new lesson on a live course must be re-reviewed before it goes back out.
+    if (course?.review_status === 'approved') {
+      await supabase
+        .from('courses')
+        .update({ review_status: 'pending_review', is_visible: false, rejection_reason: null })
+        .eq('id', courseId);
+      setCourses((prev) =>
+        prev.map((c) => (c.id === courseId ? { ...c, review_status: 'pending_review', is_visible: false, rejection_reason: null } : c)),
+      );
+      toast({ title: 'Lesson uploaded', description: 'Course sent back for compliance review.' });
+    } else {
+      toast({ title: 'Lesson uploaded' });
+    }
+    return true;
+  };
+
+  const saveCourseDetails = async (courseId: string, values: CourseEditValues): Promise<boolean> => {
+    const cleanTitle = sanitizeText(values.title);
+    if (cleanTitle.length < 6) {
+      toast({ title: 'Give your course a longer title', variant: 'destructive' });
+      return false;
+    }
+    const patch = {
+      title: cleanTitle,
+      description: sanitizeTextarea(values.description),
+      category: values.category,
+      course_type: values.course_type,
+      price: values.price,
+    };
+    const { error } = await supabase.from('courses').update(patch).eq('id', courseId);
+    if (error) {
+      toast({ title: 'Could not save', description: error.message, variant: 'destructive' });
+      return false;
+    }
+    setCourses((prev) => prev.map((c) => (c.id === courseId ? { ...c, ...patch } : c)));
+    toast({ title: 'Course updated' });
+    return true;
   };
 
   const deleteModule = async (m: Module) => {
@@ -357,6 +395,7 @@ export default function CreatorStudio() {
     setCourses((prev) => prev.map((c) => (c.id === course.id ? { ...c, review_status: 'pending_review', rejection_reason: null } : c)));
     toast({ title: 'Sent for review', description: 'Our compliance team will respond shortly.' });
   };
+
 
   const toggleVisibility = async (course: Course) => {
     const next = !course.is_visible;
@@ -522,11 +561,26 @@ export default function CreatorStudio() {
                 )}
 
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <Button size="sm" variant="outline" className="rounded-lg" onClick={() => { setUploadCourseId(c.id); setTab('upload'); }}>
-                    <Upload className="mr-1.5 h-3.5 w-3.5" /> Add lesson
+                  <Button
+                    size="sm"
+                    variant={lessonPanelId === c.id ? 'default' : 'outline'}
+                    className="rounded-lg"
+                    onClick={() => { setLessonPanelId(lessonPanelId === c.id ? null : c.id); setEditPanelId(null); }}
+                  >
+                    <Upload className="mr-1.5 h-3.5 w-3.5" /> {lessonPanelId === c.id ? 'Close' : 'Add lesson'}
                   </Button>
                   {c.review_status !== 'approved' && (
-                    <Button size="sm" className="rounded-lg" onClick={() => submitForReview(c)}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="rounded-lg"
+                      onClick={() => { setEditPanelId(editPanelId === c.id ? null : c.id); setLessonPanelId(null); }}
+                    >
+                      {editPanelId === c.id ? 'Close editor' : 'Edit details'}
+                    </Button>
+                  )}
+                  {c.review_status !== 'approved' && c.review_status !== 'pending_review' && (
+                    <Button size="sm" className="rounded-lg" onClick={() => submitForReview(c)} disabled={mods.length === 0}>
                       Submit for review
                     </Button>
                   )}
@@ -536,6 +590,29 @@ export default function CreatorStudio() {
                     </Button>
                   )}
                 </div>
+
+                {lessonPanelId === c.id && (
+                  <LessonUploader
+                    courseTitle={c.title}
+                    approved={c.review_status === 'approved'}
+                    onUpload={(draft) => uploadModule(c.id, draft)}
+                  />
+                )}
+
+                {editPanelId === c.id && (
+                  <CourseEditor
+                    initial={{
+                      title: c.title,
+                      description: c.description ?? '',
+                      category: c.category ?? '',
+                      price: c.price,
+                      course_type: c.course_type,
+                    }}
+                    onSave={(values) => saveCourseDetails(c.id, values)}
+                    onCancel={() => setEditPanelId(null)}
+                  />
+                )}
+
 
                 {c.review_status === 'approved' && creator.kyc_status !== 'approved' && (
                   <p className="mt-3 flex gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-2.5 text-[12px] text-amber-700">
@@ -612,42 +689,13 @@ export default function CreatorStudio() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-border bg-card p-5">
-            <h2 className="text-[15px] font-extrabold text-foreground">Upload a lesson</h2>
-            <p className="mt-1 text-[12px] text-muted-foreground">
-              Files are stored privately and streamed through expiring, watermarked links only.
-            </p>
-            <div className="mt-4 space-y-4">
-              <div>
-                <Label className="text-[12.5px] font-semibold">Course</Label>
-                <select value={uploadCourseId} onChange={(e) => setUploadCourseId(e.target.value)} className="mt-1.5 h-11 w-full rounded-xl border border-input bg-background px-3 text-[14px]">
-                  <option value="">Select a course</option>
-                  {courses.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
-                </select>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <Label className="text-[12.5px] font-semibold">Lesson title</Label>
-                  <Input value={moduleTitle} onChange={(e) => setModuleTitle(e.target.value)} className="mt-1.5 h-11 rounded-xl" placeholder="Module 1 — Market structure" />
-                </div>
-                <div>
-                  <Label className="text-[12.5px] font-semibold">Duration (optional)</Label>
-                  <Input value={moduleDuration} onChange={(e) => setModuleDuration(e.target.value)} className="mt-1.5 h-11 rounded-xl" placeholder="12 min" />
-                </div>
-              </div>
-              <div>
-                <Label className="text-[12.5px] font-semibold">Video (MP4) or PDF</Label>
-                <Input type="file" accept={acceptFor('course-media')} onChange={(e) => setModuleFile(e.target.files?.[0] ?? null)} className="mt-1.5 h-11 rounded-xl" />
-                <p className="mt-1.5 text-[11.5px] text-muted-foreground">{UPLOAD_RULES['course-media'].label}. Every file is scanned for scripts and disguised executables.</p>
-              </div>
-              <Button className="h-11 w-full rounded-xl" disabled={uploading} onClick={uploadModule}>
-                {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                {uploading ? 'Uploading' : 'Upload lesson'}
-              </Button>
-            </div>
-          </div>
+          <p className="rounded-2xl border border-dashed border-border bg-muted/20 p-4 text-[12.5px] text-muted-foreground">
+            Lessons are added per course. Save this draft first, then open <b>My courses</b> and use
+            <b> Add lesson</b> on the course you want to build.
+          </p>
         </div>
       )}
+
 
       {/* Payouts */}
       {tab === 'payouts' && (
