@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
+import { GROUP_PUBLIC_COLUMNS } from '@/lib/groupColumns';
 import { supabase } from '@/integrations/supabase/client';
 
 
@@ -261,7 +262,7 @@ export default function AdvisorDashboard() {
     }
     const cleanPrice = Math.max(0, Math.floor(Number(String(groupForm.monthlyPrice).replace(/\D/g, '')) || 0));
     if (cleanPrice <= 0) { toast.error('Please enter a valid monthly price in whole rupees'); return; }
-    const { data: newGroup, error } = await (supabase.from('groups') as any).insert({ advisor_id: advisor.id, name: sanitizeText(groupForm.name), description: sanitizeTextarea(groupForm.description), monthly_price: cleanPrice, dp_url: dpUrl, strategy_category: groupForm.strategyCategory || 'All' }).select().single();
+    const { data: newGroup, error } = await (supabase.from('groups') as any).insert({ advisor_id: advisor.id, name: sanitizeText(groupForm.name), description: sanitizeTextarea(groupForm.description), monthly_price: cleanPrice, dp_url: dpUrl, strategy_category: groupForm.strategyCategory || 'All' }).select(GROUP_PUBLIC_COLUMNS).single();
     if (error) { toast.error(error.message); return; }
 
     // Generate ONE permanent referral link for this group (only admin can change later)

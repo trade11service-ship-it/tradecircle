@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { GROUP_PUBLIC_COLUMNS } from '@/lib/groupColumns';
 import { useNavigate } from 'react-router-dom';
 import { sanitizeName, sanitizePhone, sanitizeText, sanitizeTextarea } from '@/lib/sanitize';
 import { supabase } from '@/integrations/supabase/client';
