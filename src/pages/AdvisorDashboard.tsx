@@ -565,15 +565,34 @@ export default function AdvisorDashboard() {
           ))}
         </div>
 
+        {/* VERIFICATION (DEFERRED KYC) TAB */}
+        {tab === 'kyc' && (
+          <AdvisorKycTab advisor={advisor} onVerified={() => { fetchData(); setTab('groups'); }} />
+        )}
+
         {/* GROUPS TAB */}
         {tab === 'groups' && (
           <div>
+            {!kycApproved && (
+              <div className="mb-4 flex flex-col gap-3 rounded-2xl border-[1.5px] border-amber-300 bg-amber-50 p-5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-start gap-3">
+                  <Lock className="h-5 w-5 text-amber-700 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-[14px] font-bold text-amber-900">Your profile is pre-approved!</p>
+                    <p className="text-[13px] text-amber-800">Complete PAN &amp; Bank verification to unlock Group Creation.</p>
+                  </div>
+                </div>
+                <Button onClick={() => setTab('kyc')} className="font-semibold shrink-0">Complete Verification</Button>
+              </div>
+            )}
             <button
-              onClick={() => setShowGroupForm(!showGroupForm)}
-              className="mb-4 flex items-center gap-2 rounded-[10px] bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground"
+              onClick={() => kycApproved ? setShowGroupForm(!showGroupForm) : setTab('kyc')}
+              disabled={!kycApproved}
+              className="mb-4 flex items-center gap-2 rounded-[10px] bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Plus className="h-4 w-4" /> Create New Group
             </button>
+
             {showGroupForm && (
               <div className="mb-6 rounded-2xl border-[1.5px] border-border bg-card p-6 space-y-4 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
                 <div><Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Group Name</Label><Input value={groupForm.name} onChange={e => setGroupForm({ ...groupForm, name: e.target.value })} className="mt-1.5" /></div>
