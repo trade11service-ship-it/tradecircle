@@ -38,23 +38,31 @@ export default function Login() {
   // Redirect once auth context is hydrated. Runs after both password sign-in and OAuth callback,
   // so the user never gets stuck on /login after a successful login.
   useEffect(() => {
-    if (authLoading || !user || !profile) return;
+    if (authLoading || !user) return;
     let cancelled = false;
     (async () => {
       // Persist pending user_type captured from the Register role picker
       // (works for both email confirm-then-login and Google OAuth callback).
       try {
         const pending = sessionStorage.getItem('pending_user_type');
-        if (pending && !profile.user_type && (pending === 'investor' || pending === 'trader')) {
+        if (pending && !profile?.user_type && (pending === 'investor' || pending === 'trader')) {
           await supabase.from('profiles').update({ user_type: pending }).eq('id', user.id);
         }
         sessionStorage.removeItem('pending_user_type');
       } catch {}
+
+      // Honour the route the user was trying to reach before being sent to /login.
+      const from = (location.state as any)?.from as string | undefined;
+      if (from && from.startsWith('/') && !from.startsWith('//') && from !== '/login') {
+        if (!cancelled) navigate(from, { replace: true });
+        return;
+      }
+
       const { data: advisor } = await supabase.from('advisors').select('id').eq('user_id', user.id).maybeSingle();
       if (cancelled) return;
-      if (profile.role === 'advisor' || advisor) {
+      if (profile?.role === 'advisor' || advisor) {
         navigate('/advisor/dashboard', { replace: true });
-      } else if (profile.role === 'admin') {
+      } else if (profile?.role === 'admin') {
         navigate('/admin', { replace: true });
       } else {
         // Trader: send to /feed only if they have active subscriptions,
@@ -69,7 +77,8 @@ export default function Login() {
       }
     })();
     return () => { cancelled = true; };
-  }, [user, profile, authLoading, navigate]);
+  }, [user, profile, authLoading, navigate, location.state]);
+
 
   // Surface OAuth callback errors returned in the URL hash (e.g. failed code exchange).
   useEffect(() => {
@@ -137,24 +146,24 @@ export default function Login() {
 
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
-    // If they consent here, stash it so AuthProvider records it for new accounts.
-    // Returning users already have a stored acceptance and won't be re-prompted.
-    try {
-      sessionStorage.setItem('pending_general_terms_consent', JSON.stringify({
-        text: GENERAL_TERMS_TEXT,
-        page_url: window.location.href,
-        accepted_at_client: new Date().toISOString(),
-      }));
-    } catch {}
+    // No consent is stashed here: signing in is not consenting. Brand-new accounts
+    // get the one-time DPDP ConsentGate right after the session is established.
+    try { sessionStorage.removeItem('pending_general_terms_consent'); } catch {}
     const { lovable } = await import('@/integrations/lovable/index');
     const result = await lovable.auth.signInWithOAuth('google', {
-      redirect_uri: getCanonicalOrigin() + '/login',
+      // Must be same-origin so the callback returns to the app the user started from
+      // (preview, custom domain, or localhost) instead of bouncing to production.
+      redirect_uri: window.location.origin + '/login',
+      // Avoid re-showing Google's "share your name and email" consent screen to
+      // returning users; only prompt for account choice.
+      extraParams: { prompt: 'select_account' },
     });
     if (result.error) {
       toast.error((result.error as any)?.message || 'Google sign-in failed');
       setGoogleLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
