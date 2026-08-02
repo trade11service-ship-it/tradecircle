@@ -26,7 +26,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { DashboardHero } from '@/components/DashboardHero';
 
 type Advisor = Tables<'advisors'>;
-type Group = Tables<'groups'>;
+type Group = Omit<Tables<'groups'>, 'advisor_merchant_key_id' | 'advisor_merchant_key_secret'>;
 type Signal = Tables<'signals'>;
 type DailyEarning = { earning_date: string; gross_revenue: number; gst_amount: number; platform_fee: number; net_earning: number; subscription_count: number };
 
