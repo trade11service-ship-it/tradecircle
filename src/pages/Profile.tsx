@@ -21,6 +21,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
+import { acceptFor, checkUpload } from '@/lib/uploadGuard';
 type AdvisorProfile = {
   id: string;
   user_id: string;

@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 import { BarChart3, Radio, Users, UserCircle, IndianRupee, TrendingUp, Clock, CheckCircle2, XCircle, AlertTriangle, MessageSquare, ImageIcon, X, Globe, Lock, Gift, Plus, Shield, Download, FileSpreadsheet, Pencil } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { sanitizeText, sanitizeTextarea, sanitizeNumeric, sanitizeAlphanumeric, sanitizeName } from '@/lib/sanitize';
+import { acceptFor, checkUpload } from '@/lib/uploadGuard';
 import type { Tables } from '@/integrations/supabase/types';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { DashboardHero } from '@/components/DashboardHero';
