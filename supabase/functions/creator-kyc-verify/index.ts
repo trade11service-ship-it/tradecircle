@@ -1,30 +1,16 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { corsHeaders, json, encryptValue, maskPan, PAN_REGEX, clientIp } from '../_shared/compliance.ts';
-import { IFSC_REGEX, ACCOUNT_REGEX } from '../_shared/courses.ts';
+import { corsHeaders, json, encryptValue, maskPan, clientIp } from '../_shared/compliance.ts';
+import { verifyPan, pennyDrop } from '../_shared/digio.ts';
 
 /**
- * Creator payout KYC — PAN validation + bank penny drop.
+ * Creator payout KYC — PAN validation + bank penny drop via the shared
+ * Digio adapter (sandbox or live, controlled by KYC_PROVIDER).
  *
  * DATA ISOLATION: results are written ONLY to public.creator_profiles.
  * This function must never touch compliance_logs, client_onboarding,
  * the compliance-vault bucket, or generate-compliance-pdf.
  */
 
-type Verdict = { ok: boolean; reason?: string; vendor_id?: string };
-
-/** Sandbox adapter — swap for Cashfree/Digio when live keys land. */
-async function verifyPanSandbox(pan: string, name: string): Promise<Verdict> {
-  if (!PAN_REGEX.test(pan)) return { ok: false, reason: 'PAN format is invalid. Expected ABCDE1234F.' };
-  if (name.trim().length < 3) return { ok: false, reason: 'Legal name is too short to match PAN records.' };
-  return { ok: true };
-}
-
-async function pennyDropSandbox(account: string, ifsc: string, holder: string): Promise<Verdict> {
-  if (!ACCOUNT_REGEX.test(account)) return { ok: false, reason: 'Bank account number must be 9-18 digits.' };
-  if (!IFSC_REGEX.test(ifsc)) return { ok: false, reason: 'IFSC code is invalid. Expected HDFC0001234.' };
-  if (holder.trim().length < 3) return { ok: false, reason: 'Account holder name is required.' };
-  return { ok: true, vendor_id: `vnd_sbx_${crypto.randomUUID().slice(0, 12)}` };
-}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
