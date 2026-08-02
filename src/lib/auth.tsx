@@ -165,7 +165,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      setUser(currentUser);
+      // Keep the SAME user object identity when it's the same account. Mobile browsers
+      // fire TOKEN_REFRESHED/SIGNED_IN when the page regains focus (e.g. returning from
+      // the file picker); replacing the object would re-run every consumer effect and
+      // wipe in-progress forms.
+      let sameUser = false;
+      setUser((prev) => {
+        sameUser = prev?.id === currentUser.id;
+        return sameUser ? prev : currentUser;
+      });
+
+      if (sameUser && event !== 'SIGNED_IN') {
+        if (mounted) setLoading(false);
+        return;
+      }
+
       const p = await fetchProfile(currentUser.id);
       if (!mounted) return;
       setProfile(p);

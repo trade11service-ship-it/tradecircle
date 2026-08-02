@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
@@ -100,8 +100,12 @@ const STATUS_LABELS: Record<string, string> = {
 
 export default function CreatorStudio() {
   const { user, profile, loading: authLoading } = useAuth();
+  const userId = user?.id ?? null;
+  const profileName = profile?.full_name ?? '';
+  const bootstrapped = useRef(false);
   const navigate = useNavigate();
   const { toast } = useToast();
+
 
   const [tab, setTab] = useState<TabKey>('courses');
   const [loading, setLoading] = useState(true);
@@ -174,20 +178,29 @@ export default function CreatorStudio() {
   useEffect(() => {
     if (authLoading) return;
     if (!user) { navigate('/login?redirect=/creator-studio', { replace: true }); return; }
+    let cancelled = false;
     (async () => {
-      setLoading(true);
+      // Only blank the page out on the very first load. A silent background refresh
+      // must never unmount the upload panels (mobile fires auth/focus events when
+      // returning from the file picker).
+      if (!bootstrapped.current) setLoading(true);
       const { data } = await supabase
         .from('creator_profiles')
         .select('id, full_legal_name, email, phone, instagram_handle, youtube_channel, pan_masked, kyc_status, rejection_reason')
         .eq('user_id', user.id)
         .maybeSingle();
+      if (cancelled) return;
       const c = data as CreatorProfile | null;
       setCreator(c);
-      setLegalName(c?.full_legal_name ?? profile?.full_name ?? '');
+      setLegalName((prev) => prev || c?.full_legal_name || profileName || '');
       if (c) await loadAll(c.id);
+      if (cancelled) return;
+      bootstrapped.current = true;
       setLoading(false);
     })();
-  }, [user, authLoading, navigate, profile?.full_name]);
+    return () => { cancelled = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, authLoading]);
 
   const createProfile = async () => {
     if (!user) return;
@@ -605,6 +618,7 @@ export default function CreatorStudio() {
 
                 {lessonPanelId === c.id && (
                   <LessonUploader
+                    courseId={c.id}
                     courseTitle={c.title}
                     approved={c.review_status === 'approved'}
                     onUpload={(draft) => uploadModule(c.id, draft)}

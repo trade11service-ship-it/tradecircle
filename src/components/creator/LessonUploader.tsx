@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,21 +12,37 @@ export type LessonDraft = { title: string; duration: string; file: File };
  * picking a file never re-renders (or scroll-jumps) the whole Studio page.
  */
 export default function LessonUploader({
+  courseId,
   courseTitle,
   approved,
   onUpload,
 }: {
+  courseId: string;
   courseTitle: string;
   approved: boolean;
   onUpload: (draft: LessonDraft) => Promise<boolean>;
 }) {
-  const [title, setTitle] = useState('');
-  const [duration, setDuration] = useState('');
+  // Mobile browsers can discard and reload the page while the native file picker
+  // is open (memory pressure). Persisting the text fields means the section is
+  // still filled in when the user comes back — only the file has to be re-picked.
+  const storeKey = `creator_lesson_draft_${courseId}`;
+  const stored = (() => {
+    try { return JSON.parse(sessionStorage.getItem(storeKey) || '{}') as { title?: string; duration?: string }; }
+    catch { return {}; }
+  })();
+
+  const [title, setTitle] = useState(stored.title ?? '');
+  const [duration, setDuration] = useState(stored.duration ?? '');
   const [file, setFile] = useState<File | null>(null);
   const [fileError, setFileError] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!title && !duration) { sessionStorage.removeItem(storeKey); return; }
+    sessionStorage.setItem(storeKey, JSON.stringify({ title, duration }));
+  }, [title, duration, storeKey]);
 
   const submit = async () => {
     if (!file) return;
@@ -38,6 +54,7 @@ export default function LessonUploader({
         setDuration('');
         setFile(null);
         setFileError(null);
+        sessionStorage.removeItem(storeKey);
         if (fileRef.current) fileRef.current.value = '';
       }
     } finally {
