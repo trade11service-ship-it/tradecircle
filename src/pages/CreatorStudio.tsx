@@ -637,7 +637,8 @@ export default function CreatorStudio() {
               </div>
               <div>
                 <Label className="text-[12.5px] font-semibold">Video (MP4) or PDF</Label>
-                <Input type="file" accept="video/*,application/pdf" onChange={(e) => setModuleFile(e.target.files?.[0] ?? null)} className="mt-1.5 h-11 rounded-xl" />
+                <Input type="file" accept={acceptFor('course-media')} onChange={(e) => setModuleFile(e.target.files?.[0] ?? null)} className="mt-1.5 h-11 rounded-xl" />
+                <p className="mt-1.5 text-[11.5px] text-muted-foreground">{UPLOAD_RULES['course-media'].label}. Every file is scanned for scripts and disguised executables.</p>
               </div>
               <Button className="h-11 w-full rounded-xl" disabled={uploading} onClick={uploadModule}>
                 {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
