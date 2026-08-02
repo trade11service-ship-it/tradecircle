@@ -38,6 +38,13 @@ export default function SmartLanding() {
         navigate('/advisor/dashboard', { replace: true });
         return;
       }
+      // Creator: cold-land straight into Creator Studio
+      const { data: creator } = await supabase
+        .from('creator_profiles').select('id').eq('user_id', user.id).maybeSingle();
+      if (creator) {
+        navigate('/creator-studio', { replace: true });
+        return;
+      }
       // Trader: only cold-land into /feed if they have at least one active subscription
       const nowIso = new Date().toISOString();
       const { data: subs } = await supabase
@@ -52,6 +59,7 @@ export default function SmartLanding() {
         return;
       }
       setDecided(true);
+
     })();
   }, [user, profile, loading, navigate]);
 
