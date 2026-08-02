@@ -102,6 +102,15 @@ export function AppLayout({ children }: AppLayoutProps) {
                     >
                       <User className="h-4 w-4" /> My profile
                     </button>
+                    {isCreator && (isAdvisor || isAdmin) && (
+                      <button
+                        onClick={() => { setMenuOpen(false); navigate("/creator-studio"); }}
+                        className="w-full flex items-center gap-2 px-3 py-2.5 text-[13px] font-medium text-foreground hover:bg-muted text-left"
+                      >
+                        <LayoutDashboard className="h-4 w-4" /> Creator Studio
+                      </button>
+                    )}
+
                     <button
                       onClick={handleLogout}
                       className="w-full flex items-center gap-2 px-3 py-2.5 text-[13px] font-medium text-destructive hover:bg-destructive/5 text-left border-t border-border"
