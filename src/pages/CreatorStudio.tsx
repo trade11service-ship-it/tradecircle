@@ -125,12 +125,10 @@ export default function CreatorStudio() {
   const [eduConfirm, setEduConfirm] = useState(false);
   const [creating, setCreating] = useState(false);
 
-  // module upload
-  const [uploadCourseId, setUploadCourseId] = useState('');
-  const [moduleTitle, setModuleTitle] = useState('');
-  const [moduleDuration, setModuleDuration] = useState('');
-  const [moduleFile, setModuleFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
+  // per-course inline panels
+  const [lessonPanelId, setLessonPanelId] = useState<string | null>(null);
+  const [editPanelId, setEditPanelId] = useState<string | null>(null);
+
 
   // payout form
   const [pan, setPan] = useState('');
