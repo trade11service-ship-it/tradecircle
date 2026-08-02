@@ -618,6 +618,7 @@ export default function CreatorStudio() {
 
                 {lessonPanelId === c.id && (
                   <LessonUploader
+                    courseId={c.id}
                     courseTitle={c.title}
                     approved={c.review_status === 'approved'}
                     onUpload={(draft) => uploadModule(c.id, draft)}
