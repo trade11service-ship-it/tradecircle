@@ -250,9 +250,11 @@ export default function AdminDashboard() {
     try {
       const appId = (advisor as any)._app_id;
       if (appId) {
-        // New intake flow: promote application -> advisors, scrub Aadhaar
-        const { error } = await (supabase as any).rpc('admin_approve_application', { _app_id: appId });
+        // Offline-first flow: manual SEBI check done → pre-approve.
+        // Advisor then completes PAN + bank verification from their dashboard.
+        const { error } = await (supabase as any).rpc('admin_pre_approve_application', { _app_id: appId });
         if (error) throw error;
+        toast.success(`${advisor.full_name} pre-approved. They can now complete PAN & bank verification.`);
       } else {
         // Legacy fallback (advisor row already exists)
         const { error: advisorError } = await supabase
@@ -261,21 +263,18 @@ export default function AdminDashboard() {
         const { error: profileError } = await supabase
           .from('profiles').update({ role: 'advisor' }).eq('id', advisor.user_id);
         if (profileError) throw profileError;
+        toast.success(`${advisor.full_name} approved!`);
       }
 
-      // Welcome email is enqueued + dispatched by admin_approve_application RPC
-      // (writes email_send_log + triggers send-advisor-approval-email server-side).
-
-
-      toast.success(`${advisor.full_name} approved! Email sent.`);
       fetchData();
     } catch (err) {
-      toast.error((err as Error).message || 'Failed to approve advisor');
+      toast.error((err as Error).message || 'Failed to pre-approve advisor');
       console.error(err);
     } finally {
       setApprovingAdvisorId(null);
     }
   };
+
 
   const rejectAdvisor = async (advisor: Advisor, reason: string) => {
     setRejectingAdvisorId(advisor.id);
