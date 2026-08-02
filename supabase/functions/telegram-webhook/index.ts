@@ -2,7 +2,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-telegram-bot-api-secret-token, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 Deno.serve(async (req) => {
@@ -11,17 +11,40 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const WEBHOOK_SECRET = Deno.env.get('TELEGRAM_WEBHOOK_SECRET') ?? '';
     const body = await req.json();
 
-    // Setup webhook endpoint
+    // Setup endpoint: admin-only. Registers the webhook with a secret token so
+    // Telegram (and nobody else) can post updates to this function.
     if (body?.setup_webhook) {
+      const bearer = (req.headers.get('Authorization') ?? '').replace(/^Bearer\s+/i, '');
+      const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      if (!bearer) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
+      if (bearer !== serviceKey) {
+        const admin = createClient(supabaseUrl, serviceKey);
+        const { data: { user } } = await admin.auth.getUser(bearer);
+        if (!user) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
+        const { data: isAdmin } = await admin.rpc('is_admin', { _user_id: user.id });
+        if (!isAdmin) return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403, headers: corsHeaders });
+      }
+
       const TELEGRAM_BOT_TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN')!;
-      const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-      const webhookUrl = `${SUPABASE_URL}/functions/v1/telegram-webhook`;
-      const res = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/setWebhook?url=${encodeURIComponent(webhookUrl)}`);
+      const webhookUrl = `${supabaseUrl}/functions/v1/telegram-webhook`;
+      const res = await fetch(
+        `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/setWebhook?url=${encodeURIComponent(webhookUrl)}&secret_token=${encodeURIComponent(WEBHOOK_SECRET)}`,
+      );
       const result = await res.json();
       return new Response(JSON.stringify(result), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
+
+    // Every real update carries the secret token header; fail closed otherwise
+    // so nobody can spoof Telegram messages and hijack alert linking.
+    const provided = req.headers.get('x-telegram-bot-api-secret-token') ?? '';
+    if (!WEBHOOK_SECRET || provided !== WEBHOOK_SECRET) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: corsHeaders });
+    }
+
 
     const message = body?.message;
     if (!message) {

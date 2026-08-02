@@ -1983,6 +1983,7 @@ export type Database = {
         Args: { _user_id: string }
         Returns: boolean
       }
+      is_live_creator: { Args: { _creator_id: string }; Returns: boolean }
       list_public_courses: {
         Args: never
         Returns: {

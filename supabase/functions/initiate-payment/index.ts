@@ -1,4 +1,5 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { isRazorpaySandbox } from '../_shared/razorpay.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -59,9 +60,7 @@ Deno.serve(async (req) => {
 
     // Sandbox mode: trigger when keys are absent or look like placeholders.
     // Lets the full subscribe → success flow work without real Razorpay.
-    const isPlaceholder = (v?: string | null) =>
-      !v || v.length < 12 || /test|sandbox|placeholder|fake|xxx|dummy|your_/i.test(v);
-    const sandboxMode = isPlaceholder(RAZORPAY_KEY_ID) || isPlaceholder(RAZORPAY_KEY_SECRET);
+    const sandboxMode = isRazorpaySandbox(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET);
 
     if (sandboxMode) {
       const fakePaymentId = `sandbox_${crypto.randomUUID()}`;
