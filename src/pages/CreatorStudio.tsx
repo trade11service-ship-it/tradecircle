@@ -82,6 +82,7 @@ const TABS = [
 type TabKey = (typeof TABS)[number]['key'];
 
 const STATUS_STYLES: Record<string, string> = {
+  draft: 'bg-slate-500/10 text-slate-600 border-slate-500/30',
   approved: 'bg-emerald/10 text-emerald border-emerald/30',
   pending_review: 'bg-amber-500/10 text-amber-700 border-amber-500/30',
   rejected: 'bg-destructive/10 text-destructive border-destructive/30',
@@ -89,11 +90,13 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 const STATUS_LABELS: Record<string, string> = {
+  draft: 'Draft',
   approved: 'Approved',
   pending_review: 'Under review',
   rejected: 'Rejected',
   unverified: 'Not verified',
 };
+
 
 export default function CreatorStudio() {
   const { user, profile, loading: authLoading } = useAuth();
