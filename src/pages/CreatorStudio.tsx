@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
@@ -129,8 +129,14 @@ export default function CreatorStudio() {
   const [creating, setCreating] = useState(false);
 
   // per-course inline panels
-  const [lessonPanelId, setLessonPanelId] = useState<string | null>(null);
+  const [lessonPanelId, setLessonPanelIdState] = useState<string | null>(() => sessionStorage.getItem('creator_lesson_panel'));
   const [editPanelId, setEditPanelId] = useState<string | null>(null);
+
+  const setLessonPanelId = useCallback((courseId: string | null) => {
+    setLessonPanelIdState(courseId);
+    if (courseId) sessionStorage.setItem('creator_lesson_panel', courseId);
+    else sessionStorage.removeItem('creator_lesson_panel');
+  }, []);
 
 
   // payout form
@@ -310,12 +316,18 @@ export default function CreatorStudio() {
       .maybeSingle();
     const creatorId = (liveCreator as { id: string } | null)?.id ?? creator.id;
     const path = `${creatorId}/${courseId}/${crypto.randomUUID()}.${check.ext}`;
-    const { error: upErr } = await supabase.storage
-      .from('courses-content')
-      .upload(path, draft.file, { upsert: false, contentType: check.detected ?? draft.file.type });
+    let upErr: Error | null = null;
+    try {
+      const result = await supabase.storage
+        .from('courses-content')
+        .upload(path, draft.file, { upsert: false, contentType: check.detected ?? draft.file.type });
+      upErr = result.error;
+    } catch (error) {
+      upErr = error instanceof Error ? error : new Error('The upload was interrupted. Please try again.');
+    }
 
     if (upErr) {
-      toast({ title: 'Upload failed', description: upErr.message, variant: 'destructive' });
+      toast({ title: 'Upload failed', description: upErr.message || 'The connection was interrupted. Please try again.', variant: 'destructive' });
       return false;
     }
     const nextOrder = modules.filter((m) => m.course_id === courseId).length;

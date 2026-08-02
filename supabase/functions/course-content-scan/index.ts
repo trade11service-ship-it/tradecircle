@@ -71,7 +71,7 @@ Deno.serve(async (req) => {
     const ALLOWED = ['application/pdf', 'video/mp4', 'video/webm', 'video/quicktime'];
     for (const m of modules) {
       const ext = (m.file_storage_path.split('.').pop() ?? '').toLowerCase();
-      if (!['pdf', 'mp4', 'webm', 'mov'].includes(ext)) {
+      if (!['pdf', 'mp4', 'm4v', 'webm', 'mov'].includes(ext)) {
         return json({ error: `Unsupported lesson file type ".${ext}". Remove it and re-upload a PDF or video.` }, 400);
       }
 
