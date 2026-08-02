@@ -226,11 +226,27 @@ export default function CreatorStudio() {
     if (!eduConfirm) { toast({ title: 'Confirm the education-only declaration', variant: 'destructive' }); return; }
 
     setCreating(true);
+
+    // Always re-resolve the creator row so storage policies see a live id
+    const { data: liveCreator } = await supabase
+      .from('creator_profiles')
+      .select('id')
+      .eq('user_id', user!.id)
+      .maybeSingle();
+    const creatorId = (liveCreator as { id: string } | null)?.id ?? creator.id;
+
     let coverUrl: string | null = null;
     if (coverFile) {
-      const ext = coverFile.name.split('.').pop() ?? 'jpg';
-      const path = `course-covers/${creator.id}/${crypto.randomUUID()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from('group-media').upload(path, coverFile, { upsert: true });
+      const check = await checkUpload(coverFile, 'image');
+      if (!check.ok) {
+        setCreating(false);
+        toast({ title: 'Cover rejected', description: check.error, variant: 'destructive' });
+        return;
+      }
+      const path = `course-covers/${creatorId}/${crypto.randomUUID()}.${check.ext}`;
+      const { error: upErr } = await supabase.storage
+        .from('group-media')
+        .upload(path, coverFile, { upsert: false, contentType: check.detected ?? coverFile.type });
       if (upErr) {
         setCreating(false);
         toast({ title: 'Cover upload failed', description: upErr.message, variant: 'destructive' });
@@ -238,6 +254,7 @@ export default function CreatorStudio() {
       }
       coverUrl = supabase.storage.from('group-media').getPublicUrl(path).data.publicUrl;
     }
+
 
     const { data, error } = await supabase
       .from('courses')
