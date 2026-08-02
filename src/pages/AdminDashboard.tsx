@@ -217,7 +217,7 @@ export default function AdminDashboard() {
       phone: a.phone,
       sebi_reg_no: a.sebi_number,
       pan_no: a.pan_number,
-      aadhaar_no: a.aadhaar_number,
+      
       address: a.address,
       bio: a.bio,
       strategy_type: a.strategy_type,
