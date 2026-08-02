@@ -35,7 +35,7 @@ Deno.serve(async (req) => {
     // Ownership check: the caller must own the advisor profile behind this group.
     const { data: group } = await admin
       .from('groups')
-      .select('id, advisor_id, payment_mode, advisor_payment_url, advisor_merchant_key_id, advisor_merchant_key_secret')
+      .select('id, advisor_id, payment_mode')
       .eq('id', groupId)
       .maybeSingle();
     if (!group) return json({ error: 'Group not found' }, 404);
@@ -47,35 +47,47 @@ Deno.serve(async (req) => {
       .maybeSingle();
     if (!advisor || advisor.user_id !== userId) return json({ error: 'Forbidden' }, 403);
 
+    // Credentials live in a service-role-only table, never in `groups`.
+    const { data: creds } = await admin
+      .from('group_payment_credentials')
+      .select('advisor_payment_url, advisor_merchant_key_id, advisor_merchant_key_secret')
+      .eq('group_id', groupId)
+      .maybeSingle();
+
     if (body.action === 'get') {
       return json({
         payment_mode: group.payment_mode ?? 'payment_link',
-        advisor_payment_url: group.advisor_payment_url ?? '',
-        advisor_merchant_key_id: group.advisor_merchant_key_id ?? '',
-        secret_hint: group.advisor_merchant_key_secret ? maskSecret(group.advisor_merchant_key_id ?? 'xxxx') : '',
-        has_secret: Boolean(group.advisor_merchant_key_secret),
+        advisor_payment_url: creds?.advisor_payment_url ?? '',
+        advisor_merchant_key_id: creds?.advisor_merchant_key_id ?? '',
+        secret_hint: creds?.advisor_merchant_key_secret ? maskSecret(creds.advisor_merchant_key_id ?? 'xxxx') : '',
+        has_secret: Boolean(creds?.advisor_merchant_key_secret),
       });
     }
 
     const mode = body.payment_mode === 'merchant_keys' ? 'merchant_keys' : 'payment_link';
-    const update: Record<string, unknown> = { payment_mode: mode };
+    const credUpdate: Record<string, unknown> = { group_id: groupId };
 
     if (mode === 'payment_link') {
       const url = String(body.advisor_payment_url ?? '').trim();
       if (!/^https:\/\/.+/i.test(url)) {
         return json({ error: 'Enter a valid https payment link' }, 400);
       }
-      update.advisor_payment_url = url;
+      credUpdate.advisor_payment_url = url;
     } else {
       const keyId = String(body.advisor_merchant_key_id ?? '').trim();
       const keySecret = String(body.advisor_merchant_key_secret ?? '').trim();
       if (!keyId) return json({ error: 'Key ID is required' }, 400);
-      update.advisor_merchant_key_id = keyId;
-      if (keySecret) update.advisor_merchant_key_secret = await encryptValue(keySecret);
-      else if (!group.advisor_merchant_key_secret) return json({ error: 'Key secret is required' }, 400);
+      credUpdate.advisor_merchant_key_id = keyId;
+      if (keySecret) credUpdate.advisor_merchant_key_secret = await encryptValue(keySecret);
+      else if (!creds?.advisor_merchant_key_secret) return json({ error: 'Key secret is required' }, 400);
     }
 
-    const { error } = await admin.from('groups').update(update).eq('id', groupId);
+    const { error: credError } = await admin
+      .from('group_payment_credentials')
+      .upsert(credUpdate, { onConflict: 'group_id' });
+    if (credError) throw credError;
+
+    const { error } = await admin.from('groups').update({ payment_mode: mode }).eq('id', groupId);
     if (error) throw error;
 
     return json({ ok: true, payment_mode: mode });

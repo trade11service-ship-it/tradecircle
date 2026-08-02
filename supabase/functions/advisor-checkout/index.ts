@@ -44,27 +44,34 @@ Deno.serve(async (req) => {
 
     const { data: group } = await admin
       .from('groups')
-      .select('id, name, monthly_price, payment_mode, advisor_payment_url, advisor_merchant_key_id, advisor_merchant_key_secret')
+      .select('id, name, monthly_price, payment_mode')
       .eq('id', onboarding.group_id)
       .maybeSingle();
 
     if (!group) return json({ error: 'Group not found' }, 404);
 
+    // Credentials live in a service-role-only table (never broadcast or exposed).
+    const { data: creds } = await admin
+      .from('group_payment_credentials')
+      .select('advisor_payment_url, advisor_merchant_key_id, advisor_merchant_key_secret')
+      .eq('group_id', group.id)
+      .maybeSingle();
+
     // Hosted payment-link mode: the URL is never exposed through the Data API,
     // so it is handed out here only to the verified owner of this onboarding.
     if (group.payment_mode !== 'merchant_keys') {
-      if (!group.advisor_payment_url) {
+      if (!creds?.advisor_payment_url) {
         return json({ error: 'This analyst has not published a payment link yet' }, 400);
       }
-      return json({ payment_url: group.advisor_payment_url, group_name: group.name });
+      return json({ payment_url: creds.advisor_payment_url, group_name: group.name });
     }
 
-    if (group.payment_mode !== 'merchant_keys' || !group.advisor_merchant_key_id || !group.advisor_merchant_key_secret) {
+    if (!creds?.advisor_merchant_key_id || !creds?.advisor_merchant_key_secret) {
       return json({ error: 'This analyst has not configured in-app checkout' }, 400);
     }
 
-    const keyId = group.advisor_merchant_key_id;
-    const keySecret = await decryptValue(group.advisor_merchant_key_secret);
+    const keyId = creds.advisor_merchant_key_id;
+    const keySecret = await decryptValue(creds.advisor_merchant_key_secret);
 
     const orderRes = await fetch('https://api.razorpay.com/v1/orders', {
       method: 'POST',
