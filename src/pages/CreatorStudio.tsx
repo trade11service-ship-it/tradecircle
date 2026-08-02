@@ -648,42 +648,13 @@ export default function CreatorStudio() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-border bg-card p-5">
-            <h2 className="text-[15px] font-extrabold text-foreground">Upload a lesson</h2>
-            <p className="mt-1 text-[12px] text-muted-foreground">
-              Files are stored privately and streamed through expiring, watermarked links only.
-            </p>
-            <div className="mt-4 space-y-4">
-              <div>
-                <Label className="text-[12.5px] font-semibold">Course</Label>
-                <select value={uploadCourseId} onChange={(e) => setUploadCourseId(e.target.value)} className="mt-1.5 h-11 w-full rounded-xl border border-input bg-background px-3 text-[14px]">
-                  <option value="">Select a course</option>
-                  {courses.map((c) => <option key={c.id} value={c.id}>{c.title}</option>)}
-                </select>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <Label className="text-[12.5px] font-semibold">Lesson title</Label>
-                  <Input value={moduleTitle} onChange={(e) => setModuleTitle(e.target.value)} className="mt-1.5 h-11 rounded-xl" placeholder="Module 1 — Market structure" />
-                </div>
-                <div>
-                  <Label className="text-[12.5px] font-semibold">Duration (optional)</Label>
-                  <Input value={moduleDuration} onChange={(e) => setModuleDuration(e.target.value)} className="mt-1.5 h-11 rounded-xl" placeholder="12 min" />
-                </div>
-              </div>
-              <div>
-                <Label className="text-[12.5px] font-semibold">Video (MP4) or PDF</Label>
-                <Input type="file" accept={acceptFor('course-media')} onChange={(e) => setModuleFile(e.target.files?.[0] ?? null)} className="mt-1.5 h-11 rounded-xl" />
-                <p className="mt-1.5 text-[11.5px] text-muted-foreground">{UPLOAD_RULES['course-media'].label}. Every file is scanned for scripts and disguised executables.</p>
-              </div>
-              <Button className="h-11 w-full rounded-xl" disabled={uploading} onClick={uploadModule}>
-                {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                {uploading ? 'Uploading' : 'Upload lesson'}
-              </Button>
-            </div>
-          </div>
+          <p className="rounded-2xl border border-dashed border-border bg-muted/20 p-4 text-[12.5px] text-muted-foreground">
+            Lessons are added per course. Save this draft first, then open <b>My courses</b> and use
+            <b> Add lesson</b> on the course you want to build.
+          </p>
         </div>
       )}
+
 
       {/* Payouts */}
       {tab === 'payouts' && (
