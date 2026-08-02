@@ -12,7 +12,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
-import { CheckCircle, FileText, Shield } from 'lucide-react';
+import { CheckCircle, Shield } from 'lucide-react';
 import { ADVISOR_CHECKBOX_1_TEXT, ADVISOR_CHECKBOX_2_TEXT, ADVISOR_CHECKBOX_3_DPDP_TEXT, getDeviceInfo, getIpAddress } from '@/lib/legalTexts';
 
 export default function AdvisorRegister() {
@@ -20,7 +20,7 @@ export default function AdvisorRegister() {
   const { user, profile, loading: authLoading } = useAuth();
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ sebiRegNo: '', bio: '', strategyType: '', aadhaarNo: '', panNo: '', address: '', phone: '' });
+  const [form, setForm] = useState({ sebiRegNo: '', bio: '', strategyType: '', address: '', phone: '' });
   const [check1, setCheck1] = useState(false);
   const [check2, setCheck2] = useState(false);
   const [check3, setCheck3] = useState(false);
@@ -30,7 +30,7 @@ export default function AdvisorRegister() {
   const [checkingAdvisor, setCheckingAdvisor] = useState(false);
   const update = (key: string, value: string) => setForm({ ...form, [key]: value });
 
-  // Check if user is already registered as advisor OR has a pending application
+  // Check if user is already registered as advisor OR has an application in flight
   useEffect(() => {
     if (user) {
       setCheckingAdvisor(true);
@@ -68,21 +68,23 @@ export default function AdvisorRegister() {
   if (existingAdvisor || (existingApplication && existingApplication.status !== 'expired' && existingApplication.status !== 'rejected')) {
     const status = existingAdvisor?.status || existingApplication?.status;
     const reason = existingAdvisor?.rejection_reason || existingApplication?.rejection_reason;
+    const isDashboardReady = status === 'approved' || status === 'pre_approved';
     return (
       <div className="min-h-screen flex flex-col bg-off-white"><Navbar />
         <div className="flex-1 flex items-center justify-center px-4">
           <div className="tc-card-static p-8 text-center max-w-md">
             <CheckCircle className="mx-auto h-16 w-16 text-primary" />
             <h2 className="mt-4 text-xl font-bold">
-              {status === 'approved' ? 'Already Registered' : 'Application Submitted'}
+              {status === 'approved' ? 'Already Registered' : status === 'pre_approved' ? 'Pre-Approved' : 'Application Submitted'}
             </h2>
             <p className="mt-3 text-sm text-muted-foreground">
-              {status === 'pending' && 'Your application is currently under review. Our team will contact you within 24-48 hours.'}
+              {status === 'pending_offline_review' && 'Your application is with our compliance team, who verify your SEBI registration manually. This usually takes 24-48 hours.'}
+              {status === 'pre_approved' && 'Your SEBI registration is verified. Open your dashboard to complete PAN and bank verification and unlock group creation.'}
               {status === 'approved' && 'You are already registered as an advisor on RA Circle. Your account is active.'}
               {status === 'rejected' && `Your application was rejected${reason ? ': ' + reason : '.'}`}
             </p>
             <div className="mt-6 flex gap-3 justify-center">
-              {status === 'approved' && (
+              {isDashboardReady && (
                 <Button onClick={() => navigate('/advisor/dashboard')} className="tc-btn-click">Go to Dashboard</Button>
               )}
               <Button variant="outline" onClick={() => navigate('/')} className="tc-btn-click">Back to Home</Button>
@@ -113,16 +115,14 @@ export default function AdvisorRegister() {
         email: profile?.email || user.email || '',
         phone: sanitizePhone(form.phone || profile?.phone || ''),
         sebi_number: sanitizeAlphanumeric(form.sebiRegNo),
-        pan_number: sanitizeAlphanumeric(form.panNo),
-        aadhaar_number: sanitizeAlphanumeric(form.aadhaarNo),
         address: sanitizeText(form.address),
         bio: sanitizeTextarea(form.bio),
         strategy_type: sanitizeText(form.strategyType),
-        status: 'pending',
+        status: 'pending_offline_review',
       }).select('id').single();
       if (appError) throw appError;
 
-      // NOTE: Do NOT set role to 'advisor' here. Role stays 'trader' until admin approves.
+      // NOTE: Do NOT set role to 'advisor' here. Role stays 'trader' until admin pre-approves.
 
       // Save legal acceptance (linked to application, not to advisors row yet).
       // MUST NOT fail silently — this is the SEBI/DPDP consent audit record.
@@ -135,7 +135,6 @@ export default function AdvisorRegister() {
           user_id: user.id,
           full_name: profile?.full_name || '',
           sebi_reg_no: sanitizeAlphanumeric(form.sebiRegNo),
-          pan_no: sanitizeAlphanumeric(form.panNo),
           checkbox_1_sebi_responsibility: check1 === true,
           checkbox_1_text: ADVISOR_CHECKBOX_1_TEXT,
           checkbox_1_accepted_at: now,
@@ -157,12 +156,12 @@ export default function AdvisorRegister() {
         throw new Error('Consent record could not be saved: ' + legalError.message);
       }
 
-      setStep(4);
+      setStep(3);
     } catch (error: any) { toast.error(error.message || 'Registration failed'); }
     setLoading(false);
   };
 
-  const steps = [{ num: 1, label: 'SEBI Details' }, { num: 2, label: 'KYC Info' }, { num: 3, label: 'Review' }];
+  const steps = [{ num: 1, label: 'SEBI Details' }, { num: 2, label: 'Review & Consent' }];
 
   return (
     <div className="min-h-screen flex flex-col bg-off-white">
@@ -173,7 +172,7 @@ export default function AdvisorRegister() {
           <p className="mt-1 tc-small">Signed in as {profile?.full_name || user.email}</p>
         </div>
 
-        {step < 4 && (
+        {step < 3 && (
           <div className="mb-8 flex gap-1">
             {steps.map(s => (
               <div key={s.num} className="flex-1">
@@ -187,6 +186,9 @@ export default function AdvisorRegister() {
         {step === 1 && (
           <div className="tc-card-static p-6 space-y-4">
             <h2 className="tc-card-title">SEBI & Strategy Details</h2>
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs leading-relaxed text-slate-700">
+              <strong className="text-slate-900">No identity documents needed yet.</strong> We verify your SEBI registration number manually against the public SEBI register. PAN and bank verification happen later, inside your dashboard, only after you are pre-approved.
+            </div>
             <div className="space-y-2"><Label>SEBI Registration Number *</Label><Input value={form.sebiRegNo} onChange={e => update('sebiRegNo', e.target.value)} placeholder="INH000XXXXXX" className="tc-input-focus" /></div>
             <div className="space-y-2"><Label>Phone Number</Label><Input value={form.phone} onChange={e => update('phone', e.target.value)} placeholder="+91 XXXXX XXXXX" className="tc-input-focus" /></div>
             <div className="space-y-2"><Label>Brief Bio</Label><Textarea value={form.bio} onChange={e => update('bio', e.target.value)} placeholder="Tell traders about your experience and approach..." rows={4} /><p className={`text-xs ${form.bio.length < 80 ? 'text-orange-600' : 'text-green-600'}`}>{form.bio.length}/80 characters (minimum 80 required)</p></div>
@@ -202,31 +204,19 @@ export default function AdvisorRegister() {
                 </SelectContent>
               </Select>
             </div>
-            <Button className="w-full tc-btn-click font-semibold" onClick={() => setStep(2)} disabled={!form.sebiRegNo || !form.strategyType}>Next</Button>
+            <div className="space-y-2"><Label>Registered Address</Label><Textarea value={form.address} onChange={e => update('address', e.target.value)} placeholder="Your SEBI-registered address" rows={3} /></div>
+            <Button className="w-full tc-btn-click font-semibold" onClick={() => setStep(2)} disabled={!form.sebiRegNo || !form.strategyType}>Review</Button>
           </div>
         )}
 
         {step === 2 && (
           <div className="tc-card-static p-6 space-y-4">
-            <h2 className="tc-card-title">KYC Information</h2>
-            <div className="space-y-2"><Label>Aadhaar Number (12 digits) *</Label><Input value={form.aadhaarNo} onChange={e => update('aadhaarNo', e.target.value.replace(/\D/g, ''))} maxLength={12} placeholder="XXXX XXXX XXXX" className="tc-input-focus" /></div>
-            <div className="space-y-2"><Label>PAN Number (10 characters) *</Label><Input value={form.panNo} onChange={e => update('panNo', e.target.value.toUpperCase())} maxLength={10} placeholder="ABCDE1234F" className="tc-input-focus" /></div>
-            <div className="space-y-2"><Label>Full Address</Label><Textarea value={form.address} onChange={e => update('address', e.target.value)} placeholder="Your registered address" rows={3} /></div>
-            <div className="flex gap-2">
-              <Button variant="outline" className="flex-1 tc-btn-click" onClick={() => setStep(1)}>Back</Button>
-              <Button className="flex-1 tc-btn-click font-semibold" onClick={() => setStep(3)} disabled={!form.aadhaarNo || !form.panNo}>Review</Button>
-            </div>
-          </div>
-        )}
-
-        {step === 3 && (
-          <div className="tc-card-static p-6 space-y-4">
             <h2 className="tc-card-title">Review & Submit</h2>
             <div className="space-y-3 text-sm">
               {[
                 { items: [{ l: 'Name', v: profile?.full_name }, { l: 'Email', v: profile?.email }, { l: 'Phone', v: form.phone || profile?.phone || '-' }] },
-                { items: [{ l: 'SEBI Reg No', v: form.sebiRegNo }, { l: 'Strategy', v: form.strategyType }, { l: 'Bio', v: form.bio || '-' }] },
-                { items: [{ l: 'Aadhaar', v: `••••••••${form.aadhaarNo.slice(-4)}` }, { l: 'PAN', v: form.panNo }, { l: 'Address', v: form.address || '-' }] },
+                { items: [{ l: 'SEBI Reg No', v: form.sebiRegNo }, { l: 'Strategy', v: form.strategyType }, { l: 'Address', v: form.address || '-' }] },
+                { items: [{ l: 'Bio', v: form.bio || '-' }] },
               ].map((group, gi) => (
                 <div key={gi} className="rounded-lg bg-off-white p-4 space-y-2">
                   {group.items.map(item => (
@@ -277,17 +267,17 @@ export default function AdvisorRegister() {
             </div>
 
             <div className="flex gap-2">
-              <Button variant="outline" className="flex-1 tc-btn-click" onClick={() => setStep(2)}>Back</Button>
+              <Button variant="outline" className="flex-1 tc-btn-click" onClick={() => setStep(1)}>Back</Button>
               <Button className="flex-1 tc-btn-click font-semibold" onClick={handleSubmit} disabled={loading || !check1 || !check2 || !check3}>{loading ? 'Submitting...' : 'Submit Application'}</Button>
             </div>
           </div>
         )}
 
-        {step === 4 && (
+        {step === 3 && (
           <div className="tc-card-static p-8 text-center">
             <CheckCircle className="mx-auto h-16 w-16 text-primary" />
             <h2 className="mt-4 text-xl font-bold">Application Submitted!</h2>
-            <p className="mt-3 text-sm text-muted-foreground">Application submitted successfully. Our team will verify your details within 24-48 hours and contact you directly.</p>
+            <p className="mt-3 text-sm text-muted-foreground">Our compliance team will verify your SEBI registration manually within 24-48 hours. Once pre-approved, you can complete PAN and bank verification from your dashboard to unlock group creation.</p>
             <Button className="mt-6 tc-btn-click" onClick={() => navigate('/')}>Back to Home</Button>
           </div>
         )}
