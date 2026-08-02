@@ -41,7 +41,7 @@ export default function AdvisorDashboard() {
   const [signals, setSignals] = useState<Signal[]>([]);
   const [dailyEarnings, setDailyEarnings] = useState<DailyEarning[]>([]);
   const [earningsSummary, setEarningsSummary] = useState<any>(null);
-  const [tab, setTab] = useState<'groups' | 'post' | 'signals_history' | 'subscribers' | 'revenue' | 'referrals' | 'compliance' | 'profile'>('groups');
+  const [tab, setTab] = useState<'groups' | 'post' | 'signals_history' | 'subscribers' | 'revenue' | 'referrals' | 'compliance' | 'profile' | 'kyc'>('groups');
   const [loading, setLoading] = useState(true);
   const [groupForm, setGroupForm] = useState({ name: '', description: '', monthlyPrice: '', strategyCategory: 'All' });
   const [groupDp, setGroupDp] = useState<File | null>(null);
