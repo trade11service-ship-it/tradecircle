@@ -920,7 +920,7 @@ export default function AdminDashboard() {
                     {a.bio && <div className="rounded-xl bg-muted p-3"><p className="text-[11px] text-muted-foreground font-semibold uppercase">Bio</p><p className="text-[14px] text-foreground mt-0.5">{a.bio}</p></div>}
                     <div className="flex gap-2 items-end flex-wrap">
                       <Button onClick={() => approveAdvisor(a)} className="bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg" disabled={approvingAdvisorId === a.id}>
-                        {approvingAdvisorId === a.id ? 'Approving...' : '✓ Approve'}
+                        {approvingAdvisorId === a.id ? 'Working...' : '✓ Pre-Approve (SEBI verified offline)'}
                       </Button>
                       <Button className="bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg" onClick={() => { setSelectedAdvisorForReject(a); setRejectModalOpen(true); }} disabled={rejectingAdvisorId === a.id}>
                         {rejectingAdvisorId === a.id ? 'Rejecting...' : '✕ Reject'}
