@@ -943,12 +943,44 @@ export type Database = {
           },
         ]
       }
-      groups: {
+      group_payment_credentials: {
         Row: {
-          advisor_id: string
           advisor_merchant_key_id: string | null
           advisor_merchant_key_secret: string | null
           advisor_payment_url: string | null
+          created_at: string
+          group_id: string
+          updated_at: string
+        }
+        Insert: {
+          advisor_merchant_key_id?: string | null
+          advisor_merchant_key_secret?: string | null
+          advisor_payment_url?: string | null
+          created_at?: string
+          group_id: string
+          updated_at?: string
+        }
+        Update: {
+          advisor_merchant_key_id?: string | null
+          advisor_merchant_key_secret?: string | null
+          advisor_payment_url?: string | null
+          created_at?: string
+          group_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_payment_credentials_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: true
+            referencedRelation: "groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      groups: {
+        Row: {
+          advisor_id: string
           created_at: string | null
           description: string | null
           dp_url: string | null
@@ -963,9 +995,6 @@ export type Database = {
         }
         Insert: {
           advisor_id: string
-          advisor_merchant_key_id?: string | null
-          advisor_merchant_key_secret?: string | null
-          advisor_payment_url?: string | null
           created_at?: string | null
           description?: string | null
           dp_url?: string | null
@@ -980,9 +1009,6 @@ export type Database = {
         }
         Update: {
           advisor_id?: string
-          advisor_merchant_key_id?: string | null
-          advisor_merchant_key_secret?: string | null
-          advisor_payment_url?: string | null
           created_at?: string | null
           description?: string | null
           dp_url?: string | null
