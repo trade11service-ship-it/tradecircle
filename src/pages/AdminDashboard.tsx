@@ -777,7 +777,7 @@ export default function AdminDashboard() {
                         </div>
                         <div className="flex gap-2">
                           <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg px-4 text-[13px] font-semibold" onClick={() => approveAdvisor(a)} disabled={approvingAdvisorId === a.id}>
-                            {approvingAdvisorId === a.id ? 'Approving...' : 'Approve'}
+                            {approvingAdvisorId === a.id ? 'Working...' : 'Pre-Approve'}
                           </Button>
                           <Button size="sm" variant="outline" className="rounded-lg px-4 text-[13px] font-semibold" onClick={() => { setSelectedAdvisorForView(a); setViewApplicationModalOpen(true); }}>View Application</Button>
                         </div>
