@@ -282,60 +282,91 @@ export default function CreatorStudio() {
     setTab('courses');
   };
 
-  const uploadModule = async () => {
-    if (!creator || !uploadCourseId || !moduleFile) {
-      toast({ title: 'Pick a course and a file', variant: 'destructive' });
-      return;
-    }
-    const cleanTitle = sanitizeText(moduleTitle) || moduleFile.name.replace(/\.[^.]+$/, '');
-    const check = await checkUpload(moduleFile, 'course-media');
+  const uploadModule = async (courseId: string, draft: LessonDraft): Promise<boolean> => {
+    if (!creator) return false;
+    const course = courses.find((c) => c.id === courseId);
+    const cleanTitle = sanitizeText(draft.title) || draft.file.name.replace(/\.[^.]+$/, '');
+    const check = await checkUpload(draft.file, 'course-media');
     if (!check.ok) {
       toast({ title: 'File rejected', description: check.error, variant: 'destructive' });
-      return;
+      return false;
     }
     const isPdf = check.detected === 'application/pdf';
-    if (isPdf && moduleFile.size > UPLOAD_RULES.pdf.maxBytes) {
+    if (isPdf && draft.file.size > UPLOAD_RULES.pdf.maxBytes) {
       toast({ title: 'PDF too large', description: 'E-books must be under 50MB.', variant: 'destructive' });
-      return;
+      return false;
     }
-    setUploading(true);
     const { data: liveCreator } = await supabase
       .from('creator_profiles')
       .select('id')
       .eq('user_id', user!.id)
       .maybeSingle();
     const creatorId = (liveCreator as { id: string } | null)?.id ?? creator.id;
-    const path = `${creatorId}/${uploadCourseId}/${crypto.randomUUID()}.${check.ext}`;
+    const path = `${creatorId}/${courseId}/${crypto.randomUUID()}.${check.ext}`;
     const { error: upErr } = await supabase.storage
       .from('courses-content')
-      .upload(path, moduleFile, { upsert: false, contentType: check.detected ?? moduleFile.type });
+      .upload(path, draft.file, { upsert: false, contentType: check.detected ?? draft.file.type });
 
     if (upErr) {
-      setUploading(false);
       toast({ title: 'Upload failed', description: upErr.message, variant: 'destructive' });
-      return;
+      return false;
     }
-    const nextOrder = modules.filter((m) => m.course_id === uploadCourseId).length;
+    const nextOrder = modules.filter((m) => m.course_id === courseId).length;
     const { data, error } = await supabase
       .from('course_modules')
       .insert({
-        course_id: uploadCourseId,
+        course_id: courseId,
         title: cleanTitle,
         content_type: isPdf ? 'pdf_ebook' : 'video',
         file_storage_path: path,
-        duration_label: moduleDuration ? sanitizeText(moduleDuration).slice(0, 20) : null,
+        duration_label: draft.duration ? sanitizeText(draft.duration).slice(0, 20) : null,
         sort_order: nextOrder,
       })
       .select('id, course_id, title, content_type, duration_label, sort_order')
       .single();
-    setUploading(false);
     if (error) {
       toast({ title: 'Could not save lesson', description: error.message, variant: 'destructive' });
-      return;
+      return false;
     }
     setModules((prev) => [...prev, data as Module]);
-    setModuleTitle(''); setModuleDuration(''); setModuleFile(null);
-    toast({ title: 'Lesson uploaded' });
+
+    // Any new lesson on a live course must be re-reviewed before it goes back out.
+    if (course?.review_status === 'approved') {
+      await supabase
+        .from('courses')
+        .update({ review_status: 'pending_review', is_visible: false, rejection_reason: null })
+        .eq('id', courseId);
+      setCourses((prev) =>
+        prev.map((c) => (c.id === courseId ? { ...c, review_status: 'pending_review', is_visible: false, rejection_reason: null } : c)),
+      );
+      toast({ title: 'Lesson uploaded', description: 'Course sent back for compliance review.' });
+    } else {
+      toast({ title: 'Lesson uploaded' });
+    }
+    return true;
+  };
+
+  const saveCourseDetails = async (courseId: string, values: CourseEditValues): Promise<boolean> => {
+    const cleanTitle = sanitizeText(values.title);
+    if (cleanTitle.length < 6) {
+      toast({ title: 'Give your course a longer title', variant: 'destructive' });
+      return false;
+    }
+    const patch = {
+      title: cleanTitle,
+      description: sanitizeTextarea(values.description),
+      category: values.category,
+      course_type: values.course_type,
+      price: values.price,
+    };
+    const { error } = await supabase.from('courses').update(patch).eq('id', courseId);
+    if (error) {
+      toast({ title: 'Could not save', description: error.message, variant: 'destructive' });
+      return false;
+    }
+    setCourses((prev) => prev.map((c) => (c.id === courseId ? { ...c, ...patch } : c)));
+    toast({ title: 'Course updated' });
+    return true;
   };
 
   const deleteModule = async (m: Module) => {
@@ -357,6 +388,7 @@ export default function CreatorStudio() {
     setCourses((prev) => prev.map((c) => (c.id === course.id ? { ...c, review_status: 'pending_review', rejection_reason: null } : c)));
     toast({ title: 'Sent for review', description: 'Our compliance team will respond shortly.' });
   };
+
 
   const toggleVisibility = async (course: Course) => {
     const next = !course.is_visible;
