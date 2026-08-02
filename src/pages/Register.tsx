@@ -140,7 +140,8 @@ export default function Register() {
     } catch {}
     const { lovable } = await import('@/integrations/lovable/index');
     const result = await lovable.auth.signInWithOAuth('google', {
-      redirect_uri: getCanonicalOrigin() + '/login',
+      redirect_uri: window.location.origin + '/login',
+      extraParams: { prompt: 'select_account' },
     });
     if (result.error) {
       toast.error((result.error as any)?.message || 'Google sign-up failed');
