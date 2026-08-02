@@ -146,24 +146,24 @@ export default function Login() {
 
   const handleGoogleLogin = async () => {
     setGoogleLoading(true);
-    // If they consent here, stash it so AuthProvider records it for new accounts.
-    // Returning users already have a stored acceptance and won't be re-prompted.
-    try {
-      sessionStorage.setItem('pending_general_terms_consent', JSON.stringify({
-        text: GENERAL_TERMS_TEXT,
-        page_url: window.location.href,
-        accepted_at_client: new Date().toISOString(),
-      }));
-    } catch {}
+    // No consent is stashed here: signing in is not consenting. Brand-new accounts
+    // get the one-time DPDP ConsentGate right after the session is established.
+    try { sessionStorage.removeItem('pending_general_terms_consent'); } catch {}
     const { lovable } = await import('@/integrations/lovable/index');
     const result = await lovable.auth.signInWithOAuth('google', {
-      redirect_uri: getCanonicalOrigin() + '/login',
+      // Must be same-origin so the callback returns to the app the user started from
+      // (preview, custom domain, or localhost) instead of bouncing to production.
+      redirect_uri: window.location.origin + '/login',
+      // Avoid re-showing Google's "share your name and email" consent screen to
+      // returning users; only prompt for account choice.
+      extraParams: { prompt: 'select_account' },
     });
     if (result.error) {
       toast.error((result.error as any)?.message || 'Google sign-in failed');
       setGoogleLoading(false);
     }
   };
+
 
   return (
     <div className="min-h-screen flex flex-col bg-background">
