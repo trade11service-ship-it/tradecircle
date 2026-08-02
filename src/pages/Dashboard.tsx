@@ -33,9 +33,19 @@ export default function Dashboard() {
         .maybeSingle();
       if (profile?.role === 'advisor' || advisor) {
         navigate('/advisor/dashboard', { replace: true });
-      } else {
-        navigate('/home', { replace: true });
+        return;
       }
+      const { data: creator } = await supabase
+        .from('creator_profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .maybeSingle();
+      if (creator) {
+        navigate('/creator-studio', { replace: true });
+        return;
+      }
+      navigate('/home', { replace: true });
+
     })();
   }, [user, profile, loading, navigate]);
 

@@ -9,8 +9,10 @@ import {
   Radio,
   Rss,
   GraduationCap,
+  LayoutDashboard,
   ChevronDown,
 } from "lucide-react";
+
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/Logo";
 
@@ -19,7 +21,7 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
-  const { profile, user } = useAuth();
+  const { profile, user, creatorId } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -42,21 +44,26 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   const isAdvisor = profile?.role === "advisor";
   const isAdmin = profile?.role === "admin";
+  const isCreator = !!creatorId;
   const isGroupPage = location.pathname.startsWith("/group/");
 
-  const feedItem = isAdvisor
-    ? { name: "Dashboard", path: "/advisor/dashboard", icon: Radio, show: !!user, exact: false }
-    : isAdmin
-      ? { name: "Admin", path: "/admin", icon: Radio, show: !!user, exact: false }
-      : { name: "Feed", path: "/feed", icon: Radio, show: !!user, exact: false };
+  // One role-aware "Dashboard" slot: admin → advisor → creator → trader.
+  const dashboardItem = isAdmin
+    ? { name: "Admin", path: "/admin", icon: Radio, show: !!user, exact: false }
+    : isAdvisor
+      ? { name: "Dashboard", path: "/advisor/dashboard", icon: Radio, show: !!user, exact: false }
+      : isCreator
+        ? { name: "Studio", path: "/creator-studio", icon: LayoutDashboard, show: !!user, exact: false }
+        : { name: "Feed", path: "/feed", icon: Radio, show: !!user, exact: false };
 
   const navItems = [
     { name: "Home", path: "/", icon: Home, show: true, exact: true },
-    { name: "Discover", path: "/discover", icon: Compass, show: true, exact: false },
-    feedItem,
-    { name: "Public", path: "/explore", icon: Rss, show: true, exact: false },
     { name: "Courses", path: "/courses", icon: GraduationCap, show: true, exact: false },
+    dashboardItem,
+    { name: "Public", path: "/explore", icon: Rss, show: true, exact: false },
+    { name: "Discover", path: "/discover", icon: Compass, show: true, exact: false },
   ].filter(i => i.show);
+
 
   const initial = (profile?.full_name || user?.email || "U").charAt(0).toUpperCase();
 
@@ -95,6 +102,15 @@ export function AppLayout({ children }: AppLayoutProps) {
                     >
                       <User className="h-4 w-4" /> My profile
                     </button>
+                    {isCreator && (isAdvisor || isAdmin) && (
+                      <button
+                        onClick={() => { setMenuOpen(false); navigate("/creator-studio"); }}
+                        className="w-full flex items-center gap-2 px-3 py-2.5 text-[13px] font-medium text-foreground hover:bg-muted text-left"
+                      >
+                        <LayoutDashboard className="h-4 w-4" /> Creator Studio
+                      </button>
+                    )}
+
                     <button
                       onClick={handleLogout}
                       className="w-full flex items-center gap-2 px-3 py-2.5 text-[13px] font-medium text-destructive hover:bg-destructive/5 text-left border-t border-border"
