@@ -263,24 +263,58 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [navigate]);
 
+  const userId = user?.id ?? null;
+
+  const refreshCreator = async () => {
+    if (!userId) { setCreatorId(null); setCreatorKycStatus(null); return; }
+    const { data } = await supabase
+      .from('creator_profiles')
+      .select('id, kyc_status')
+      .eq('user_id', userId)
+      .maybeSingle();
+    setCreatorId((data as { id: string } | null)?.id ?? null);
+    setCreatorKycStatus((data as { kyc_status: string } | null)?.kyc_status ?? null);
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!userId) { setCreatorId(null); setCreatorKycStatus(null); return; }
+    (async () => {
+      const { data } = await supabase
+        .from('creator_profiles')
+        .select('id, kyc_status')
+        .eq('user_id', userId)
+        .maybeSingle();
+      if (cancelled) return;
+      setCreatorId((data as { id: string } | null)?.id ?? null);
+      setCreatorKycStatus((data as { kyc_status: string } | null)?.kyc_status ?? null);
+    })();
+    return () => { cancelled = true; };
+  }, [userId]);
+
   const signOut = async () => {
     try {
       await clearLocalAuthSession();
       setUser(null);
       setProfile(null);
       setNeedsConsent(false);
+      setCreatorId(null);
+      setCreatorKycStatus(null);
       navigate('/', { replace: true });
     } catch (err) {
       console.error('Logout error:', err);
       setUser(null);
       setProfile(null);
       setNeedsConsent(false);
+      setCreatorId(null);
+      setCreatorKycStatus(null);
       navigate('/', { replace: true });
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, creatorId, creatorKycStatus, refreshCreator, signOut }}>
+
       {children}
       {user && needsConsent && (
         <ConsentGate
