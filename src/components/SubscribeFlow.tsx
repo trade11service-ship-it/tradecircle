@@ -60,7 +60,6 @@ export function SubscribeFlow({
   const durationDays = Number((group as any).duration_days ?? 30);
   const price = Number(group.monthly_price ?? 0);
   const paymentMode = ((group as any).payment_mode ?? 'payment_link') as 'payment_link' | 'merchant_keys';
-  const advisorPaymentUrl = (group as any).advisor_payment_url as string | null;
 
   const clauses = useMemo(
     () =>
@@ -135,14 +134,20 @@ export function SubscribeFlow({
   };
 
   /* ----------------------- Step 4: Payment ----------------------- */
-  const payViaLink = () => {
-    if (!advisorPaymentUrl) {
-      setError('This analyst has not published a payment link yet. Please contact them directly.');
+  const payViaLink = async () => {
+    setError('');
+    setBusy(true);
+    const { data, error: fnError } = await supabase.functions.invoke('advisor-checkout', {
+      body: { onboarding_id: onboardingId },
+    });
+    setBusy(false);
+    if (fnError || data?.error || !data?.payment_url) {
+      setError(data?.error || 'This analyst has not published a payment link yet. Please contact them directly.');
       return;
     }
     sessionStorage.setItem('ra_onboarding_id', String(onboardingId));
     sessionStorage.setItem('ra_onboarding_group', group.id);
-    window.location.href = advisorPaymentUrl;
+    window.location.href = data.payment_url as string;
   };
 
   const payViaGateway = async () => {
