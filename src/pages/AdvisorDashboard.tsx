@@ -203,7 +203,7 @@ export default function AdvisorDashboard() {
     const { data: advList, error: advError } = await (supabase as any).rpc('get_advisor_full_by_user', { _user_id: user!.id });
     if (advError) console.error('Advisor fetch error:', advError);
     const list: any[] = Array.isArray(advList) ? advList : [];
-    const adv = list.find((a: any) => a.status === 'approved') || list[0] || null;
+    const adv = list.find((a: any) => a.status === 'approved') || list.find((a: any) => a.status === 'pre_approved') || list[0] || null;
     setAdvisor(adv);
     if (adv) {
       setProfileForm({
