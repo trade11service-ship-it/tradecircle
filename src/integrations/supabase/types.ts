@@ -2046,7 +2046,7 @@ export type Database = {
       }
     }
     Enums: {
-      course_review_status: "pending_review" | "approved" | "rejected"
+      course_review_status: "pending_review" | "approved" | "rejected" | "draft"
       creator_kyc_status: "unverified" | "pending" | "approved" | "rejected"
       payout_ledger_status: "accrued" | "paid"
     }
@@ -2176,7 +2176,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      course_review_status: ["pending_review", "approved", "rejected"],
+      course_review_status: ["pending_review", "approved", "rejected", "draft"],
       creator_kyc_status: ["unverified", "pending", "approved", "rejected"],
       payout_ledger_status: ["accrued", "paid"],
     },
