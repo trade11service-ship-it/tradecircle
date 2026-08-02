@@ -104,7 +104,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 
 export default function CreatorStudio() {
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading, refreshCreator } = useAuth();
   const userId = user?.id ?? null;
   const profileName = profile?.full_name ?? '';
   const bootstrapped = useRef(false);
@@ -112,7 +112,7 @@ export default function CreatorStudio() {
   const { toast } = useToast();
 
 
-  const [tab, setTab] = useState<TabKey>('courses');
+  const [tab, setTab] = useState<TabKey>('overview');
   const [loading, setLoading] = useState(true);
   const [creator, setCreator] = useState<CreatorProfile | null>(null);
   const [courses, setCourses] = useState<Course[]>([]);
