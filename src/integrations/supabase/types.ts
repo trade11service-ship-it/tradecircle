@@ -16,7 +16,6 @@ export type Database = {
     Tables: {
       advisor_applications: {
         Row: {
-          aadhaar_number: string | null
           address: string | null
           bio: string | null
           created_at: string
@@ -35,7 +34,6 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          aadhaar_number?: string | null
           address?: string | null
           bio?: string | null
           created_at?: string
@@ -54,7 +52,6 @@ export type Database = {
           user_id: string
         }
         Update: {
-          aadhaar_number?: string | null
           address?: string | null
           bio?: string | null
           created_at?: string
@@ -219,18 +216,25 @@ export type Database = {
       }
       advisors: {
         Row: {
-          aadhaar_no: string | null
-          aadhaar_photo_url: string | null
           address: string | null
+          bank_account_holder_name: string | null
+          bank_account_number: string | null
+          bank_ifsc: string | null
           bio: string | null
           cover_image_url: string | null
           created_at: string | null
           email: string
+          encrypted_pan: string | null
           full_name: string
           id: string
           is_public_featured: boolean | null
+          kyc_rejection_reason: string | null
+          kyc_status: string
+          kyc_updated_at: string | null
+          pan_masked: string | null
           pan_no: string | null
           pan_photo_url: string | null
+          payout_vendor_id: string | null
           phone: string | null
           preferred_trading_hours: string | null
           profile_photo_url: string | null
@@ -246,18 +250,25 @@ export type Database = {
           user_id: string
         }
         Insert: {
-          aadhaar_no?: string | null
-          aadhaar_photo_url?: string | null
           address?: string | null
+          bank_account_holder_name?: string | null
+          bank_account_number?: string | null
+          bank_ifsc?: string | null
           bio?: string | null
           cover_image_url?: string | null
           created_at?: string | null
           email: string
+          encrypted_pan?: string | null
           full_name: string
           id?: string
           is_public_featured?: boolean | null
+          kyc_rejection_reason?: string | null
+          kyc_status?: string
+          kyc_updated_at?: string | null
+          pan_masked?: string | null
           pan_no?: string | null
           pan_photo_url?: string | null
+          payout_vendor_id?: string | null
           phone?: string | null
           preferred_trading_hours?: string | null
           profile_photo_url?: string | null
@@ -273,18 +284,25 @@ export type Database = {
           user_id: string
         }
         Update: {
-          aadhaar_no?: string | null
-          aadhaar_photo_url?: string | null
           address?: string | null
+          bank_account_holder_name?: string | null
+          bank_account_number?: string | null
+          bank_ifsc?: string | null
           bio?: string | null
           cover_image_url?: string | null
           created_at?: string | null
           email?: string
+          encrypted_pan?: string | null
           full_name?: string
           id?: string
           is_public_featured?: boolean | null
+          kyc_rejection_reason?: string | null
+          kyc_status?: string
+          kyc_updated_at?: string | null
+          pan_masked?: string | null
           pan_no?: string | null
           pan_photo_url?: string | null
+          payout_vendor_id?: string | null
           phone?: string | null
           preferred_trading_hours?: string | null
           profile_photo_url?: string | null
@@ -1031,6 +1049,39 @@ export type Database = {
           },
         ]
       }
+      kyc_audit_events: {
+        Row: {
+          check_type: string
+          created_at: string
+          id: string
+          provider: string
+          status_verdict: string
+          subject_id: string | null
+          subject_type: string
+          transaction_id: string | null
+        }
+        Insert: {
+          check_type: string
+          created_at?: string
+          id?: string
+          provider?: string
+          status_verdict: string
+          subject_id?: string | null
+          subject_type: string
+          transaction_id?: string | null
+        }
+        Update: {
+          check_type?: string
+          created_at?: string
+          id?: string
+          provider?: string
+          status_verdict?: string
+          subject_id?: string | null
+          subject_type?: string
+          transaction_id?: string | null
+        }
+        Relationships: []
+      }
       kyc_documents: {
         Row: {
           advisor_id: string
@@ -1284,7 +1335,6 @@ export type Database = {
       }
       rejected_advisor_applications: {
         Row: {
-          aadhaar_no: string | null
           bio: string | null
           email: string | null
           full_name: string | null
@@ -1301,7 +1351,6 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
-          aadhaar_no?: string | null
           bio?: string | null
           email?: string | null
           full_name?: string | null
@@ -1318,7 +1367,6 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
-          aadhaar_no?: string | null
           bio?: string | null
           email?: string | null
           full_name?: string | null
@@ -1710,18 +1758,25 @@ export type Database = {
       admin_list_advisors: {
         Args: { _status?: string }
         Returns: {
-          aadhaar_no: string | null
-          aadhaar_photo_url: string | null
           address: string | null
+          bank_account_holder_name: string | null
+          bank_account_number: string | null
+          bank_ifsc: string | null
           bio: string | null
           cover_image_url: string | null
           created_at: string | null
           email: string
+          encrypted_pan: string | null
           full_name: string
           id: string
           is_public_featured: boolean | null
+          kyc_rejection_reason: string | null
+          kyc_status: string
+          kyc_updated_at: string | null
+          pan_masked: string | null
           pan_no: string | null
           pan_photo_url: string | null
+          payout_vendor_id: string | null
           phone: string | null
           preferred_trading_hours: string | null
           profile_photo_url: string | null
@@ -1743,10 +1798,21 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      admin_list_awaiting_kyc_advisors: {
+        Args: never
+        Returns: {
+          created_at: string
+          email: string
+          full_name: string
+          id: string
+          kyc_rejection_reason: string
+          kyc_status: string
+          sebi_reg_no: string
+        }[]
+      }
       admin_list_pending_applications: {
         Args: never
         Returns: {
-          aadhaar_number: string | null
           address: string | null
           bio: string | null
           created_at: string
@@ -1801,7 +1867,6 @@ export type Database = {
       admin_list_rejected_applications: {
         Args: never
         Returns: {
-          aadhaar_no: string | null
           bio: string | null
           email: string | null
           full_name: string | null
@@ -1823,6 +1888,10 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      admin_pre_approve_application: {
+        Args: { _app_id: string }
+        Returns: string
       }
       admin_reject_advisor: {
         Args: { _advisor_id: string; _reason: string }
@@ -1858,18 +1927,25 @@ export type Database = {
       get_advisor_full: {
         Args: { _advisor_id: string }
         Returns: {
-          aadhaar_no: string | null
-          aadhaar_photo_url: string | null
           address: string | null
+          bank_account_holder_name: string | null
+          bank_account_number: string | null
+          bank_ifsc: string | null
           bio: string | null
           cover_image_url: string | null
           created_at: string | null
           email: string
+          encrypted_pan: string | null
           full_name: string
           id: string
           is_public_featured: boolean | null
+          kyc_rejection_reason: string | null
+          kyc_status: string
+          kyc_updated_at: string | null
+          pan_masked: string | null
           pan_no: string | null
           pan_photo_url: string | null
+          payout_vendor_id: string | null
           phone: string | null
           preferred_trading_hours: string | null
           profile_photo_url: string | null
@@ -1894,18 +1970,25 @@ export type Database = {
       get_advisor_full_by_user: {
         Args: { _user_id: string }
         Returns: {
-          aadhaar_no: string | null
-          aadhaar_photo_url: string | null
           address: string | null
+          bank_account_holder_name: string | null
+          bank_account_number: string | null
+          bank_ifsc: string | null
           bio: string | null
           cover_image_url: string | null
           created_at: string | null
           email: string
+          encrypted_pan: string | null
           full_name: string
           id: string
           is_public_featured: boolean | null
+          kyc_rejection_reason: string | null
+          kyc_status: string
+          kyc_updated_at: string | null
+          pan_masked: string | null
           pan_no: string | null
           pan_photo_url: string | null
+          payout_vendor_id: string | null
           phone: string | null
           preferred_trading_hours: string | null
           profile_photo_url: string | null
@@ -2044,6 +2127,7 @@ export type Database = {
           read_ct: number
         }[]
       }
+      scrub_stale_kyc: { Args: never; Returns: number }
     }
     Enums: {
       course_review_status: "pending_review" | "approved" | "rejected" | "draft"
