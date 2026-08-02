@@ -37,17 +37,17 @@ export const UPLOAD_RULES: Record<UploadKind, UploadRules> = {
     label: 'PDF up to 50MB',
   },
   video: {
-    exts: ['mp4', 'webm', 'mov'],
-    mimes: ['video/mp4', 'video/webm', 'video/quicktime'],
+    exts: ['mp4', 'm4v', 'webm', 'mov'],
+    mimes: ['video/mp4', 'video/x-m4v', 'video/webm', 'video/quicktime'],
     maxBytes: 500 * MB,
-    label: 'MP4, WEBM or MOV up to 500MB',
+    label: 'MP4, M4V, WEBM or MOV up to 500MB',
   },
   // Course lessons accept either a PDF e-book or a video file
   'course-media': {
-    exts: ['pdf', 'mp4', 'webm', 'mov'],
-    mimes: ['application/pdf', 'video/mp4', 'video/webm', 'video/quicktime'],
+    exts: ['pdf', 'mp4', 'm4v', 'webm', 'mov'],
+    mimes: ['application/pdf', 'video/mp4', 'video/x-m4v', 'video/webm', 'video/quicktime'],
     maxBytes: 500 * MB,
-    label: 'PDF (50MB) or MP4/WEBM/MOV video (500MB)',
+    label: 'PDF (50MB) or MP4/M4V/WEBM/MOV video (500MB)',
   },
 };
 
@@ -120,7 +120,10 @@ export async function checkUpload(file: File, kind: UploadKind): Promise<UploadC
     return fail(`Unsupported file type ".${rawExt || 'unknown'}". Allowed: ${rules.label}.`);
   }
   const declaredMime = (file.type || '').toLowerCase();
-  if (declaredMime && !rules.mimes.includes(declaredMime)) {
+  // Mobile pickers sometimes report a genuine MP4/M4V as a generic binary.
+  // Treat the declaration only as a hint in that case; magic bytes below remain mandatory.
+  const genericMime = declaredMime === 'application/octet-stream' || declaredMime === 'binary/octet-stream';
+  if (declaredMime && !genericMime && !rules.mimes.includes(declaredMime)) {
     return fail(`Unsupported file type "${declaredMime}". Allowed: ${rules.label}.`);
   }
   if (declaredMime.includes('svg') || rawExt === 'svg') {
@@ -139,7 +142,9 @@ export async function checkUpload(file: File, kind: UploadKind): Promise<UploadC
   if (!detected || !rules.mimes.includes(detected)) {
     return fail('File contents do not match its extension. Upload a genuine image, PDF or video file.');
   }
-  if (declaredMime && detected !== declaredMime && !(detected === 'video/mp4' && declaredMime === 'video/quicktime')) {
+  const compatibleIsoVideoMime = detected === 'video/mp4'
+    && ['video/mp4', 'video/x-m4v', 'video/quicktime'].includes(declaredMime);
+  if (declaredMime && !genericMime && detected !== declaredMime && !compatibleIsoVideoMime) {
     return fail('File contents do not match its extension. Upload rejected.');
   }
 
@@ -173,5 +178,6 @@ export async function checkUpload(file: File, kind: UploadKind): Promise<UploadC
 
 /** Convenience accept attribute for <input type="file"> */
 export function acceptFor(kind: UploadKind): string {
-  return UPLOAD_RULES[kind].mimes.join(',');
+  const rules = UPLOAD_RULES[kind];
+  return [...rules.mimes, ...rules.exts.map((ext) => `.${ext}`)].join(',');
 }

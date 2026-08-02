@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2, Upload } from 'lucide-react';
-import { acceptFor, UPLOAD_RULES } from '@/lib/uploadGuard';
+import { acceptFor, checkUpload, UPLOAD_RULES } from '@/lib/uploadGuard';
 
 export type LessonDraft = { title: string; duration: string; file: File };
 
@@ -23,19 +23,46 @@ export default function LessonUploader({
   const [title, setTitle] = useState('');
   const [duration, setDuration] = useState('');
   const [file, setFile] = useState<File | null>(null);
+  const [fileError, setFileError] = useState<string | null>(null);
+  const [checking, setChecking] = useState(false);
   const [busy, setBusy] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   const submit = async () => {
     if (!file) return;
     setBusy(true);
-    const ok = await onUpload({ title, duration, file });
-    setBusy(false);
-    if (ok) {
-      setTitle('');
-      setDuration('');
-      setFile(null);
+    try {
+      const ok = await onUpload({ title, duration, file });
+      if (ok) {
+        setTitle('');
+        setDuration('');
+        setFile(null);
+        setFileError(null);
+        if (fileRef.current) fileRef.current.value = '';
+      }
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const selectFile = async (nextFile: File | null) => {
+    setFile(null);
+    setFileError(null);
+    if (!nextFile) return;
+    setChecking(true);
+    try {
+      const check = await checkUpload(nextFile, 'course-media');
+      if (!check.ok) {
+        setFileError(check.error ?? 'This file cannot be uploaded.');
+        if (fileRef.current) fileRef.current.value = '';
+        return;
+      }
+      setFile(nextFile);
+    } catch {
+      setFileError('Could not read this file. Try exporting it as MP4, M4V, WEBM, MOV, or PDF.');
       if (fileRef.current) fileRef.current.value = '';
+    } finally {
+      setChecking(false);
     }
   };
 
@@ -74,22 +101,27 @@ export default function LessonUploader({
           </div>
         </div>
         <div>
-          <Label className="text-[12px] font-semibold">Video (MP4) or PDF</Label>
+          <Label className="text-[12px] font-semibold">Lesson file</Label>
           <Input
             ref={fileRef}
             type="file"
             accept={acceptFor('course-media')}
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            onChange={(e) => { void selectFile(e.target.files?.[0] ?? null); }}
+            disabled={busy || checking}
             className="mt-1.5 h-11 rounded-xl"
           />
           <p className="mt-1.5 text-[11.5px] text-muted-foreground">
             {UPLOAD_RULES['course-media'].label}. Every file is scanned for scripts and disguised executables.
           </p>
+          {checking && <p className="mt-1.5 text-[11.5px] font-semibold text-muted-foreground">Checking file…</p>}
+          {fileError && <p role="alert" className="mt-1.5 text-[11.5px] font-semibold text-destructive">{fileError}</p>}
           {file && (
-            <p className="mt-1 truncate text-[11.5px] font-semibold text-foreground">Selected: {file.name}</p>
+            <p className="mt-1 truncate text-[11.5px] font-semibold text-foreground">
+              Selected: {file.name} · {(file.size / (1024 * 1024)).toFixed(1)}MB
+            </p>
           )}
         </div>
-        <Button type="button" className="h-11 w-full rounded-xl" disabled={busy || !file} onClick={submit}>
+        <Button type="button" className="h-11 w-full rounded-xl" disabled={busy || checking || !file} onClick={submit}>
           {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
           {busy ? 'Uploading' : 'Upload lesson'}
         </Button>
