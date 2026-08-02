@@ -142,20 +142,20 @@ export default function Profile() {
 
   const handleAdvisorImageUpload = async (file: File | undefined, type: 'avatar' | 'cover') => {
     if (!file || !advisor || !user) return;
-    if (file.size > 5 * 1024 * 1024) { toast.error('Max file size is 5MB'); return; }
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) { toast.error('Only JPG, PNG, WEBP allowed'); return; }
+    const check = await checkUpload(file, 'image');
+    if (!check.ok) { toast.error(check.error!); return; }
 
     setUploadingAdvisorImage(type);
     const bucket = type === 'avatar' ? 'advisor-avatars' : 'advisor-covers';
     const column = type === 'avatar' ? 'profile_photo_url' : 'cover_image_url';
-    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-    const path = `${user.id}/${type}.${ext}`;
+    const path = `${user.id}/${type}.${check.ext}`;
 
     const { data: uploadData, error: uploadError } = await supabase.storage.from(bucket).upload(path, file, {
       cacheControl: '3600',
       upsert: true,
-      contentType: file.type,
+      contentType: check.detected ?? file.type,
     });
+
 
     if (uploadError) {
       toast.error(uploadError.message || 'Image upload failed');
