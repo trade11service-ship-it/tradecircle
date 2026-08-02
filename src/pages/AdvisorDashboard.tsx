@@ -413,17 +413,18 @@ export default function AdvisorDashboard() {
   if (loading) return <div className="min-h-full h-full bg-background"><div className="flex items-center justify-center py-20"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div></div>;
   if (!advisor) return <div className="min-h-full h-full bg-background"><div className="py-20 text-center text-muted-foreground">No advisor profile found.</div></div>;
 
-  if (advisor.status === 'pending') return (
+  if (advisor.status === 'pending' || advisor.status === 'pending_offline_review') return (
     <div className="min-h-full h-full flex flex-col bg-background">
       <div className="flex-1 flex items-center justify-center px-4">
         <div className="tc-card-static p-8 text-center max-w-md">
           <span className="tc-badge-pending">Pending Review</span>
           <h2 className="mt-4 text-xl font-bold">Your application is under review</h2>
-          <p className="mt-2 text-muted-foreground">We'll notify you once your SEBI verification is complete.</p>
+          <p className="mt-2 text-muted-foreground">Our compliance team verifies your SEBI registration manually. We'll notify you the moment you're pre-approved.</p>
         </div>
       </div>
     </div>
   );
+
 
   if (advisor.status === 'rejected') return (
     <div className="min-h-full h-full flex flex-col bg-background">
