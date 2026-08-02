@@ -255,11 +255,13 @@ export default function AdvisorDashboard() {
     if (!advisor) return;
     let dpUrl = '';
     if (groupDp) {
-      const ext = groupDp.name.split('.').pop();
-      const path = `${advisor.id}/${Date.now()}.${ext}`;
-      const { data, error: uploadErr } = await supabase.storage.from('group-media').upload(path, groupDp, { upsert: true });
+      const check = await checkUpload(groupDp, 'image');
+      if (!check.ok) { toast.error(check.error!); return; }
+      const path = `${advisor.id}/${Date.now()}.${check.ext}`;
+      const { data, error: uploadErr } = await supabase.storage.from('group-media').upload(path, groupDp, { upsert: true, contentType: check.detected ?? groupDp.type });
       if (uploadErr) { toast.error('Group photo upload failed: ' + uploadErr.message); return; }
       if (data) dpUrl = supabase.storage.from('group-media').getPublicUrl(data.path).data.publicUrl;
+
     }
     const cleanPrice = Math.max(0, Math.floor(Number(String(groupForm.monthlyPrice).replace(/\D/g, '')) || 0));
     if (cleanPrice <= 0) { toast.error('Please enter a valid monthly price in whole rupees'); return; }
