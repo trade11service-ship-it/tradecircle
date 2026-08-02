@@ -542,6 +542,111 @@ export default function CreatorStudio() {
         ))}
       </div>
 
+      {/* Overview — creator dashboard */}
+      {tab === 'overview' && (() => {
+        const live = courses.filter((c) => c.review_status === 'approved' && c.is_visible).length;
+        const approved = courses.filter((c) => c.review_status === 'approved').length;
+        const inReview = courses.filter((c) => c.review_status === 'pending_review').length;
+        const drafts = courses.filter((c) => c.review_status === 'draft').length;
+        const rejected = courses.filter((c) => c.review_status === 'rejected').length;
+
+        const kycBanner =
+          creator.kyc_status === 'approved'
+            ? { tone: 'emerald', icon: BadgeCheck, title: 'Payouts verified', body: `Settlements run weekly${creator.pan_masked ? ` · PAN ${creator.pan_masked}` : ''}.`, cta: null as null | { label: string; onClick: () => void } }
+            : creator.kyc_status === 'rejected'
+              ? { tone: 'destructive', icon: XCircle, title: 'Payout verification rejected', body: creator.rejection_reason || 'Re-submit your PAN and bank details.', cta: { label: 'Retry verification', onClick: () => setTab('payouts') } }
+              : approved > 0
+                ? { tone: 'amber', icon: ShieldCheck, title: 'Verify your payout details', body: 'A course of yours is approved. Verify PAN + bank to start receiving money.', cta: { label: 'Verify payouts', onClick: () => setTab('payouts') } }
+                : { tone: 'slate', icon: Clock, title: 'Payout verification locks until your first course is approved', body: 'Upload a course and submit it for review. Once our team approves it, PAN + bank verification unlocks here.', cta: { label: 'Create a course', onClick: () => setTab('upload') } };
+
+        const toneClass: Record<string, string> = {
+          emerald: 'border-emerald/30 bg-emerald/5 text-emerald',
+          amber: 'border-amber-500/30 bg-amber-500/5 text-amber-700',
+          destructive: 'border-destructive/30 bg-destructive/5 text-destructive',
+          slate: 'border-border bg-muted/30 text-muted-foreground',
+        };
+
+        return (
+          <div className="mt-4 space-y-4">
+            {/* KYC / next-step banner */}
+            <div className={`rounded-2xl border p-4 ${toneClass[kycBanner.tone]}`}>
+              <div className="flex flex-wrap items-start gap-3">
+                <kycBanner.icon className="mt-0.5 h-5 w-5 shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13.5px] font-extrabold">{kycBanner.title}</p>
+                  <p className="mt-0.5 text-[12.5px] opacity-90">{kycBanner.body}</p>
+                </div>
+                {kycBanner.cta && (
+                  <Button size="sm" className="rounded-lg" onClick={kycBanner.cta.onClick}>{kycBanner.cta.label}</Button>
+                )}
+              </div>
+            </div>
+
+            {/* Stats */}
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+              {[
+                { label: 'Courses', value: String(courses.length), icon: BookOpen },
+                { label: 'Live on marketplace', value: String(live), icon: BadgeCheck },
+                { label: 'Under review', value: String(inReview), icon: Clock },
+                { label: 'Drafts', value: String(drafts), icon: Upload },
+                { label: 'Students', value: String(sales.count), icon: Users },
+                { label: 'Gross sales', value: formatINR(sales.gross), icon: IndianRupee },
+                { label: 'Net earnings', value: formatINR(netEarnings), icon: Wallet },
+                { label: 'Awaiting settlement', value: formatINR(pendingPayout), icon: Clock },
+              ].map((s) => (
+                <div key={s.label} className="rounded-2xl border border-border bg-card p-3.5">
+                  <div className="flex items-center gap-1.5 text-muted-foreground">
+                    <s.icon className="h-3.5 w-3.5" />
+                    <p className="text-[10.5px] font-bold uppercase tracking-wide">{s.label}</p>
+                  </div>
+                  <p className="mt-1.5 text-[19px] font-extrabold leading-none text-foreground">{s.value}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Quick actions */}
+            <div className="rounded-2xl border border-border bg-card p-4">
+              <p className="text-[13px] font-extrabold text-foreground">Quick actions</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button size="sm" className="rounded-lg" onClick={() => setTab('upload')}>
+                  <Plus className="mr-1.5 h-3.5 w-3.5" /> New course
+                </Button>
+                <Button size="sm" variant="outline" className="rounded-lg" onClick={() => setTab('courses')}>
+                  <Upload className="mr-1.5 h-3.5 w-3.5" /> Manage lessons
+                </Button>
+                <Button size="sm" variant="outline" className="rounded-lg" onClick={() => setTab('payouts')}>
+                  <Wallet className="mr-1.5 h-3.5 w-3.5" /> Earnings & payouts
+                </Button>
+              </div>
+              {rejected > 0 && (
+                <p className="mt-3 flex gap-2 text-[12px] text-destructive">
+                  <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                  {rejected} course{rejected === 1 ? '' : 's'} rejected — open <b>My courses</b> to fix and resubmit.
+                </p>
+              )}
+            </div>
+
+            {/* Recent settlements */}
+            <div className="rounded-2xl border border-border bg-card p-4">
+              <p className="text-[13px] font-extrabold text-foreground">Recent settlements</p>
+              {ledger.length === 0 ? (
+                <p className="mt-2 text-[12.5px] text-muted-foreground">No sales settled yet. Earnings appear here after your first purchase.</p>
+              ) : (
+                <ul className="mt-3 divide-y divide-border">
+                  {ledger.slice(0, 5).map((l) => (
+                    <li key={l.id} className="flex items-center justify-between gap-3 py-2">
+                      <span className="text-[12.5px] text-muted-foreground">{new Date(l.created_at).toLocaleDateString('en-IN')}</span>
+                      <span className="text-[13px] font-bold text-foreground">{formatINR(Number(l.amount))}</span>
+                      <span className="text-[10.5px] font-bold uppercase tracking-wide text-muted-foreground">{l.status}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* Courses */}
       {tab === 'courses' && (
         <div className="mt-4 space-y-4">
