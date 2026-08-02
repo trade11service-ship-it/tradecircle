@@ -217,7 +217,7 @@ export default function AdminDashboard() {
       phone: a.phone,
       sebi_reg_no: a.sebi_number,
       pan_no: a.pan_number,
-      aadhaar_no: a.aadhaar_number,
+      
       address: a.address,
       bio: a.bio,
       strategy_type: a.strategy_type,
@@ -250,9 +250,11 @@ export default function AdminDashboard() {
     try {
       const appId = (advisor as any)._app_id;
       if (appId) {
-        // New intake flow: promote application -> advisors, scrub Aadhaar
-        const { error } = await (supabase as any).rpc('admin_approve_application', { _app_id: appId });
+        // Offline-first flow: manual SEBI check done → pre-approve.
+        // Advisor then completes PAN + bank verification from their dashboard.
+        const { error } = await (supabase as any).rpc('admin_pre_approve_application', { _app_id: appId });
         if (error) throw error;
+        toast.success(`${advisor.full_name} pre-approved. They can now complete PAN & bank verification.`);
       } else {
         // Legacy fallback (advisor row already exists)
         const { error: advisorError } = await supabase
@@ -261,21 +263,18 @@ export default function AdminDashboard() {
         const { error: profileError } = await supabase
           .from('profiles').update({ role: 'advisor' }).eq('id', advisor.user_id);
         if (profileError) throw profileError;
+        toast.success(`${advisor.full_name} approved!`);
       }
 
-      // Welcome email is enqueued + dispatched by admin_approve_application RPC
-      // (writes email_send_log + triggers send-advisor-approval-email server-side).
-
-
-      toast.success(`${advisor.full_name} approved! Email sent.`);
       fetchData();
     } catch (err) {
-      toast.error((err as Error).message || 'Failed to approve advisor');
+      toast.error((err as Error).message || 'Failed to pre-approve advisor');
       console.error(err);
     } finally {
       setApprovingAdvisorId(null);
     }
   };
+
 
   const rejectAdvisor = async (advisor: Advisor, reason: string) => {
     setRejectingAdvisorId(advisor.id);
@@ -778,7 +777,7 @@ export default function AdminDashboard() {
                         </div>
                         <div className="flex gap-2">
                           <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg px-4 text-[13px] font-semibold" onClick={() => approveAdvisor(a)} disabled={approvingAdvisorId === a.id}>
-                            {approvingAdvisorId === a.id ? 'Approving...' : 'Approve'}
+                            {approvingAdvisorId === a.id ? 'Working...' : 'Pre-Approve'}
                           </Button>
                           <Button size="sm" variant="outline" className="rounded-lg px-4 text-[13px] font-semibold" onClick={() => { setSelectedAdvisorForView(a); setViewApplicationModalOpen(true); }}>View Application</Button>
                         </div>
@@ -907,7 +906,7 @@ export default function AdminDashboard() {
                       {[
                         { label: 'Email', value: a.email },
                         { label: 'Phone', value: a.phone || '-' },
-                        { label: 'Aadhaar No', value: a.aadhaar_no ? `••••••••${a.aadhaar_no.slice(-4)}` : '-' },
+                        { label: 'SEBI Reg No', value: a.sebi_reg_no || '-' },
                         { label: 'PAN No', value: a.pan_no || '-' },
                         { label: 'Strategy', value: a.strategy_type || '-' },
                         { label: 'Address', value: a.address || '-' },
@@ -921,7 +920,7 @@ export default function AdminDashboard() {
                     {a.bio && <div className="rounded-xl bg-muted p-3"><p className="text-[11px] text-muted-foreground font-semibold uppercase">Bio</p><p className="text-[14px] text-foreground mt-0.5">{a.bio}</p></div>}
                     <div className="flex gap-2 items-end flex-wrap">
                       <Button onClick={() => approveAdvisor(a)} className="bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg" disabled={approvingAdvisorId === a.id}>
-                        {approvingAdvisorId === a.id ? 'Approving...' : '✓ Approve'}
+                        {approvingAdvisorId === a.id ? 'Working...' : '✓ Pre-Approve (SEBI verified offline)'}
                       </Button>
                       <Button className="bg-red-600 hover:bg-red-700 text-white font-semibold rounded-lg" onClick={() => { setSelectedAdvisorForReject(a); setRejectModalOpen(true); }} disabled={rejectingAdvisorId === a.id}>
                         {rejectingAdvisorId === a.id ? 'Rejecting...' : '✕ Reject'}

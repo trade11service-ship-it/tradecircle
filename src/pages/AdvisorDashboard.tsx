@@ -8,6 +8,7 @@ import { ReferralLinkCard } from '@/components/ReferralLinkCard';
 import { ReferralStatsTab } from '@/components/ReferralStatsTab';
 import { ComplianceLogTab } from '@/components/advisor/ComplianceLogTab';
 import { GroupPaymentSettings } from '@/components/advisor/GroupPaymentSettings';
+import { AdvisorKycTab } from '@/components/advisor/AdvisorKycTab';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,7 +42,7 @@ export default function AdvisorDashboard() {
   const [signals, setSignals] = useState<Signal[]>([]);
   const [dailyEarnings, setDailyEarnings] = useState<DailyEarning[]>([]);
   const [earningsSummary, setEarningsSummary] = useState<any>(null);
-  const [tab, setTab] = useState<'groups' | 'post' | 'signals_history' | 'subscribers' | 'revenue' | 'referrals' | 'compliance' | 'profile'>('groups');
+  const [tab, setTab] = useState<'groups' | 'post' | 'signals_history' | 'subscribers' | 'revenue' | 'referrals' | 'compliance' | 'profile' | 'kyc'>('groups');
   const [loading, setLoading] = useState(true);
   const [groupForm, setGroupForm] = useState({ name: '', description: '', monthlyPrice: '', strategyCategory: 'All' });
   const [groupDp, setGroupDp] = useState<File | null>(null);
@@ -203,7 +204,7 @@ export default function AdvisorDashboard() {
     const { data: advList, error: advError } = await (supabase as any).rpc('get_advisor_full_by_user', { _user_id: user!.id });
     if (advError) console.error('Advisor fetch error:', advError);
     const list: any[] = Array.isArray(advList) ? advList : [];
-    const adv = list.find((a: any) => a.status === 'approved') || list[0] || null;
+    const adv = list.find((a: any) => a.status === 'approved') || list.find((a: any) => a.status === 'pre_approved') || list[0] || null;
     setAdvisor(adv);
     if (adv) {
       setProfileForm({
@@ -413,17 +414,18 @@ export default function AdvisorDashboard() {
   if (loading) return <div className="min-h-full h-full bg-background"><div className="flex items-center justify-center py-20"><div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent" /></div></div>;
   if (!advisor) return <div className="min-h-full h-full bg-background"><div className="py-20 text-center text-muted-foreground">No advisor profile found.</div></div>;
 
-  if (advisor.status === 'pending') return (
+  if (advisor.status === 'pending' || advisor.status === 'pending_offline_review') return (
     <div className="min-h-full h-full flex flex-col bg-background">
       <div className="flex-1 flex items-center justify-center px-4">
         <div className="tc-card-static p-8 text-center max-w-md">
           <span className="tc-badge-pending">Pending Review</span>
           <h2 className="mt-4 text-xl font-bold">Your application is under review</h2>
-          <p className="mt-2 text-muted-foreground">We'll notify you once your SEBI verification is complete.</p>
+          <p className="mt-2 text-muted-foreground">Our compliance team verifies your SEBI registration manually. We'll notify you the moment you're pre-approved.</p>
         </div>
       </div>
     </div>
   );
+
 
   if (advisor.status === 'rejected') return (
     <div className="min-h-full h-full flex flex-col bg-background">
@@ -481,7 +483,10 @@ export default function AdvisorDashboard() {
     return <Clock className="h-4 w-4 text-muted-foreground" />;
   };
 
+  const kycApproved = (advisor as any).kyc_status === 'approved';
+
   const tabs = [
+    ...(!kycApproved ? [{ key: 'kyc' as const, label: 'Verification', icon: Shield }] : []),
     { key: 'groups' as const, label: 'Groups', icon: BarChart3 },
     { key: 'post' as const, label: 'Post', icon: Radio },
     { key: 'signals_history' as const, label: 'My Signals', icon: TrendingUp },
@@ -492,6 +497,7 @@ export default function AdvisorDashboard() {
     { key: 'profile' as const, label: 'Profile', icon: UserCircle },
   ];
 
+
   const tabPathMap: Record<typeof tab, string> = {
     groups: '/advisor/dashboard/groups',
     post: '/advisor/dashboard/post',
@@ -501,6 +507,7 @@ export default function AdvisorDashboard() {
     referrals: '/advisor/dashboard',
     compliance: '/advisor/dashboard',
     profile: '/advisor/dashboard',
+    kyc: '/advisor/dashboard',
   };
 
 
@@ -530,7 +537,7 @@ export default function AdvisorDashboard() {
                 <Globe className="h-3.5 w-3.5" /> Website
               </a>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-white text-primary px-3.5 h-9 text-[12px] font-bold shadow-md">
-                ✓ Approved & Active
+                {kycApproved ? '✓ Approved & Active' : '● Pre-Approved · Verification pending'}
               </span>
             </>
           }
@@ -559,15 +566,34 @@ export default function AdvisorDashboard() {
           ))}
         </div>
 
+        {/* VERIFICATION (DEFERRED KYC) TAB */}
+        {tab === 'kyc' && (
+          <AdvisorKycTab advisor={advisor} onVerified={() => { fetchData(); setTab('groups'); }} />
+        )}
+
         {/* GROUPS TAB */}
         {tab === 'groups' && (
           <div>
+            {!kycApproved && (
+              <div className="mb-4 flex flex-col gap-3 rounded-2xl border-[1.5px] border-amber-300 bg-amber-50 p-5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-start gap-3">
+                  <Lock className="h-5 w-5 text-amber-700 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-[14px] font-bold text-amber-900">Your profile is pre-approved!</p>
+                    <p className="text-[13px] text-amber-800">Complete PAN &amp; Bank verification to unlock Group Creation.</p>
+                  </div>
+                </div>
+                <Button onClick={() => setTab('kyc')} className="font-semibold shrink-0">Complete Verification</Button>
+              </div>
+            )}
             <button
-              onClick={() => setShowGroupForm(!showGroupForm)}
-              className="mb-4 flex items-center gap-2 rounded-[10px] bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground"
+              onClick={() => kycApproved ? setShowGroupForm(!showGroupForm) : setTab('kyc')}
+              disabled={!kycApproved}
+              className="mb-4 flex items-center gap-2 rounded-[10px] bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Plus className="h-4 w-4" /> Create New Group
             </button>
+
             {showGroupForm && (
               <div className="mb-6 rounded-2xl border-[1.5px] border-border bg-card p-6 space-y-4 shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
                 <div><Label className="text-xs font-bold uppercase tracking-wider text-[hsl(var(--small-text))]">Group Name</Label><Input value={groupForm.name} onChange={e => setGroupForm({ ...groupForm, name: e.target.value })} className="mt-1.5" /></div>
