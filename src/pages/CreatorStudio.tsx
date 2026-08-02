@@ -288,11 +288,28 @@ export default function CreatorStudio() {
       return;
     }
     const cleanTitle = sanitizeText(moduleTitle) || moduleFile.name.replace(/\.[^.]+$/, '');
+    const check = await checkUpload(moduleFile, 'course-media');
+    if (!check.ok) {
+      toast({ title: 'File rejected', description: check.error, variant: 'destructive' });
+      return;
+    }
+    const isPdf = check.detected === 'application/pdf';
+    if (isPdf && moduleFile.size > UPLOAD_RULES.pdf.maxBytes) {
+      toast({ title: 'PDF too large', description: 'E-books must be under 50MB.', variant: 'destructive' });
+      return;
+    }
     setUploading(true);
-    const isPdf = moduleFile.type === 'application/pdf' || moduleFile.name.toLowerCase().endsWith('.pdf');
-    const ext = moduleFile.name.split('.').pop() ?? (isPdf ? 'pdf' : 'mp4');
-    const path = `${creator.id}/${uploadCourseId}/${crypto.randomUUID()}.${ext}`;
-    const { error: upErr } = await supabase.storage.from('courses-content').upload(path, moduleFile, { upsert: false });
+    const { data: liveCreator } = await supabase
+      .from('creator_profiles')
+      .select('id')
+      .eq('user_id', user!.id)
+      .maybeSingle();
+    const creatorId = (liveCreator as { id: string } | null)?.id ?? creator.id;
+    const path = `${creatorId}/${uploadCourseId}/${crypto.randomUUID()}.${check.ext}`;
+    const { error: upErr } = await supabase.storage
+      .from('courses-content')
+      .upload(path, moduleFile, { upsert: false, contentType: check.detected ?? moduleFile.type });
+
     if (upErr) {
       setUploading(false);
       toast({ title: 'Upload failed', description: upErr.message, variant: 'destructive' });
