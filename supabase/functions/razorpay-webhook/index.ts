@@ -45,16 +45,16 @@ Deno.serve(async (req) => {
       const signature = req.headers.get('x-razorpay-signature') || '';
       const webhookSecret = Deno.env.get('RAZORPAY_WEBHOOK_SECRET');
 
-      // Enforce signature when secret is configured. If missing, we still process but log loudly
-      // so the operator notices (production must set RAZORPAY_WEBHOOK_SECRET).
-      if (webhookSecret) {
-        const ok = await verifyRazorpaySignature(rawBody, signature, webhookSecret);
-        if (!ok) {
-          console.error('Razorpay webhook signature verification FAILED');
-          return new Response(JSON.stringify({ error: 'invalid_signature' }), { status: 401, headers: corsHeaders });
-        }
-      } else {
-        console.warn('RAZORPAY_WEBHOOK_SECRET not configured — webhook is accepting unverified requests');
+      // Fail closed: an unsigned payment webhook would let anyone mint paid
+      // subscriptions, so a missing secret rejects the request outright.
+      if (!webhookSecret) {
+        console.error('RAZORPAY_WEBHOOK_SECRET is not configured — rejecting webhook');
+        return new Response(JSON.stringify({ error: 'webhook_not_configured' }), { status: 503, headers: corsHeaders });
+      }
+      const ok = await verifyRazorpaySignature(rawBody, signature, webhookSecret);
+      if (!ok) {
+        console.error('Razorpay webhook signature verification FAILED');
+        return new Response(JSON.stringify({ error: 'invalid_signature' }), { status: 401, headers: corsHeaders });
       }
 
       const body = JSON.parse(rawBody);
