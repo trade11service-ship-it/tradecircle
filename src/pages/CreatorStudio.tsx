@@ -267,6 +267,8 @@ export default function CreatorStudio() {
         price: Math.max(0, parseInt(price.replace(/[^\d]/g, ''), 10) || 0),
         course_type: courseType,
         cover_image_url: coverUrl,
+        review_status: 'draft',
+        is_visible: false,
         platform_commission_percent: PLATFORM_COMMISSION_PERCENT,
       })
       .select('*')
@@ -277,10 +279,11 @@ export default function CreatorStudio() {
       return;
     }
     setCourses((prev) => [data as Course, ...prev]);
-    setUploadCourseId((data as Course).id);
+    setLessonPanelId((data as Course).id);
     setTitle(''); setDescription(''); setCoverFile(null); setEduConfirm(false);
     toast({ title: 'Draft created', description: 'Now upload lessons, then submit for review.' });
     setTab('courses');
+
   };
 
   const uploadModule = async (courseId: string, draft: LessonDraft): Promise<boolean> => {
