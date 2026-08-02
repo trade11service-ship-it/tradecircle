@@ -17,6 +17,7 @@ import {
   splitAmount,
 } from '@/lib/courses';
 import { sanitizeAlphanumeric, sanitizeName, sanitizeText, sanitizeTextarea } from '@/lib/sanitize';
+import { acceptFor, checkUpload, UPLOAD_RULES } from '@/lib/uploadGuard';
 import { setMetaTags } from '@/lib/seo';
 import {
   AlertTriangle,
@@ -225,11 +226,27 @@ export default function CreatorStudio() {
     if (!eduConfirm) { toast({ title: 'Confirm the education-only declaration', variant: 'destructive' }); return; }
 
     setCreating(true);
+
+    // Always re-resolve the creator row so storage policies see a live id
+    const { data: liveCreator } = await supabase
+      .from('creator_profiles')
+      .select('id')
+      .eq('user_id', user!.id)
+      .maybeSingle();
+    const creatorId = (liveCreator as { id: string } | null)?.id ?? creator.id;
+
     let coverUrl: string | null = null;
     if (coverFile) {
-      const ext = coverFile.name.split('.').pop() ?? 'jpg';
-      const path = `course-covers/${creator.id}/${crypto.randomUUID()}.${ext}`;
-      const { error: upErr } = await supabase.storage.from('group-media').upload(path, coverFile, { upsert: true });
+      const check = await checkUpload(coverFile, 'image');
+      if (!check.ok) {
+        setCreating(false);
+        toast({ title: 'Cover rejected', description: check.error, variant: 'destructive' });
+        return;
+      }
+      const path = `course-covers/${creatorId}/${crypto.randomUUID()}.${check.ext}`;
+      const { error: upErr } = await supabase.storage
+        .from('group-media')
+        .upload(path, coverFile, { upsert: false, contentType: check.detected ?? coverFile.type });
       if (upErr) {
         setCreating(false);
         toast({ title: 'Cover upload failed', description: upErr.message, variant: 'destructive' });
@@ -237,6 +254,7 @@ export default function CreatorStudio() {
       }
       coverUrl = supabase.storage.from('group-media').getPublicUrl(path).data.publicUrl;
     }
+
 
     const { data, error } = await supabase
       .from('courses')
@@ -270,11 +288,28 @@ export default function CreatorStudio() {
       return;
     }
     const cleanTitle = sanitizeText(moduleTitle) || moduleFile.name.replace(/\.[^.]+$/, '');
+    const check = await checkUpload(moduleFile, 'course-media');
+    if (!check.ok) {
+      toast({ title: 'File rejected', description: check.error, variant: 'destructive' });
+      return;
+    }
+    const isPdf = check.detected === 'application/pdf';
+    if (isPdf && moduleFile.size > UPLOAD_RULES.pdf.maxBytes) {
+      toast({ title: 'PDF too large', description: 'E-books must be under 50MB.', variant: 'destructive' });
+      return;
+    }
     setUploading(true);
-    const isPdf = moduleFile.type === 'application/pdf' || moduleFile.name.toLowerCase().endsWith('.pdf');
-    const ext = moduleFile.name.split('.').pop() ?? (isPdf ? 'pdf' : 'mp4');
-    const path = `${creator.id}/${uploadCourseId}/${crypto.randomUUID()}.${ext}`;
-    const { error: upErr } = await supabase.storage.from('courses-content').upload(path, moduleFile, { upsert: false });
+    const { data: liveCreator } = await supabase
+      .from('creator_profiles')
+      .select('id')
+      .eq('user_id', user!.id)
+      .maybeSingle();
+    const creatorId = (liveCreator as { id: string } | null)?.id ?? creator.id;
+    const path = `${creatorId}/${uploadCourseId}/${crypto.randomUUID()}.${check.ext}`;
+    const { error: upErr } = await supabase.storage
+      .from('courses-content')
+      .upload(path, moduleFile, { upsert: false, contentType: check.detected ?? moduleFile.type });
+
     if (upErr) {
       setUploading(false);
       toast({ title: 'Upload failed', description: upErr.message, variant: 'destructive' });
@@ -562,7 +597,8 @@ export default function CreatorStudio() {
               </div>
               <div>
                 <Label className="text-[12.5px] font-semibold">Cover image</Label>
-                <Input type="file" accept="image/*" onChange={(e) => setCoverFile(e.target.files?.[0] ?? null)} className="mt-1.5 h-11 rounded-xl" />
+                <Input type="file" accept={acceptFor('image')} onChange={(e) => setCoverFile(e.target.files?.[0] ?? null)} className="mt-1.5 h-11 rounded-xl" />
+                <p className="mt-1.5 text-[11.5px] text-muted-foreground">{UPLOAD_RULES.image.label}. SVG and script-bearing files are blocked.</p>
               </div>
               <label className="flex cursor-pointer gap-3 rounded-xl border border-border bg-muted/30 p-3">
                 <Checkbox checked={eduConfirm} onCheckedChange={(v) => setEduConfirm(!!v)} className="mt-0.5" />
@@ -601,7 +637,8 @@ export default function CreatorStudio() {
               </div>
               <div>
                 <Label className="text-[12.5px] font-semibold">Video (MP4) or PDF</Label>
-                <Input type="file" accept="video/*,application/pdf" onChange={(e) => setModuleFile(e.target.files?.[0] ?? null)} className="mt-1.5 h-11 rounded-xl" />
+                <Input type="file" accept={acceptFor('course-media')} onChange={(e) => setModuleFile(e.target.files?.[0] ?? null)} className="mt-1.5 h-11 rounded-xl" />
+                <p className="mt-1.5 text-[11.5px] text-muted-foreground">{UPLOAD_RULES['course-media'].label}. Every file is scanned for scripts and disguised executables.</p>
               </div>
               <Button className="h-11 w-full rounded-xl" disabled={uploading} onClick={uploadModule}>
                 {uploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}

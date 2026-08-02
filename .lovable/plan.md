@@ -1,55 +1,48 @@
 ## Goal
 
-Add an Educational Course Marketplace and Creator Studio to RA Circle, fully isolated from the SEBI advisor compliance vault, with an approval-first creator journey, anti-piracy media delivery, and an 80/20 revenue ledger.
+Make Creator Studio uploads (cover image, video lessons, PDF e-books) work reliably, and make every file upload on the platform safe — no scripts, no disguised executables, no oversized or unverified files.
 
-## Creator journey (as decided)
+## 1. Fix the cover-upload RLS failure
 
-```text
-1 Signup ─> 2 Build course ─> 3 Admin review ─> 4 Creator KYC ─> 5 Live + 80/20 split
-  name/email/phone   upload+price+scrub   compliance gate   PAN + penny drop   payouts ledger
-```
+What I verified in the database:
+- `courses-content` and `group-media` both have creator upload policies keyed on `current_creator_id()`, and that function is executable by `authenticated`.
+- `group-media` has **no SELECT policy** on `storage.objects`, and the cover upload is called with `upsert: true`, which makes the storage layer perform a read + conditional update path in addition to the insert.
+- Only one `creator_profiles` row exists, so the failure can also occur when a user reaches the course form before their creator row is committed.
 
-A course only becomes publicly visible when `review_status = 'approved'` AND the creator's `kyc_status = 'approved'`.
+Because the exact trigger is not yet confirmed, step one is to reproduce the upload as a signed-in creator and read the precise policy that rejects it. Then:
 
-## 1. Database
+- Drop `upsert: true` on cover uploads (paths are UUID-based, upsert is never needed) so only the INSERT policy is exercised.
+- Add the missing `storage.objects` SELECT policy for `group-media` (public bucket, so read is already public over HTTP — this just aligns the table policy) and a matching SELECT for creator course covers.
+- Guard the UI: block the cover/lesson upload until a `creator_profiles` row exists, and re-fetch the creator id right before upload instead of trusting stale state.
+- Apply the same reproduction check to `courses-content` lesson uploads (video + PDF) and fix any policy gap found there the same way.
 
-New enums: `course_review_status`, `creator_kyc_status`.
+## 2. Upload safety layer (new `src/lib/uploadGuard.ts`)
 
-New tables (each with GRANTs, RLS enabled, then policies):
-- `creator_profiles` — user_id, full_legal_name, phone, email, `pan_masked`, `encrypted_pan`, bank account/IFSC/holder, `payout_vendor_id`, socials, `kyc_status`, rejection_reason. Sensitive columns (`encrypted_pan`, bank number) readable only by `service_role` via column-level grants; the client reads a masked view.
-- `courses` — creator_id, title, description, price (whole rupees), `platform_commission_percent` default 20, cover_image_url, course_type, `review_status`, rejection_reason, `is_visible`, reviewed_by/at.
-- `course_modules` — course_id, title, content_type (`video` | `pdf_ebook`), `file_storage_path`, sort_order.
-- `course_purchases` — user_id, course_id, total_amount, `creator_payout_amount`, `platform_fee_amount`, payment_status, payment_reference_id, `split_transfer_id`, purchase ip/timestamp.
-- `creator_payout_ledger` — creator_id, purchase_id, amount, status (`accrued` | `paid`), settled_at. This is the real ledger backing the sandbox split.
+A single validator used by every upload site in the app:
 
-Policies: public reads approved+visible courses only; creators manage their own rows; module file paths readable only by purchasers, the owning creator, or admins; purchases readable by buyer, seller creator, and admin; writes to purchases/ledger restricted to `service_role`.
+- **Extension + MIME allowlist**
+  - Images: `jpg, jpeg, png, webp` (`image/*` subset). **SVG is rejected** — it can carry scripts.
+  - Documents: `pdf` only.
+  - Video: `mp4, webm, mov`.
+- **Magic-byte sniffing** — read the first bytes of the file and confirm the real signature matches the claimed type (`%PDF-`, JPEG `FF D8 FF`, PNG signature, WebP `RIFF….WEBP`, MP4/MOV `ftyp`, WebM `1A 45 DF A3`). A `.mp4` that is really a ZIP or an EXE is rejected.
+- **Content scan for text-ish payloads** — reject files whose head contains `<script`, `<?php`, `<!DOCTYPE html`, or `<svg` when an image/PDF was claimed.
+- **PDF active-content check** — reject PDFs containing `/JavaScript`, `/JS`, `/Launch`, `/EmbeddedFile`, or `/OpenAction`.
+- **Size caps** — cover 5 MB, PDF 50 MB, video 500 MB.
+- **Filename sanitisation** — never trust the original name; store as `{uuid}.{validated-ext}` (already the pattern) and keep the display name sanitised through the existing `sanitizeText`.
 
-Storage: new private bucket `courses-content` (videos, PDFs) and reuse a public path for cover images. RLS on `storage.objects` limits uploads to the owning creator's folder; no public reads.
+## 3. Enforce it server-side too
 
-Strict isolation: nothing in this module writes to `compliance_logs`, `client_onboarding`, or `compliance-vault`, and no compliance PDF is generated.
+Client validation can be bypassed, so the same checks are enforced where the file lands:
 
-## 2. Edge functions
+- Set **bucket-level `allowed_mime_types` and `file_size_limit`** on `group-media`, `courses-content`, `advisor-avatars`, `advisor-covers` and `kyc-documents`. Every bucket currently has both unset, so anything of any size gets through today.
+- Extend the existing `course-content-scan` edge function to also verify each module's stored object: fetch its head bytes with the service role, re-run the magic-byte and active-content checks, and refuse to move the course to `pending_review` if a file fails.
 
-- `creator-kyc-verify` — same sandbox adapter pattern as the existing `kyc-verify`: validates PAN format/NSDL stub + bank penny-drop stub, encrypts PAN with the existing `PAN_ENCRYPTION_KEY`, writes only to `creator_profiles`. Refuses to run unless the creator has at least one approved course.
-- `get-course-video-url` — verifies the JWT, confirms a `captured` purchase (or creator/admin ownership), returns a 60-minute signed URL for the private object. Never returns raw paths.
-- `course-checkout-split` — creates the order through the central gateway in sandbox mode, computes 20% platform / 80% creator, writes `course_purchases` and `creator_payout_ledger` rows on capture. Transfer call is stubbed behind a `COURSE_SPLIT_MODE` flag so flipping to live Route later is a one-line change.
-- `course-content-scan` — server-side re-check of banned words on submit, so the client scrubber can't be bypassed.
+## 4. Apply the guard everywhere files are uploaded
 
-## 3. Frontend
-
-Navigation: add **Courses** to the bottom bar / header nav; Creator Studio surfaces in the profile dropdown and as a dashboard tab for users with a `creator_profiles` row.
-
-- `src/pages/Courses.tsx` — marketplace grid with search, category and price filters, cover, creator legal name, type badge, and the mandatory educational-purpose compliance banner.
-- `src/pages/CourseDetail.tsx` — syllabus, price, 20% fee disclosure, Buy button → `course-checkout-split`; owned courses show "Start learning".
-- `src/pages/CreatorStudio.tsx` — three tabs:
-  - **Course Builder** (default first step): title, description, price, type, cover upload, module uploader; live banned-word scrubber over `["guaranteed","100% profit","tips","jackpot","sure shot","daily earnings", ...]` that disables submit and highlights offending terms.
-  - **Identity & Payout** — locked until a course is approved, then unlocked with the "Your course is approved — complete PAN & bank verification" banner; PAN, bank, IFSC, socials; real-time verification state.
-  - **Sales & Earnings** — gross sales, 20% platform commission, 80% net, accrued vs settled ledger, recent transactions table.
-- `src/pages/admin/CourseReview.tsx` (wired into the existing admin shell) — pending queue, in-place preview of video/PDF via signed URLs, the three-point SEBI compliance checklist, Approve / Reject-with-reason.
-- `src/pages/CourseLearn.tsx` + `src/components/SecurePlayerModal.tsx` — HTML5 `<video>` fed by short-lived signed URLs, `controlsList="nodownload"`, context menu disabled; PDF.js canvas renderer with selection/copy/print blocked and a `@media print { body { display: none } }` rule; a shared `DynamicWatermark` overlay drifting `{email} | {phone} | timestamp` to a new random position every 4 seconds, plus a diagonal repeating watermark mesh on PDF pages.
+Creator Studio (cover, lessons), advisor avatar and banner, group display photo, and KYC document upload — all routed through the same `uploadGuard` with the appropriate profile, plus clear inline error messages instead of raw storage errors.
 
 ## Technical notes
 
-- Video is served from private storage with signed URLs (no transcoding). The player and token function are structured so swapping in an HLS provider later touches only `get-course-video-url` and the player source.
-- Payout split is a real ledger with a simulated transfer; no Razorpay Route dependency until your account is approved.
-- All new UI uses the existing Institutional Fintech tokens (navy/emerald/slate) — no new hardcoded colors.
+- Storage policy changes and bucket MIME/size limits go through a database migration; bucket settings use the storage bucket tool, not raw SQL.
+- No changes to the SEBI compliance vault access rules — only its size/type limits are tightened.
+- Verification: sign in as a creator in a headless browser, upload a valid cover + PDF + MP4 (expect success), then attempt an SVG, a renamed `.exe`, and a JavaScript-bearing PDF (expect clean rejections).

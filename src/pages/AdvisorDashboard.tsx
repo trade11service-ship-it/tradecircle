@@ -21,6 +21,7 @@ import { toast } from 'sonner';
 import { BarChart3, Radio, Users, UserCircle, IndianRupee, TrendingUp, Clock, CheckCircle2, XCircle, AlertTriangle, MessageSquare, ImageIcon, X, Globe, Lock, Gift, Plus, Shield, Download, FileSpreadsheet, Pencil } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { sanitizeText, sanitizeTextarea, sanitizeNumeric, sanitizeAlphanumeric, sanitizeName } from '@/lib/sanitize';
+import { acceptFor, checkUpload } from '@/lib/uploadGuard';
 import type { Tables } from '@/integrations/supabase/types';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { DashboardHero } from '@/components/DashboardHero';
@@ -254,11 +255,13 @@ export default function AdvisorDashboard() {
     if (!advisor) return;
     let dpUrl = '';
     if (groupDp) {
-      const ext = groupDp.name.split('.').pop();
-      const path = `${advisor.id}/${Date.now()}.${ext}`;
-      const { data, error: uploadErr } = await supabase.storage.from('group-media').upload(path, groupDp, { upsert: true });
+      const check = await checkUpload(groupDp, 'image');
+      if (!check.ok) { toast.error(check.error!); return; }
+      const path = `${advisor.id}/${Date.now()}.${check.ext}`;
+      const { data, error: uploadErr } = await supabase.storage.from('group-media').upload(path, groupDp, { upsert: true, contentType: check.detected ?? groupDp.type });
       if (uploadErr) { toast.error('Group photo upload failed: ' + uploadErr.message); return; }
       if (data) dpUrl = supabase.storage.from('group-media').getPublicUrl(data.path).data.publicUrl;
+
     }
     const cleanPrice = Math.max(0, Math.floor(Number(String(groupForm.monthlyPrice).replace(/\D/g, '')) || 0));
     if (cleanPrice <= 0) { toast.error('Please enter a valid monthly price in whole rupees'); return; }
@@ -325,12 +328,14 @@ export default function AdvisorDashboard() {
     let imageUrl: string | null = null;
 
     if (messageImage) {
+      const check = await checkUpload(messageImage, 'image');
+      if (!check.ok) { toast.error(check.error!); setPosting(false); return; }
       setUploadProgress(20);
-      const ext = messageImage.name.split('.').pop();
-      const path = `${advisor.id}/${Date.now()}.${ext}`;
+      const path = `${advisor.id}/${Date.now()}.${check.ext}`;
       setUploadProgress(50);
-      const { data, error } = await supabase.storage.from('group-media').upload(path, messageImage);
+      const { data, error } = await supabase.storage.from('group-media').upload(path, messageImage, { contentType: check.detected ?? messageImage.type });
       if (error) { toast.error('Image upload failed'); setPosting(false); setUploadProgress(0); return; }
+
       setUploadProgress(80);
       imageUrl = supabase.storage.from('group-media').getPublicUrl(data.path).data.publicUrl;
       setUploadProgress(100);
@@ -1222,15 +1227,15 @@ export default function AdvisorDashboard() {
                 <label className="absolute top-3 right-3 cursor-pointer inline-flex items-center gap-1.5 bg-black/60 hover:bg-black/80 text-white text-xs font-semibold px-3 py-1.5 rounded-full backdrop-blur transition">
                   <ImageIcon className="h-3.5 w-3.5" />
                   {uploadingCover ? 'Uploading…' : ((advisor as any).cover_image_url ? 'Change banner' : 'Add banner')}
-                  <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" disabled={uploadingCover} onChange={async (e) => {
+                  <input type="file" accept={acceptFor('image')} className="hidden" disabled={uploadingCover} onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file || !user) return;
-                    if (file.size > 5 * 1024 * 1024) { toast.error('Max 5MB'); return; }
-                    if (!['image/jpeg','image/png','image/webp'].includes(file.type)) { toast.error('Only JPG, PNG, WEBP'); return; }
+                    const check = await checkUpload(file, 'image');
+                    if (!check.ok) { toast.error(check.error!); return; }
                     setUploadingCover(true);
-                    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-                    const path = `${user.id}/cover.${ext}`;
-                    const { data, error } = await supabase.storage.from('advisor-covers').upload(path, file, { upsert: true, cacheControl: '3600', contentType: file.type });
+                    const path = `${user.id}/cover.${check.ext}`;
+                    const { data, error } = await supabase.storage.from('advisor-covers').upload(path, file, { upsert: true, cacheControl: '3600', contentType: check.detected ?? file.type });
+
                     if (error) { toast.error('Banner upload failed: ' + error.message); setUploadingCover(false); return; }
                     const url = `${supabase.storage.from('advisor-covers').getPublicUrl(data.path).data.publicUrl}?v=${Date.now()}`;
                     const { error: updErr } = await supabase.from('advisors').update({ cover_image_url: url } as any).eq('id', advisor.id).eq('user_id', user.id);
@@ -1249,15 +1254,15 @@ export default function AdvisorDashboard() {
                     <ImageIcon className="h-5 w-5 text-white" />
                   </div>
                   {uploadingAvatar && <div className="absolute inset-0 rounded-full bg-black/60 flex items-center justify-center text-white text-[10px] font-bold">Uploading…</div>}
-                  <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" disabled={uploadingAvatar} onChange={async (e) => {
+                  <input type="file" accept={acceptFor('image')} className="hidden" disabled={uploadingAvatar} onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file || !user) return;
-                    if (file.size > 5 * 1024 * 1024) { toast.error('Max 5MB'); return; }
-                    if (!['image/jpeg','image/png','image/webp'].includes(file.type)) { toast.error('Only JPG, PNG, WEBP'); return; }
+                    const check = await checkUpload(file, 'image');
+                    if (!check.ok) { toast.error(check.error!); return; }
                     setUploadingAvatar(true);
-                    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-                    const path = `${user.id}/avatar.${ext}`;
-                    const { data, error } = await supabase.storage.from('advisor-avatars').upload(path, file, { upsert: true, cacheControl: '3600', contentType: file.type });
+                    const path = `${user.id}/avatar.${check.ext}`;
+                    const { data, error } = await supabase.storage.from('advisor-avatars').upload(path, file, { upsert: true, cacheControl: '3600', contentType: check.detected ?? file.type });
+
                     if (error) { toast.error('Upload failed: ' + error.message); setUploadingAvatar(false); return; }
                     const url = `${supabase.storage.from('advisor-avatars').getPublicUrl(data.path).data.publicUrl}?v=${Date.now()}`;
                     const { error: updErr } = await supabase.from('advisors').update({ profile_photo_url: url }).eq('id', advisor.id).eq('user_id', user.id);
