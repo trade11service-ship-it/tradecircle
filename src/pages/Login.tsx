@@ -38,23 +38,31 @@ export default function Login() {
   // Redirect once auth context is hydrated. Runs after both password sign-in and OAuth callback,
   // so the user never gets stuck on /login after a successful login.
   useEffect(() => {
-    if (authLoading || !user || !profile) return;
+    if (authLoading || !user) return;
     let cancelled = false;
     (async () => {
       // Persist pending user_type captured from the Register role picker
       // (works for both email confirm-then-login and Google OAuth callback).
       try {
         const pending = sessionStorage.getItem('pending_user_type');
-        if (pending && !profile.user_type && (pending === 'investor' || pending === 'trader')) {
+        if (pending && !profile?.user_type && (pending === 'investor' || pending === 'trader')) {
           await supabase.from('profiles').update({ user_type: pending }).eq('id', user.id);
         }
         sessionStorage.removeItem('pending_user_type');
       } catch {}
+
+      // Honour the route the user was trying to reach before being sent to /login.
+      const from = (location.state as any)?.from as string | undefined;
+      if (from && from.startsWith('/') && !from.startsWith('//') && from !== '/login') {
+        if (!cancelled) navigate(from, { replace: true });
+        return;
+      }
+
       const { data: advisor } = await supabase.from('advisors').select('id').eq('user_id', user.id).maybeSingle();
       if (cancelled) return;
-      if (profile.role === 'advisor' || advisor) {
+      if (profile?.role === 'advisor' || advisor) {
         navigate('/advisor/dashboard', { replace: true });
-      } else if (profile.role === 'admin') {
+      } else if (profile?.role === 'admin') {
         navigate('/admin', { replace: true });
       } else {
         // Trader: send to /feed only if they have active subscriptions,
@@ -69,7 +77,8 @@ export default function Login() {
       }
     })();
     return () => { cancelled = true; };
-  }, [user, profile, authLoading, navigate]);
+  }, [user, profile, authLoading, navigate, location.state]);
+
 
   // Surface OAuth callback errors returned in the URL hash (e.g. failed code exchange).
   useEffect(() => {
