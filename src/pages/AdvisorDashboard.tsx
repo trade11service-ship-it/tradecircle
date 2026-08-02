@@ -1227,15 +1227,15 @@ export default function AdvisorDashboard() {
                 <label className="absolute top-3 right-3 cursor-pointer inline-flex items-center gap-1.5 bg-black/60 hover:bg-black/80 text-white text-xs font-semibold px-3 py-1.5 rounded-full backdrop-blur transition">
                   <ImageIcon className="h-3.5 w-3.5" />
                   {uploadingCover ? 'Uploading…' : ((advisor as any).cover_image_url ? 'Change banner' : 'Add banner')}
-                  <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" disabled={uploadingCover} onChange={async (e) => {
+                  <input type="file" accept={acceptFor('image')} className="hidden" disabled={uploadingCover} onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file || !user) return;
-                    if (file.size > 5 * 1024 * 1024) { toast.error('Max 5MB'); return; }
-                    if (!['image/jpeg','image/png','image/webp'].includes(file.type)) { toast.error('Only JPG, PNG, WEBP'); return; }
+                    const check = await checkUpload(file, 'image');
+                    if (!check.ok) { toast.error(check.error!); return; }
                     setUploadingCover(true);
-                    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-                    const path = `${user.id}/cover.${ext}`;
-                    const { data, error } = await supabase.storage.from('advisor-covers').upload(path, file, { upsert: true, cacheControl: '3600', contentType: file.type });
+                    const path = `${user.id}/cover.${check.ext}`;
+                    const { data, error } = await supabase.storage.from('advisor-covers').upload(path, file, { upsert: true, cacheControl: '3600', contentType: check.detected ?? file.type });
+
                     if (error) { toast.error('Banner upload failed: ' + error.message); setUploadingCover(false); return; }
                     const url = `${supabase.storage.from('advisor-covers').getPublicUrl(data.path).data.publicUrl}?v=${Date.now()}`;
                     const { error: updErr } = await supabase.from('advisors').update({ cover_image_url: url } as any).eq('id', advisor.id).eq('user_id', user.id);
