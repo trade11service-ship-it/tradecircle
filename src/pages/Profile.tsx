@@ -114,7 +114,7 @@ export default function Profile() {
     const adv = (Array.isArray(advRows) ? advRows[0] : null) as AdvisorProfile | null;
     if (adv) {
       setAdvisor(adv);
-      const { data: grps } = await supabase.from('groups').select('*').eq('advisor_id', adv.id);
+      const { data: grps } = await supabase.from('groups').select(GROUP_PUBLIC_COLUMNS).eq('advisor_id', adv.id);
       setAdvisorGroups(grps || []);
     }
   };

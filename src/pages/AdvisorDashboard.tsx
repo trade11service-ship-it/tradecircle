@@ -215,7 +215,7 @@ export default function AdvisorDashboard() {
     }
     if (adv) {
       const [grpsRes, subsRes, sigsRes, earningsRes] = await Promise.all([
-        supabase.from('groups').select('*').eq('advisor_id', adv.id),
+        supabase.from('groups').select(GROUP_PUBLIC_COLUMNS).eq('advisor_id', adv.id),
         supabase.from('subscriptions').select('*, profiles(full_name, email), groups!inner(name)').eq('advisor_id', adv.id).order('created_at', { ascending: false }),
         supabase.from('signals').select('*').eq('advisor_id', adv.id).order('created_at', { ascending: false }),
         supabase.from('advisor_daily_earnings').select('*').eq('advisor_id', adv.id).order('earning_date', { ascending: false }),

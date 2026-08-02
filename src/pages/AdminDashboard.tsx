@@ -150,7 +150,7 @@ export default function AdminDashboard() {
     setLoadingContent(true);
     const [sigs, grps] = await Promise.all([
       supabase.from('signals').select('*').eq('advisor_id', advisorId).order('created_at', { ascending: false }).limit(50),
-      supabase.from('groups').select('*').eq('advisor_id', advisorId),
+      supabase.from('groups').select(GROUP_PUBLIC_COLUMNS).eq('advisor_id', advisorId),
     ]);
     setContentSignals(sigs.data || []);
     setContentGroups(grps.data || []);
