@@ -11,10 +11,23 @@ interface AuthContextType {
   user: User | null;
   profile: Profile | null;
   loading: boolean;
+  /** creator_profiles.id when this user has a Creator Studio account */
+  creatorId: string | null;
+  creatorKycStatus: string | null;
+  refreshCreator: () => Promise<void>;
   signOut: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType>({ user: null, profile: null, loading: true, signOut: async () => {} });
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  profile: null,
+  loading: true,
+  creatorId: null,
+  creatorKycStatus: null,
+  refreshCreator: async () => {},
+  signOut: async () => {},
+});
+
 
 export const useAuth = () => useContext(AuthContext);
 
