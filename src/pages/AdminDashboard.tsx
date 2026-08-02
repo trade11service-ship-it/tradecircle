@@ -907,7 +907,7 @@ export default function AdminDashboard() {
                       {[
                         { label: 'Email', value: a.email },
                         { label: 'Phone', value: a.phone || '-' },
-                        { label: 'Aadhaar No', value: a.aadhaar_no ? `••••••••${a.aadhaar_no.slice(-4)}` : '-' },
+                        { label: 'SEBI Reg No', value: a.sebi_reg_no || '-' },
                         { label: 'PAN No', value: a.pan_no || '-' },
                         { label: 'Strategy', value: a.strategy_type || '-' },
                         { label: 'Address', value: a.address || '-' },
