@@ -28,14 +28,17 @@ import {
   BookOpen,
   Clock,
   IndianRupee,
+  LayoutDashboard,
   Loader2,
   Plus,
   ShieldCheck,
   Trash2,
   Upload,
+  Users,
   Wallet,
   XCircle,
 } from 'lucide-react';
+
 
 type CreatorProfile = {
   id: string;
@@ -75,11 +78,13 @@ type Module = {
 type LedgerRow = { id: string; amount: number; status: string; created_at: string };
 
 const TABS = [
+  { key: 'overview', label: 'Overview', icon: LayoutDashboard },
   { key: 'courses', label: 'My courses', icon: BookOpen },
   { key: 'upload', label: 'New course', icon: Plus },
   { key: 'payouts', label: 'Earnings & payouts', icon: Wallet },
 ] as const;
 type TabKey = (typeof TABS)[number]['key'];
+
 
 const STATUS_STYLES: Record<string, string> = {
   draft: 'bg-slate-500/10 text-slate-600 border-slate-500/30',
