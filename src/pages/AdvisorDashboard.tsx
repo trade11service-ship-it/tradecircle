@@ -536,7 +536,7 @@ export default function AdvisorDashboard() {
                 <Globe className="h-3.5 w-3.5" /> Website
               </a>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-white text-primary px-3.5 h-9 text-[12px] font-bold shadow-md">
-                ✓ Approved & Active
+                {kycApproved ? '✓ Approved & Active' : '● Pre-Approved · Verification pending'}
               </span>
             </>
           }
