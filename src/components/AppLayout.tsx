@@ -9,8 +9,10 @@ import {
   Radio,
   Rss,
   GraduationCap,
+  LayoutDashboard,
   ChevronDown,
 } from "lucide-react";
+
 import { supabase } from "@/integrations/supabase/client";
 import { Logo } from "@/components/Logo";
 
