@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
 
     await admin.from('creator_profiles').update({ kyc_status: 'pending' }).eq('id', creator.id);
 
-    const panResult = await verifyPanSandbox(pan, legalName);
+    const panResult = await verifyPan(pan, legalName);
     if (!panResult.ok) {
       await admin
         .from('creator_profiles')
@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
       return json({ error: panResult.reason }, 400);
     }
 
-    const bankResult = await pennyDropSandbox(account, ifsc, holder);
+    const bankResult = await pennyDrop(account, ifsc, holder);
     if (!bankResult.ok) {
       await admin
         .from('creator_profiles')
