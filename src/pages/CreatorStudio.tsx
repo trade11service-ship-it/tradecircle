@@ -558,11 +558,26 @@ export default function CreatorStudio() {
                 )}
 
                 <div className="mt-3 flex flex-wrap gap-2">
-                  <Button size="sm" variant="outline" className="rounded-lg" onClick={() => { setUploadCourseId(c.id); setTab('upload'); }}>
-                    <Upload className="mr-1.5 h-3.5 w-3.5" /> Add lesson
+                  <Button
+                    size="sm"
+                    variant={lessonPanelId === c.id ? 'default' : 'outline'}
+                    className="rounded-lg"
+                    onClick={() => { setLessonPanelId(lessonPanelId === c.id ? null : c.id); setEditPanelId(null); }}
+                  >
+                    <Upload className="mr-1.5 h-3.5 w-3.5" /> {lessonPanelId === c.id ? 'Close' : 'Add lesson'}
                   </Button>
                   {c.review_status !== 'approved' && (
-                    <Button size="sm" className="rounded-lg" onClick={() => submitForReview(c)}>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="rounded-lg"
+                      onClick={() => { setEditPanelId(editPanelId === c.id ? null : c.id); setLessonPanelId(null); }}
+                    >
+                      {editPanelId === c.id ? 'Close editor' : 'Edit details'}
+                    </Button>
+                  )}
+                  {c.review_status !== 'approved' && c.review_status !== 'pending_review' && (
+                    <Button size="sm" className="rounded-lg" onClick={() => submitForReview(c)} disabled={mods.length === 0}>
                       Submit for review
                     </Button>
                   )}
@@ -572,6 +587,29 @@ export default function CreatorStudio() {
                     </Button>
                   )}
                 </div>
+
+                {lessonPanelId === c.id && (
+                  <LessonUploader
+                    courseTitle={c.title}
+                    approved={c.review_status === 'approved'}
+                    onUpload={(draft) => uploadModule(c.id, draft)}
+                  />
+                )}
+
+                {editPanelId === c.id && (
+                  <CourseEditor
+                    initial={{
+                      title: c.title,
+                      description: c.description ?? '',
+                      category: c.category ?? '',
+                      price: c.price,
+                      course_type: c.course_type,
+                    }}
+                    onSave={(values) => saveCourseDetails(c.id, values)}
+                    onCancel={() => setEditPanelId(null)}
+                  />
+                )}
+
 
                 {c.review_status === 'approved' && creator.kyc_status !== 'approved' && (
                   <p className="mt-3 flex gap-2 rounded-lg border border-amber-500/30 bg-amber-500/5 p-2.5 text-[12px] text-amber-700">
