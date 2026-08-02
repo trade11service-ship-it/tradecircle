@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { GROUP_PUBLIC_COLUMNS } from '@/lib/groupColumns';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Footer } from '@/components/Footer';
@@ -63,7 +64,7 @@ export default function ReferralLanding() {
     // Fetch advisor + group
     const [advRes, grpRes] = await Promise.all([
       supabase.from('advisors').select('id, full_name, bio, sebi_reg_no, strategy_type, profile_photo_url, status, created_at, user_id').eq('id', ref.advisor_id).single(),
-      supabase.from('groups').select('*').eq('id', ref.group_id).single(),
+      supabase.from('groups').select(GROUP_PUBLIC_COLUMNS).eq('id', ref.group_id).single(),
     ]);
     setAdvisor(advRes.data);
     setGroup(grpRes.data);

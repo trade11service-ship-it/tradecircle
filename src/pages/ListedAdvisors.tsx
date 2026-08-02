@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { GROUP_PUBLIC_COLUMNS } from '@/lib/groupColumns';
 import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -83,7 +84,7 @@ export default function ListedAdvisors() {
           // Fetch groups
           const { data: groupsData } = await supabase
             .from('groups')
-            .select('*')
+            .select(GROUP_PUBLIC_COLUMNS)
             .eq('advisor_id', advisor.id)
             .eq('is_active', true);
 

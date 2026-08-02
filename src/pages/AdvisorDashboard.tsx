@@ -1,4 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
+import { GROUP_PUBLIC_COLUMNS } from '@/lib/groupColumns';
 import { supabase } from '@/integrations/supabase/client';
 
 
@@ -215,7 +216,7 @@ export default function AdvisorDashboard() {
     }
     if (adv) {
       const [grpsRes, subsRes, sigsRes, earningsRes] = await Promise.all([
-        supabase.from('groups').select('*').eq('advisor_id', adv.id),
+        supabase.from('groups').select(GROUP_PUBLIC_COLUMNS).eq('advisor_id', adv.id),
         supabase.from('subscriptions').select('*, profiles(full_name, email), groups!inner(name)').eq('advisor_id', adv.id).order('created_at', { ascending: false }),
         supabase.from('signals').select('*').eq('advisor_id', adv.id).order('created_at', { ascending: false }),
         supabase.from('advisor_daily_earnings').select('*').eq('advisor_id', adv.id).order('earning_date', { ascending: false }),
@@ -261,7 +262,7 @@ export default function AdvisorDashboard() {
     }
     const cleanPrice = Math.max(0, Math.floor(Number(String(groupForm.monthlyPrice).replace(/\D/g, '')) || 0));
     if (cleanPrice <= 0) { toast.error('Please enter a valid monthly price in whole rupees'); return; }
-    const { data: newGroup, error } = await (supabase.from('groups') as any).insert({ advisor_id: advisor.id, name: sanitizeText(groupForm.name), description: sanitizeTextarea(groupForm.description), monthly_price: cleanPrice, dp_url: dpUrl, strategy_category: groupForm.strategyCategory || 'All' }).select().single();
+    const { data: newGroup, error } = await (supabase.from('groups') as any).insert({ advisor_id: advisor.id, name: sanitizeText(groupForm.name), description: sanitizeTextarea(groupForm.description), monthly_price: cleanPrice, dp_url: dpUrl, strategy_category: groupForm.strategyCategory || 'All' }).select(GROUP_PUBLIC_COLUMNS).single();
     if (error) { toast.error(error.message); return; }
 
     // Generate ONE permanent referral link for this group (only admin can change later)
