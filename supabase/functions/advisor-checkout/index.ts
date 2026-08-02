@@ -44,11 +44,21 @@ Deno.serve(async (req) => {
 
     const { data: group } = await admin
       .from('groups')
-      .select('id, name, monthly_price, payment_mode, advisor_merchant_key_id, advisor_merchant_key_secret')
+      .select('id, name, monthly_price, payment_mode, advisor_payment_url, advisor_merchant_key_id, advisor_merchant_key_secret')
       .eq('id', onboarding.group_id)
       .maybeSingle();
 
     if (!group) return json({ error: 'Group not found' }, 404);
+
+    // Hosted payment-link mode: the URL is never exposed through the Data API,
+    // so it is handed out here only to the verified owner of this onboarding.
+    if (group.payment_mode !== 'merchant_keys') {
+      if (!group.advisor_payment_url) {
+        return json({ error: 'This analyst has not published a payment link yet' }, 400);
+      }
+      return json({ payment_url: group.advisor_payment_url, group_name: group.name });
+    }
+
     if (group.payment_mode !== 'merchant_keys' || !group.advisor_merchant_key_id || !group.advisor_merchant_key_secret) {
       return json({ error: 'This analyst has not configured in-app checkout' }, 400);
     }
