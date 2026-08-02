@@ -501,6 +501,7 @@ export default function AdvisorDashboard() {
     referrals: '/advisor/dashboard',
     compliance: '/advisor/dashboard',
     profile: '/advisor/dashboard',
+    kyc: '/advisor/dashboard',
   };
 
 
