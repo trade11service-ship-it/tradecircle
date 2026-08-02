@@ -4,15 +4,14 @@ import {
   json,
   encryptValue,
   maskPan,
-  PAN_REGEX,
   clientIp,
 } from '../_shared/compliance.ts';
+import { verifyPan } from '../_shared/digio.ts';
 
 /**
- * Pass-through KYC.
- * Raw PAN/DOB are received here, verified against a provider adapter and
- * immediately encrypted. The plaintext PAN never leaves this function and is
- * never written to a readable column.
+ * Pass-through KYC for advisory subscribers (SEBI client due diligence).
+ * Raw PAN/DOB are received here, verified through the shared Digio adapter
+ * and immediately encrypted. The plaintext PAN never leaves this function.
  */
 
 type KycResult = {
@@ -22,11 +21,7 @@ type KycResult = {
   reason?: string;
 };
 
-/** Sandbox adapter — swap this file's implementation for Digio/Cashfree later. */
-async function verifySandbox(pan: string, dob: string): Promise<KycResult> {
-  if (!PAN_REGEX.test(pan)) {
-    return { verified: false, kra_status: 'INVALID_FORMAT', reference_id: '', reason: 'PAN format is invalid. Expected ABCDE1234F.' };
-  }
+async function runKyc(pan: string, dob: string, name = 'Subscriber'): Promise<KycResult> {
   const d = new Date(dob);
   if (isNaN(d.getTime())) {
     return { verified: false, kra_status: 'INVALID_DOB', reference_id: '', reason: 'Date of birth is invalid.' };
@@ -35,18 +30,13 @@ async function verifySandbox(pan: string, dob: string): Promise<KycResult> {
   if (age < 18 || age > 100) {
     return { verified: false, kra_status: 'INVALID_DOB', reference_id: '', reason: 'Subscriber must be at least 18 years old.' };
   }
-  return { verified: true, kra_status: 'KRA_VERIFIED', reference_id: `sbx_${crypto.randomUUID()}` };
+
+  const verdict = await verifyPan(pan, name);
+  return verdict.ok
+    ? { verified: true, kra_status: 'KRA_VERIFIED', reference_id: verdict.transaction_id }
+    : { verified: false, kra_status: 'PAN_UNVERIFIED', reference_id: verdict.transaction_id, reason: verdict.reason };
 }
 
-async function runKyc(pan: string, dob: string): Promise<KycResult> {
-  const provider = Deno.env.get('KYC_PROVIDER') ?? 'sandbox';
-  switch (provider) {
-    // case 'digio': return verifyDigio(pan, dob);
-    // case 'cashfree': return verifyCashfree(pan, dob);
-    default:
-      return verifySandbox(pan, dob);
-  }
-}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
