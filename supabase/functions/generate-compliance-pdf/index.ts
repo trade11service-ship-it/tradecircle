@@ -12,6 +12,11 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response(null, { headers: corsHeaders });
 
   try {
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) return json({ error: 'Unauthorized' }, 401);
+    const token = authHeader.replace('Bearer ', '').trim();
+    const isInternalCall = token === Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
     const { onboarding_id } = await req.json().catch(() => ({}));
     if (!onboarding_id) return json({ error: 'onboarding_id is required' }, 400);
 
@@ -26,8 +31,36 @@ Deno.serve(async (req) => {
       .eq('id', onboarding_id)
       .maybeSingle();
     if (!onboarding) return json({ error: 'Onboarding not found' }, 404);
+
+    // Only the subscriber, the owning analyst, an admin, or an internal
+    // service-role call may generate / re-send this PAN-bearing agreement.
+    if (!isInternalCall) {
+      const anon = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: claimsData, error: claimsError } = await anon.auth.getClaims(token);
+      if (claimsError || !claimsData?.claims) return json({ error: 'Unauthorized' }, 401);
+      const userId = claimsData.claims.sub as string;
+
+      let allowed = onboarding.user_id === userId;
+      if (!allowed && onboarding.advisor_id) {
+        const { data: advisorRow } = await admin
+          .from('advisors')
+          .select('user_id')
+          .eq('id', onboarding.advisor_id)
+          .maybeSingle();
+        allowed = advisorRow?.user_id === userId;
+      }
+      if (!allowed) {
+        const { data: isAdmin } = await admin.rpc('is_admin', { _user_id: userId });
+        allowed = Boolean(isAdmin);
+      }
+      if (!allowed) return json({ error: 'Forbidden' }, 403);
+    }
+
     if (onboarding.payment_status !== 'captured') return json({ error: 'Payment is not captured' }, 400);
     if (onboarding.pdf_vault_url) return json({ ok: true, pdf_path: onboarding.pdf_vault_url, cached: true });
+
 
     const [{ data: group }, { data: advisor }, { data: profile }] = await Promise.all([
       admin.from('groups').select('id, name, monthly_price, duration_days').eq('id', onboarding.group_id).maybeSingle(),
