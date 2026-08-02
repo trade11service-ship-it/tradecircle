@@ -142,6 +142,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [needsConsent, setNeedsConsent] = useState(false);
+  const [creatorId, setCreatorId] = useState<string | null>(null);
+  const [creatorKycStatus, setCreatorKycStatus] = useState<string | null>(null);
+
 
   const checkConsent = async (userId: string) => {
     try {
