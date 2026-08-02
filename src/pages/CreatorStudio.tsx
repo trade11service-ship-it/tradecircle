@@ -18,7 +18,10 @@ import {
 } from '@/lib/courses';
 import { sanitizeAlphanumeric, sanitizeName, sanitizeText, sanitizeTextarea } from '@/lib/sanitize';
 import { acceptFor, checkUpload, UPLOAD_RULES } from '@/lib/uploadGuard';
+import LessonUploader, { type LessonDraft } from '@/components/creator/LessonUploader';
+import CourseEditor, { type CourseEditValues } from '@/components/creator/CourseEditor';
 import { setMetaTags } from '@/lib/seo';
+
 import {
   AlertTriangle,
   BadgeCheck,
