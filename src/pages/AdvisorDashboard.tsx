@@ -328,12 +328,14 @@ export default function AdvisorDashboard() {
     let imageUrl: string | null = null;
 
     if (messageImage) {
+      const check = await checkUpload(messageImage, 'image');
+      if (!check.ok) { toast.error(check.error!); setPosting(false); return; }
       setUploadProgress(20);
-      const ext = messageImage.name.split('.').pop();
-      const path = `${advisor.id}/${Date.now()}.${ext}`;
+      const path = `${advisor.id}/${Date.now()}.${check.ext}`;
       setUploadProgress(50);
-      const { data, error } = await supabase.storage.from('group-media').upload(path, messageImage);
+      const { data, error } = await supabase.storage.from('group-media').upload(path, messageImage, { contentType: check.detected ?? messageImage.type });
       if (error) { toast.error('Image upload failed'); setPosting(false); setUploadProgress(0); return; }
+
       setUploadProgress(80);
       imageUrl = supabase.storage.from('group-media').getPublicUrl(data.path).data.publicUrl;
       setUploadProgress(100);
