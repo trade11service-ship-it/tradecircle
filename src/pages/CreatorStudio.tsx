@@ -232,8 +232,10 @@ export default function CreatorStudio() {
       return;
     }
     setCreator(data as CreatorProfile);
+    await refreshCreator();
     toast({ title: 'Creator account ready', description: 'Upload your first course to enter the review queue.' });
     setTab('upload');
+
   };
 
   const bannedHits = useMemo(() => findBannedWords(title, description), [title, description]);
