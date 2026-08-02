@@ -597,7 +597,8 @@ export default function CreatorStudio() {
               </div>
               <div>
                 <Label className="text-[12.5px] font-semibold">Cover image</Label>
-                <Input type="file" accept="image/*" onChange={(e) => setCoverFile(e.target.files?.[0] ?? null)} className="mt-1.5 h-11 rounded-xl" />
+                <Input type="file" accept={acceptFor('image')} onChange={(e) => setCoverFile(e.target.files?.[0] ?? null)} className="mt-1.5 h-11 rounded-xl" />
+                <p className="mt-1.5 text-[11.5px] text-muted-foreground">{UPLOAD_RULES.image.label}. SVG and script-bearing files are blocked.</p>
               </div>
               <label className="flex cursor-pointer gap-3 rounded-xl border border-border bg-muted/30 p-3">
                 <Checkbox checked={eduConfirm} onCheckedChange={(v) => setEduConfirm(!!v)} className="mt-0.5" />
