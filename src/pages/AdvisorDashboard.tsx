@@ -482,7 +482,10 @@ export default function AdvisorDashboard() {
     return <Clock className="h-4 w-4 text-muted-foreground" />;
   };
 
+  const kycApproved = (advisor as any).kyc_status === 'approved';
+
   const tabs = [
+    ...(!kycApproved ? [{ key: 'kyc' as const, label: 'Verification', icon: Shield }] : []),
     { key: 'groups' as const, label: 'Groups', icon: BarChart3 },
     { key: 'post' as const, label: 'Post', icon: Radio },
     { key: 'signals_history' as const, label: 'My Signals', icon: TrendingUp },
@@ -492,6 +495,7 @@ export default function AdvisorDashboard() {
     { key: 'compliance' as const, label: 'Compliance', icon: Shield },
     { key: 'profile' as const, label: 'Profile', icon: UserCircle },
   ];
+
 
   const tabPathMap: Record<typeof tab, string> = {
     groups: '/advisor/dashboard/groups',
