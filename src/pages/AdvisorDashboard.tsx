@@ -8,6 +8,7 @@ import { ReferralLinkCard } from '@/components/ReferralLinkCard';
 import { ReferralStatsTab } from '@/components/ReferralStatsTab';
 import { ComplianceLogTab } from '@/components/advisor/ComplianceLogTab';
 import { GroupPaymentSettings } from '@/components/advisor/GroupPaymentSettings';
+import { AdvisorKycTab } from '@/components/advisor/AdvisorKycTab';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
