@@ -1254,15 +1254,15 @@ export default function AdvisorDashboard() {
                     <ImageIcon className="h-5 w-5 text-white" />
                   </div>
                   {uploadingAvatar && <div className="absolute inset-0 rounded-full bg-black/60 flex items-center justify-center text-white text-[10px] font-bold">Uploading…</div>}
-                  <input type="file" accept="image/jpeg,image/png,image/webp" className="hidden" disabled={uploadingAvatar} onChange={async (e) => {
+                  <input type="file" accept={acceptFor('image')} className="hidden" disabled={uploadingAvatar} onChange={async (e) => {
                     const file = e.target.files?.[0];
                     if (!file || !user) return;
-                    if (file.size > 5 * 1024 * 1024) { toast.error('Max 5MB'); return; }
-                    if (!['image/jpeg','image/png','image/webp'].includes(file.type)) { toast.error('Only JPG, PNG, WEBP'); return; }
+                    const check = await checkUpload(file, 'image');
+                    if (!check.ok) { toast.error(check.error!); return; }
                     setUploadingAvatar(true);
-                    const ext = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-                    const path = `${user.id}/avatar.${ext}`;
-                    const { data, error } = await supabase.storage.from('advisor-avatars').upload(path, file, { upsert: true, cacheControl: '3600', contentType: file.type });
+                    const path = `${user.id}/avatar.${check.ext}`;
+                    const { data, error } = await supabase.storage.from('advisor-avatars').upload(path, file, { upsert: true, cacheControl: '3600', contentType: check.detected ?? file.type });
+
                     if (error) { toast.error('Upload failed: ' + error.message); setUploadingAvatar(false); return; }
                     const url = `${supabase.storage.from('advisor-avatars').getPublicUrl(data.path).data.publicUrl}?v=${Date.now()}`;
                     const { error: updErr } = await supabase.from('advisors').update({ profile_photo_url: url }).eq('id', advisor.id).eq('user_id', user.id);
