@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
 
     const { data: group } = await admin
       .from('groups')
-      .select('id, name, monthly_price, duration_days, advisor_id, payment_mode, advisor_merchant_key_secret')
+      .select('id, name, monthly_price, duration_days, advisor_id, payment_mode')
       .eq('id', onboarding.group_id)
       .maybeSingle();
     if (!group) return json({ error: 'Group not found' }, 404);
@@ -74,8 +74,13 @@ Deno.serve(async (req) => {
     // Signature verification for in-app checkout.
     if (group.payment_mode === 'merchant_keys') {
       if (!orderId || !signature) return json({ error: 'Missing payment signature' }, 400);
-      if (!group.advisor_merchant_key_secret) return json({ error: 'Analyst gateway not configured' }, 400);
-      const secret = await decryptValue(group.advisor_merchant_key_secret);
+      const { data: creds } = await admin
+        .from('group_payment_credentials')
+        .select('advisor_merchant_key_secret')
+        .eq('group_id', group.id)
+        .maybeSingle();
+      if (!creds?.advisor_merchant_key_secret) return json({ error: 'Analyst gateway not configured' }, 400);
+      const secret = await decryptValue(creds.advisor_merchant_key_secret);
       const expected = await hmacHex(secret, `${orderId}|${txnId}`);
       if (expected !== signature) {
         await admin.from('compliance_logs').insert({
