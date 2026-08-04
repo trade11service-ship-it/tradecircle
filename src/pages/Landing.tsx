@@ -5,7 +5,8 @@ import { Footer } from '@/components/Footer';
 import { GroupCard } from '@/components/GroupCard';
 import { PublicMixedFeed } from '@/components/PublicMixedFeed';
 import { Button } from '@/components/ui/button';
-import { ShieldCheck, ArrowRight, Lock, EyeOff, Bell, FileCheck, Users, ArrowUpRight, Rss } from 'lucide-react';
+import { ShieldCheck, ArrowRight, Lock, EyeOff, Bell, FileCheck, Users, ArrowUpRight, Rss, GraduationCap, PlayCircle } from 'lucide-react';
+import { formatINR } from '@/lib/courses';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { useAuth } from '@/lib/auth';
 import { setMetaTags, setJsonLd, SEO_CONFIG } from '@/lib/seo';
@@ -42,6 +43,19 @@ export default function Landing() {
   const [groups, setGroups] = useState<GroupData[]>([]);
   const [featuredAdvisors, setFeaturedAdvisors] = useState<FeaturedAdvisor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [courses, setCourses] = useState<{ id: string; title: string; price: number; cover_image_url: string | null; creator_name: string; module_count: number }[]>([]);
+  const [creators, setCreators] = useState<{ id: string; full_legal_name: string; avatar_url: string | null; bio: string | null; course_count: number }[]>([]);
+
+  useEffect(() => {
+    (async () => {
+      const [{ data: cs }, { data: cr }] = await Promise.all([
+        supabase.rpc('list_public_courses'),
+        supabase.rpc('list_public_creators'),
+      ]);
+      setCourses(((cs as typeof courses) ?? []).slice(0, 4));
+      setCreators(((cr as typeof creators) ?? []).slice(0, 6));
+    })();
+  }, []);
 
   useEffect(() => {
     setMetaTags(SEO_CONFIG.landing);
@@ -132,20 +146,26 @@ export default function Landing() {
         <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 pt-16 pb-16 md:pt-20 md:pb-20">
           <div className="max-w-[640px]">
             <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-slate-600">
-              India's first SEBI-only advisory marketplace
+              SEBI-verified advisors + education from India's best market creators
             </p>
             <h1 className="mt-4 text-[32px] md:text-[40px] font-bold tracking-tight leading-[1.15] text-foreground">
-              Trade with verified advisors.{' '}
+              Learn the market. Trade with verified advisors.{' '}
               <span className="text-slate-600 line-through decoration-[1.5px]">Not random tips.</span>
             </h1>
             <p className="mt-5 text-[18px] leading-relaxed text-[hsl(var(--body))]">
-              Every advisor is manually checked against SEBI records. Every signal is permanently timestamped.
+              Every advisor is manually checked against SEBI records, every signal is permanently timestamped,
+              and every course is reviewed for education-only compliance.
             </p>
 
             <div className="mt-7 flex flex-wrap items-center gap-3">
               <Link to="/discover">
                 <Button className="h-11 px-5 rounded-[10px] bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-[14px]">
                   Browse advisors
+                </Button>
+              </Link>
+              <Link to="/courses">
+                <Button variant="outline" className="h-11 px-5 rounded-[10px] border-border bg-background hover:bg-slate-50 text-foreground font-semibold text-[14px]">
+                  Explore courses
                 </Button>
               </Link>
               <a href="#how">
@@ -213,6 +233,72 @@ export default function Landing() {
           )}
         </div>
       </section>
+
+      {/* ===== COURSES & CREATORS ===== */}
+      {(courses.length > 0 || creators.length > 0) && (
+        <section className="border-b border-border">
+          <div className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-16">
+            <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-8">
+              <div className="max-w-[640px]">
+                <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-slate-600">Learn</p>
+                <h2 className="mt-2 text-[28px] font-bold text-foreground tracking-tight">Courses from verified creators</h2>
+                <p className="mt-2 text-[15px] text-[hsl(var(--body))]">Education only — reviewed by our compliance team. No calls, no return promises.</p>
+              </div>
+              <Link to="/courses">
+                <Button variant="outline" className="h-10 rounded-[10px] border-border text-[13px] font-semibold">
+                  All courses <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                </Button>
+              </Link>
+            </div>
+
+            {courses.length > 0 && (
+              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {courses.map(c => (
+                  <Link key={c.id} to={`/courses/${c.id}`} className="group rounded-xl border border-border bg-card overflow-hidden hover:border-primary/40 transition-colors">
+                    <div className="h-28 bg-slate-100">
+                      {c.cover_image_url
+                        ? <img src={c.cover_image_url} alt={c.title} loading="lazy" className="h-full w-full object-cover" />
+                        : <div className="flex h-full w-full items-center justify-center"><GraduationCap className="h-7 w-7 text-muted-foreground" /></div>}
+                    </div>
+                    <div className="p-3.5">
+                      <h3 className="text-[14px] font-semibold leading-snug text-foreground line-clamp-2">{c.title}</h3>
+                      <p className="mt-1 text-[12px] text-muted-foreground truncate">{c.creator_name}</p>
+                      <div className="mt-2 flex items-center justify-between">
+                        <span className="text-[13px] font-bold text-foreground">{c.price === 0 ? 'Free' : formatINR(c.price)}</span>
+                        <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                          <PlayCircle className="h-3.5 w-3.5" /> {c.module_count}
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            {creators.length > 0 && (
+              <div className="mt-10">
+                <h3 className="text-[15px] font-semibold text-foreground">Creators on RA Circle</h3>
+                <div className="mt-4 -mx-4 px-4 overflow-x-auto">
+                  <div className="flex gap-3 pb-1">
+                    {creators.map(cr => (
+                      <div key={cr.id} className="shrink-0 w-[190px] rounded-xl border border-border bg-card p-3.5">
+                        <div className="h-10 w-10 overflow-hidden rounded-full bg-slate-100">
+                          {cr.avatar_url
+                            ? <img src={cr.avatar_url} alt={cr.full_legal_name} loading="lazy" className="h-full w-full object-cover" />
+                            : <div className="flex h-full w-full items-center justify-center text-[14px] font-bold text-muted-foreground">{cr.full_legal_name[0]}</div>}
+                        </div>
+                        <p className="mt-2.5 text-[13.5px] font-semibold text-foreground truncate">{cr.full_legal_name}</p>
+                        <p className="mt-0.5 text-[11.5px] text-muted-foreground line-clamp-2">{cr.bio || 'Market educator'}</p>
+                        <p className="mt-1.5 text-[11px] font-semibold text-primary">{cr.course_count} course{cr.course_count === 1 ? '' : 's'}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
 
       {/* ===== WHY RA CIRCLE — clean 3-col, no card containers ===== */}
       <section id="how" className="mx-auto w-full max-w-6xl px-4 sm:px-6 py-16">

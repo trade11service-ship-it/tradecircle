@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
@@ -35,8 +35,11 @@ import {
   Trash2,
   Upload,
   Users,
+  UserRound,
   Wallet,
   XCircle,
+  PlayCircle,
+  Banknote,
 } from 'lucide-react';
 
 
@@ -50,6 +53,10 @@ type CreatorProfile = {
   pan_masked: string | null;
   kyc_status: string;
   rejection_reason: string | null;
+  avatar_url: string | null;
+  banner_url: string | null;
+  bio: string | null;
+  intro_video_url: string | null;
 };
 
 type Course = {
@@ -82,6 +89,7 @@ const TABS = [
   { key: 'courses', label: 'My courses', icon: BookOpen },
   { key: 'upload', label: 'New course', icon: Plus },
   { key: 'payouts', label: 'Earnings & payouts', icon: Wallet },
+  { key: 'profile', label: 'Public profile', icon: UserRound },
 ] as const;
 type TabKey = (typeof TABS)[number]['key'];
 
@@ -154,6 +162,14 @@ export default function CreatorStudio() {
   const [ifsc, setIfsc] = useState('');
   const [holder, setHolder] = useState('');
   const [verifying, setVerifying] = useState(false);
+  const [payout, setPayout] = useState<{ unsettled: number; settled: number; pending_requests: number; available: number } | null>(null);
+  const [requesting, setRequesting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // public profile form
+  const [bio, setBio] = useState('');
+  const [savingPublic, setSavingPublic] = useState(false);
+  const [avatarBusy, setAvatarBusy] = useState<'avatar' | 'banner' | 'intro' | null>(null);
 
   useEffect(() => {
     setMetaTags({
@@ -172,6 +188,8 @@ export default function CreatorStudio() {
     setCourses((cs as Course[]) ?? []);
     setModules((ms as Module[]) ?? []);
     setLedger((lg as LedgerRow[]) ?? []);
+    const { data: ps2 } = await supabase.rpc('creator_payout_summary');
+    if (ps2) setPayout(ps2 as unknown as { unsettled: number; settled: number; pending_requests: number; available: number });
     const rows = (ps as { total_amount: number; creator_payout_amount: number }[]) ?? [];
     setSales({
       gross: rows.reduce((s, r) => s + Number(r.total_amount || 0), 0),
@@ -191,13 +209,14 @@ export default function CreatorStudio() {
       if (!bootstrapped.current) setLoading(true);
       const { data } = await supabase
         .from('creator_profiles')
-        .select('id, full_legal_name, email, phone, instagram_handle, youtube_channel, pan_masked, kyc_status, rejection_reason')
+        .select('id, full_legal_name, email, phone, instagram_handle, youtube_channel, pan_masked, kyc_status, rejection_reason, avatar_url, banner_url, bio, intro_video_url')
         .eq('user_id', user.id)
         .maybeSingle();
       if (cancelled) return;
       const c = data as CreatorProfile | null;
       setCreator(c);
       setLegalName((prev) => prev || c?.full_legal_name || profileName || '');
+      setBio((prev) => prev || c?.bio || '');
       if (c) await loadAll(c.id);
       if (cancelled) return;
       bootstrapped.current = true;
@@ -224,7 +243,7 @@ export default function CreatorStudio() {
         instagram_handle: instagram ? sanitizeText(instagram).slice(0, 60) : null,
         youtube_channel: youtube ? sanitizeText(youtube).slice(0, 120) : null,
       })
-      .select('id, full_legal_name, email, phone, instagram_handle, youtube_channel, pan_masked, kyc_status, rejection_reason')
+      .select('id, full_legal_name, email, phone, instagram_handle, youtube_channel, pan_masked, kyc_status, rejection_reason, avatar_url, banner_url, bio, intro_video_url')
       .single();
     setSavingProfile(false);
     if (error) {
@@ -456,6 +475,65 @@ export default function CreatorStudio() {
     setCreator((prev) => (prev ? { ...prev, kyc_status: 'approved', pan_masked: payload?.pan_masked ?? prev.pan_masked } : prev));
     setPan(''); setBankAccount(''); setIfsc(''); setHolder('');
     toast({ title: 'Payout details verified', description: 'Your approved courses can now go live.' });
+  };
+
+  const deleteCourse = async (course: Course) => {
+    if (!confirm(`Delete "${course.title}"? If it already has students it will be unlisted instead.`)) return;
+    setDeletingId(course.id);
+    const { data, error } = await supabase.rpc('creator_delete_course', { _course_id: course.id });
+    setDeletingId(null);
+    if (error) { toast({ title: 'Could not delete', description: error.message, variant: 'destructive' }); return; }
+    if (data === 'deleted') {
+      setCourses((prev) => prev.filter((c) => c.id !== course.id));
+      setModules((prev) => prev.filter((m) => m.course_id !== course.id));
+      toast({ title: 'Course deleted' });
+    } else {
+      setCourses((prev) => prev.map((c) => (c.id === course.id ? { ...c, is_visible: false } : c)));
+      toast({ title: 'Course unlisted', description: 'It has enrolled students, so their access is preserved.' });
+    }
+  };
+
+  const requestPayout = async () => {
+    setRequesting(true);
+    const { error } = await supabase.rpc('creator_request_payout');
+    setRequesting(false);
+    if (error) { toast({ title: 'Payout request failed', description: error.message, variant: 'destructive' }); return; }
+    toast({ title: 'Payout requested', description: 'Our finance team settles manually within the next working days.' });
+    if (creator) loadAll(creator.id);
+  };
+
+  const uploadPublicAsset = async (kind: 'avatar' | 'banner' | 'intro', file: File) => {
+    if (!creator) return;
+    setAvatarBusy(kind);
+    const check = await checkUpload(file, kind === 'intro' ? 'course-media' : 'image');
+    if (!check.ok) { setAvatarBusy(null); toast({ title: 'File rejected', description: check.error, variant: 'destructive' }); return; }
+    const path = `creator-profile/${creator.id}/${kind}-${crypto.randomUUID()}.${check.ext}`;
+    const { error: upErr } = await supabase.storage
+      .from('group-media')
+      .upload(path, file, { upsert: false, contentType: check.detected ?? file.type });
+    if (upErr) { setAvatarBusy(null); toast({ title: 'Upload failed', description: upErr.message, variant: 'destructive' }); return; }
+    const url = supabase.storage.from('group-media').getPublicUrl(path).data.publicUrl;
+    const column = kind === 'avatar' ? 'avatar_url' : kind === 'banner' ? 'banner_url' : 'intro_video_url';
+    const { error } = await supabase.from('creator_profiles').update({ [column]: url }).eq('id', creator.id);
+    setAvatarBusy(null);
+    if (error) { toast({ title: 'Could not save', description: error.message, variant: 'destructive' }); return; }
+    setCreator((prev) => (prev ? { ...prev, [column]: url } as CreatorProfile : prev));
+    toast({ title: 'Saved' });
+  };
+
+  const savePublicProfile = async () => {
+    if (!creator) return;
+    setSavingPublic(true);
+    const patch = {
+      bio: sanitizeTextarea(bio).slice(0, 600),
+      instagram_handle: instagram ? sanitizeText(instagram).slice(0, 60) : creator.instagram_handle,
+      youtube_channel: youtube ? sanitizeText(youtube).slice(0, 120) : creator.youtube_channel,
+    };
+    const { error } = await supabase.from('creator_profiles').update(patch).eq('id', creator.id);
+    setSavingPublic(false);
+    if (error) { toast({ title: 'Could not save', description: error.message, variant: 'destructive' }); return; }
+    setCreator((prev) => (prev ? { ...prev, ...patch } : prev));
+    toast({ title: 'Public profile updated' });
   };
 
   if (loading) {
@@ -726,6 +804,22 @@ export default function CreatorStudio() {
                       {c.is_visible ? 'Unlist from marketplace' : 'Publish to marketplace'}
                     </Button>
                   )}
+                  {mods.length > 0 && (
+                    <Link to={`/courses/${c.id}/learn`}>
+                      <Button size="sm" variant="outline" className="rounded-lg">
+                        <PlayCircle className="mr-1.5 h-3.5 w-3.5" /> Preview my course
+                      </Button>
+                    </Link>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="rounded-lg text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    disabled={deletingId === c.id}
+                    onClick={() => deleteCourse(c)}
+                  >
+                    <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Delete
+                  </Button>
                 </div>
 
                 {lessonPanelId === c.id && (
@@ -916,8 +1010,122 @@ export default function CreatorStudio() {
               </ul>
             )}
           </div>
+
+          {/* Weekly payout request */}
+          {(() => {
+            const dow = new Date().getDay(); // 0 Sun, 6 Sat
+            const windowOpen = dow === 0 || dow === 6;
+            const available = Number(payout?.available ?? 0);
+            const kycOk = creator.kyc_status === 'approved';
+            const canRequest = windowOpen && kycOk && available >= 500;
+            return (
+              <div className="rounded-2xl border border-border bg-card p-5">
+                <h2 className="flex items-center gap-2 text-[15px] font-extrabold text-foreground">
+                  <Banknote className="h-4 w-4" /> Request a payout
+                </h2>
+                <p className="mt-1.5 text-[12.5px] text-muted-foreground">
+                  Settlement week runs Sunday to Saturday. Requests open every <b>Saturday and Sunday</b> and
+                  are paid manually by our finance team. Minimum balance {formatINR(500)}.
+                </p>
+                <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                  {[
+                    { l: 'Available now', v: formatINR(available) },
+                    { l: 'Already requested', v: formatINR(Number(payout?.pending_requests ?? 0)) },
+                    { l: 'Paid to date', v: formatINR(Number(payout?.settled ?? 0)) },
+                  ].map((x) => (
+                    <div key={x.l} className="rounded-xl border border-border bg-muted/20 p-3">
+                      <p className="text-[10.5px] font-bold uppercase tracking-wide text-muted-foreground">{x.l}</p>
+                      <p className="mt-0.5 text-[16px] font-extrabold text-foreground">{x.v}</p>
+                    </div>
+                  ))}
+                </div>
+                <Button className="mt-4 h-11 w-full rounded-xl" disabled={!canRequest || requesting} onClick={requestPayout}>
+                  {requesting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Request payout
+                </Button>
+                {!kycOk && <p className="mt-2 text-[12px] text-amber-700">Verify your PAN and bank details above to enable payouts.</p>}
+                {kycOk && !windowOpen && <p className="mt-2 text-[12px] text-muted-foreground">The request window opens on Saturday.</p>}
+                {kycOk && windowOpen && available < 500 && <p className="mt-2 text-[12px] text-muted-foreground">You need at least {formatINR(500)} available.</p>}
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* Public profile */}
+      {tab === 'profile' && (
+        <div className="mt-4 space-y-4">
+          {creator.kyc_status !== 'approved' && (
+            <p className="flex gap-2 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-3.5 text-[12.5px] text-amber-700">
+              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
+              Your public creator page goes live on the marketplace once verification is approved. You can prepare it now.
+            </p>
+          )}
+
+          <div className="overflow-hidden rounded-2xl border border-border bg-card">
+            <div className="relative h-28 bg-muted">
+              {creator.banner_url && <img src={creator.banner_url} alt="" className="h-full w-full object-cover" />}
+            </div>
+            <div className="px-4 pb-4">
+              <div className="-mt-8 flex items-end gap-3">
+                <div className="h-16 w-16 overflow-hidden rounded-full border-4 border-card bg-muted">
+                  {creator.avatar_url
+                    ? <img src={creator.avatar_url} alt="" className="h-full w-full object-cover" />
+                    : <div className="flex h-full w-full items-center justify-center text-[20px] font-extrabold text-muted-foreground">{creator.full_legal_name[0]}</div>}
+                </div>
+                <p className="pb-1 text-[15px] font-extrabold text-foreground">{creator.full_legal_name}</p>
+              </div>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div>
+                  <Label className="text-[12.5px] font-semibold">Profile photo</Label>
+                  <Input type="file" accept={acceptFor('image')} disabled={avatarBusy !== null}
+                    onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) uploadPublicAsset('avatar', f); }}
+                    className="mt-1.5 h-11 rounded-xl" />
+                </div>
+                <div>
+                  <Label className="text-[12.5px] font-semibold">Banner image</Label>
+                  <Input type="file" accept={acceptFor('image')} disabled={avatarBusy !== null}
+                    onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) uploadPublicAsset('banner', f); }}
+                    className="mt-1.5 h-11 rounded-xl" />
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <Label className="text-[12.5px] font-semibold">Short intro video (optional)</Label>
+                <Input type="file" accept={acceptFor('course-media')} disabled={avatarBusy !== null}
+                  onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) uploadPublicAsset('intro', f); }}
+                  className="mt-1.5 h-11 rounded-xl" />
+                {creator.intro_video_url && (
+                  <video src={creator.intro_video_url} controls className="mt-3 w-full rounded-xl border border-border" />
+                )}
+              </div>
+
+              <div className="mt-4">
+                <Label className="text-[12.5px] font-semibold">Bio</Label>
+                <Textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={4} maxLength={600}
+                  className="mt-1.5 rounded-xl" placeholder="Tell learners who you are and what you teach. Education only — no calls or return claims." />
+                <p className="mt-1 text-[11px] text-muted-foreground">{bio.length}/600</p>
+              </div>
+
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <div>
+                  <Label className="text-[12.5px] font-semibold">Instagram</Label>
+                  <Input value={instagram || creator.instagram_handle || ''} onChange={(e) => setInstagram(e.target.value)} className="mt-1.5 h-11 rounded-xl" placeholder="@handle" />
+                </div>
+                <div>
+                  <Label className="text-[12.5px] font-semibold">YouTube</Label>
+                  <Input value={youtube || creator.youtube_channel || ''} onChange={(e) => setYoutube(e.target.value)} className="mt-1.5 h-11 rounded-xl" placeholder="Channel URL" />
+                </div>
+              </div>
+
+              <Button className="mt-4 h-11 w-full rounded-xl" disabled={savingPublic || avatarBusy !== null} onClick={savePublicProfile}>
+                {(savingPublic || avatarBusy) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Save public profile
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>
   );
 }
+
