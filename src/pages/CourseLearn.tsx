@@ -140,7 +140,14 @@ export default function CourseLearn() {
           .eq('course_id', id)
           .order('sort_order', { ascending: true }),
       ]);
-      setTitle((c as { title: string }[])?.[0]?.title ?? 'Course');
+      let courseTitle = (c as { title: string }[])?.[0]?.title ?? '';
+      if (!courseTitle) {
+        // Creators previewing their own unpublished course: the public RPC returns nothing,
+        // but RLS still lets the owner read their row.
+        const { data: own } = await supabase.from('courses').select('title').eq('id', id).maybeSingle();
+        courseTitle = (own as { title: string } | null)?.title ?? 'Course';
+      }
+      setTitle(courseTitle);
       const list = (mods as Lesson[]) ?? [];
       setLessons(list);
       setAllowed(!!purchase || list.length > 0);
