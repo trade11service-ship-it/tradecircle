@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
@@ -35,8 +35,11 @@ import {
   Trash2,
   Upload,
   Users,
+  UserRound,
   Wallet,
   XCircle,
+  PlayCircle,
+  Banknote,
 } from 'lucide-react';
 
 
@@ -50,6 +53,10 @@ type CreatorProfile = {
   pan_masked: string | null;
   kyc_status: string;
   rejection_reason: string | null;
+  avatar_url: string | null;
+  banner_url: string | null;
+  bio: string | null;
+  intro_video_url: string | null;
 };
 
 type Course = {
@@ -82,6 +89,7 @@ const TABS = [
   { key: 'courses', label: 'My courses', icon: BookOpen },
   { key: 'upload', label: 'New course', icon: Plus },
   { key: 'payouts', label: 'Earnings & payouts', icon: Wallet },
+  { key: 'profile', label: 'Public profile', icon: UserRound },
 ] as const;
 type TabKey = (typeof TABS)[number]['key'];
 
@@ -154,6 +162,14 @@ export default function CreatorStudio() {
   const [ifsc, setIfsc] = useState('');
   const [holder, setHolder] = useState('');
   const [verifying, setVerifying] = useState(false);
+  const [payout, setPayout] = useState<{ unsettled: number; settled: number; pending_requests: number; available: number } | null>(null);
+  const [requesting, setRequesting] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // public profile form
+  const [bio, setBio] = useState('');
+  const [savingPublic, setSavingPublic] = useState(false);
+  const [avatarBusy, setAvatarBusy] = useState<'avatar' | 'banner' | 'intro' | null>(null);
 
   useEffect(() => {
     setMetaTags({
@@ -172,6 +188,8 @@ export default function CreatorStudio() {
     setCourses((cs as Course[]) ?? []);
     setModules((ms as Module[]) ?? []);
     setLedger((lg as LedgerRow[]) ?? []);
+    const { data: ps2 } = await supabase.rpc('creator_payout_summary');
+    if (ps2) setPayout(ps2 as unknown as { unsettled: number; settled: number; pending_requests: number; available: number });
     const rows = (ps as { total_amount: number; creator_payout_amount: number }[]) ?? [];
     setSales({
       gross: rows.reduce((s, r) => s + Number(r.total_amount || 0), 0),
@@ -191,13 +209,14 @@ export default function CreatorStudio() {
       if (!bootstrapped.current) setLoading(true);
       const { data } = await supabase
         .from('creator_profiles')
-        .select('id, full_legal_name, email, phone, instagram_handle, youtube_channel, pan_masked, kyc_status, rejection_reason')
+        .select('id, full_legal_name, email, phone, instagram_handle, youtube_channel, pan_masked, kyc_status, rejection_reason, avatar_url, banner_url, bio, intro_video_url')
         .eq('user_id', user.id)
         .maybeSingle();
       if (cancelled) return;
       const c = data as CreatorProfile | null;
       setCreator(c);
       setLegalName((prev) => prev || c?.full_legal_name || profileName || '');
+      setBio((prev) => prev || c?.bio || '');
       if (c) await loadAll(c.id);
       if (cancelled) return;
       bootstrapped.current = true;
@@ -224,7 +243,7 @@ export default function CreatorStudio() {
         instagram_handle: instagram ? sanitizeText(instagram).slice(0, 60) : null,
         youtube_channel: youtube ? sanitizeText(youtube).slice(0, 120) : null,
       })
-      .select('id, full_legal_name, email, phone, instagram_handle, youtube_channel, pan_masked, kyc_status, rejection_reason')
+      .select('id, full_legal_name, email, phone, instagram_handle, youtube_channel, pan_masked, kyc_status, rejection_reason, avatar_url, banner_url, bio, intro_video_url')
       .single();
     setSavingProfile(false);
     if (error) {
@@ -456,6 +475,65 @@ export default function CreatorStudio() {
     setCreator((prev) => (prev ? { ...prev, kyc_status: 'approved', pan_masked: payload?.pan_masked ?? prev.pan_masked } : prev));
     setPan(''); setBankAccount(''); setIfsc(''); setHolder('');
     toast({ title: 'Payout details verified', description: 'Your approved courses can now go live.' });
+  };
+
+  const deleteCourse = async (course: Course) => {
+    if (!confirm(`Delete "${course.title}"? If it already has students it will be unlisted instead.`)) return;
+    setDeletingId(course.id);
+    const { data, error } = await supabase.rpc('creator_delete_course', { _course_id: course.id });
+    setDeletingId(null);
+    if (error) { toast({ title: 'Could not delete', description: error.message, variant: 'destructive' }); return; }
+    if (data === 'deleted') {
+      setCourses((prev) => prev.filter((c) => c.id !== course.id));
+      setModules((prev) => prev.filter((m) => m.course_id !== course.id));
+      toast({ title: 'Course deleted' });
+    } else {
+      setCourses((prev) => prev.map((c) => (c.id === course.id ? { ...c, is_visible: false } : c)));
+      toast({ title: 'Course unlisted', description: 'It has enrolled students, so their access is preserved.' });
+    }
+  };
+
+  const requestPayout = async () => {
+    setRequesting(true);
+    const { error } = await supabase.rpc('creator_request_payout');
+    setRequesting(false);
+    if (error) { toast({ title: 'Payout request failed', description: error.message, variant: 'destructive' }); return; }
+    toast({ title: 'Payout requested', description: 'Our finance team settles manually within the next working days.' });
+    if (creator) loadAll(creator.id);
+  };
+
+  const uploadPublicAsset = async (kind: 'avatar' | 'banner' | 'intro', file: File) => {
+    if (!creator) return;
+    setAvatarBusy(kind);
+    const check = await checkUpload(file, kind === 'intro' ? 'course-media' : 'image');
+    if (!check.ok) { setAvatarBusy(null); toast({ title: 'File rejected', description: check.error, variant: 'destructive' }); return; }
+    const path = `creator-profile/${creator.id}/${kind}-${crypto.randomUUID()}.${check.ext}`;
+    const { error: upErr } = await supabase.storage
+      .from('group-media')
+      .upload(path, file, { upsert: false, contentType: check.detected ?? file.type });
+    if (upErr) { setAvatarBusy(null); toast({ title: 'Upload failed', description: upErr.message, variant: 'destructive' }); return; }
+    const url = supabase.storage.from('group-media').getPublicUrl(path).data.publicUrl;
+    const column = kind === 'avatar' ? 'avatar_url' : kind === 'banner' ? 'banner_url' : 'intro_video_url';
+    const { error } = await supabase.from('creator_profiles').update({ [column]: url }).eq('id', creator.id);
+    setAvatarBusy(null);
+    if (error) { toast({ title: 'Could not save', description: error.message, variant: 'destructive' }); return; }
+    setCreator((prev) => (prev ? { ...prev, [column]: url } as CreatorProfile : prev));
+    toast({ title: 'Saved' });
+  };
+
+  const savePublicProfile = async () => {
+    if (!creator) return;
+    setSavingPublic(true);
+    const patch = {
+      bio: sanitizeTextarea(bio).slice(0, 600),
+      instagram_handle: instagram ? sanitizeText(instagram).slice(0, 60) : creator.instagram_handle,
+      youtube_channel: youtube ? sanitizeText(youtube).slice(0, 120) : creator.youtube_channel,
+    };
+    const { error } = await supabase.from('creator_profiles').update(patch).eq('id', creator.id);
+    setSavingPublic(false);
+    if (error) { toast({ title: 'Could not save', description: error.message, variant: 'destructive' }); return; }
+    setCreator((prev) => (prev ? { ...prev, ...patch } : prev));
+    toast({ title: 'Public profile updated' });
   };
 
   if (loading) {
@@ -726,6 +804,22 @@ export default function CreatorStudio() {
                       {c.is_visible ? 'Unlist from marketplace' : 'Publish to marketplace'}
                     </Button>
                   )}
+                  {mods.length > 0 && (
+                    <Link to={`/courses/${c.id}/learn`}>
+                      <Button size="sm" variant="outline" className="rounded-lg">
+                        <PlayCircle className="mr-1.5 h-3.5 w-3.5" /> Preview my course
+                      </Button>
+                    </Link>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="rounded-lg text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    disabled={deletingId === c.id}
+                    onClick={() => deleteCourse(c)}
+                  >
+                    <Trash2 className="mr-1.5 h-3.5 w-3.5" /> Delete
+                  </Button>
                 </div>
 
                 {lessonPanelId === c.id && (
