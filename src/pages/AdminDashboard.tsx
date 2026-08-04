@@ -11,6 +11,7 @@ import { useAuth } from '@/lib/auth';
 import { toast } from 'sonner';
 import { AdminReferralTab } from '@/components/AdminReferralTab';
 import { CourseReviewTab } from '@/components/admin/CourseReviewTab';
+import { CreatorEarningsTab } from '@/components/admin/CreatorEarningsTab';
 import { Link } from 'react-router-dom';
 import type { Tables } from '@/integrations/supabase/types';
 import {
@@ -22,7 +23,7 @@ import { DashboardHero } from '@/components/DashboardHero';
 
 type Advisor = Tables<'advisors'>;
 
-type TabKey = 'dashboard' | 'pending' | 'advisors' | 'users' | 'payments' | 'referrals' | 'legal' | 'requests' | 'content' | 'courses';
+type TabKey = 'dashboard' | 'pending' | 'advisors' | 'users' | 'payments' | 'referrals' | 'legal' | 'requests' | 'content' | 'courses' | 'creators';
 
 const NAV_SECTIONS = [
   {
@@ -36,6 +37,7 @@ const NAV_SECTIONS = [
       { key: 'advisors' as TabKey, label: 'All Advisors', icon: UserCheck },
       { key: 'content' as TabKey, label: 'Content Manager', icon: Radio },
       { key: 'courses' as TabKey, label: 'Course Review', icon: GraduationCap },
+      { key: 'creators' as TabKey, label: 'Creator Earnings', icon: Wallet },
       { key: 'users' as TabKey, label: 'All Users', icon: Users },
       { key: 'payments' as TabKey, label: 'Payments', icon: CreditCard },
       { key: 'referrals' as TabKey, label: 'Referrals', icon: Gift },
@@ -56,6 +58,7 @@ const PAGE_TITLES: Record<TabKey, string> = {
   advisors: 'All Advisors',
   content: 'Content Manager',
   courses: 'Course Review Queue',
+  creators: 'Creator Earnings & Payouts',
   users: 'All Users',
   payments: 'Payments',
   referrals: 'Referral Program',
@@ -1198,6 +1201,8 @@ export default function AdminDashboard() {
         )}
 
         {tab === 'courses' && !loading && <CourseReviewTab />}
+
+        {tab === 'creators' && !loading && <CreatorEarningsTab />}
 
         {/* ===== CONTENT MANAGER TAB ===== */}
         {tab === 'content' && !loading && (
