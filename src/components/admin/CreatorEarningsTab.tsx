@@ -90,7 +90,7 @@ export function CreatorEarningsTab() {
     setLoading(true);
     const [{ data: cr, error: e1 }, { data: pu }, { data: pr }] = await Promise.all([
       supabase.rpc('admin_list_creator_earnings'),
-      supabase.rpc('admin_list_course_purchases', { _creator_id: null }),
+      supabase.rpc('admin_list_course_purchases'),
       supabase.rpc('admin_list_payout_requests'),
     ]);
     if (e1) toast({ title: 'Could not load creators', description: e1.message, variant: 'destructive' });
