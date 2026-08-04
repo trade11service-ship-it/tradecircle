@@ -1,70 +1,70 @@
-# Offline-First Advisor Onboarding + Shared Digio Adapter
+# Creator earnings, course preview, manual payouts, and homepage mix
 
-Note on file locations: there is no `src/pages/admin/` directory — admin UI lives in `src/pages/AdminDashboard.tsx` (which already calls `admin_list_pending_applications`). The offline review queue will be a new `src/components/admin/OfflineReviewQueue.tsx` mounted as a tab there, matching the existing `src/components/admin/CourseReviewTab.tsx` pattern.
+## 1. Admin: creator earnings and sales visibility
 
-## 1. Database migration
+New **Creators** tab in the admin panel (next to Courses):
 
-`advisor_applications`
-- Drop `aadhaar_number` column entirely.
-- Status values become: `pending_offline_review` → `pre_approved` → `approved` (plus `rejected`, `expired`). Existing `pending` rows migrate to `pending_offline_review`.
+- Creator list: name, email, Instagram/YouTube, KYC status, live/pending/draft course counts, total sales count, gross revenue, platform fee earned, creator net payable, amount already marked paid, and outstanding balance.
+- Click a creator to expand: their courses with per-course sales count and revenue, plus a buyer list (buyer name, course, amount, payment reference, date).
+- CSV export for both the creator summary and the purchase rows.
+- Payout actions: see section 3.
 
-`advisors` — add deferred-KYC columns:
-- `kyc_status` (`unverified` | `pending` | `approved` | `rejected`, default `unverified`)
-- `pan_masked`, `encrypted_pan`, `bank_account_number` (encrypted), `bank_ifsc`, `bank_account_holder_name`, `payout_vendor_id`, `kyc_rejection_reason`
-- Drop `aadhaar_no` and `aadhaar_photo_url` from `advisors`; drop `aadhaar_no` from `rejected_advisor_applications`.
+## 2. Creator Studio: view own course, delete course
 
-New `kyc_audit_events` table (PII-free): `id`, `subject_type` (advisor/creator/client), `subject_id`, `check_type` (pan/penny_drop), `transaction_id`, `status_verdict`, `created_at`. Admin-read only, service_role write, no update/delete.
+- Each course card gets a **Preview** action that opens the real learner player for that course (creators always get access to their own content, even before approval).
+- Each course gets a **Delete** action (typed confirmation). Deleting is blocked once a course has at least one paid purchase — those become "Unlist" instead, so financial records stay intact.
+- Lesson delete already exists and stays.
 
-RPC changes:
-- `admin_pre_approve_application(_app_id)` — replaces the current approve path. Creates the `advisors` row with `status = 'pre_approved'`, `kyc_status = 'unverified'`, sets profile role to `advisor`, keeps the approval email but reworded to "pre-approved, complete verification".
-- `admin_approve_application` is retired (kept as a thin wrapper that raises, so nothing silently uses the old flow).
-- `expire_stale_applications` updated for the new status name and the dropped Aadhaar column.
-- New `scrub_stale_kyc()` — nulls `encrypted_pan`, `pan_masked`, `bank_account_number`, `bank_ifsc`, `bank_account_holder_name` on advisor rows with `kyc_status IN ('rejected','unverified')` and on `creator_profiles` with `kyc_status = 'rejected'`, older than 60 days. Scheduled via pg_cron daily.
-- Group creation gate: RLS on `groups` INSERT tightened to require the owning advisor row have `status = 'approved'` AND `kyc_status = 'approved'`.
+## 3. Manual payout requests (weekly settlement)
 
-## 2. Shared Digio adapter
+Settlement window: **Sunday to Saturday**. Payouts are paid manually by your team.
 
-New `supabase/functions/_shared/digio.ts`:
-- `verifyPan(pan, name)` and `pennyDrop(account, ifsc, holder)` returning `{ ok, transaction_id, verdict, reason? }`.
-- Switch on `KYC_PROVIDER`: `sandbox` keeps today's format/regex behaviour; `digio` calls Digio over HTTP Basic auth (`DIGIO_CLIENT_ID`:`DIGIO_CLIENT_SECRET`) against `DIGIO_BASE_URL`.
-- Returns only the transaction id and verdict — the raw vendor JSON is never returned, logged, or stored.
-- Writes one `kyc_audit_events` row per call.
+- Creator Studio → Earnings shows: settled amount, unsettled balance for the closed week, next request window.
+- **Request Payout** button is enabled only on Saturday and Sunday (India time), only when KYC is approved and the unsettled balance is at least the minimum threshold (₹500, matching the advisor rule). Otherwise it shows why it is disabled.
+- A request creates a payout request record (creator, period start/end, amount, status `requested`).
+- Admin Creators tab lists payout requests and lets an admin mark them `paid` with a reference note (UTR/manual note) and date. Marking paid flips the covered ledger rows to settled so the balance resets.
 
-Rewire `kyc-verify` (advisory subscriber) and `creator-kyc-verify` (course seller) onto it; sandbox behaviour is unchanged so nothing breaks before Digio approval.
+## 4. Purchase data — what we store today
 
-## 3. New `advisor-kyc-verify` edge function
+Already stored per purchase: purchase id, buyer id, course id, creator id, total amount, creator payout amount, platform fee, payment status, payment reference id (Razorpay), split transfer id, buyer IP, timestamp. A payout ledger row is accrued per purchase.
 
-- Auth required; resolves the caller's advisor row.
-- Rejects unless `status = 'pre_approved'`.
-- Validates PAN + bank fields, runs `verifyPan()` then `pennyDrop()`.
-- On success: encrypts PAN and account number with the existing `PAN_ENCRYPTION_KEY` helper, stores masked PAN + IFSC + holder name, sets `kyc_status = 'approved'` and `status = 'approved'`.
-- On failure: `kyc_status = 'rejected'` with a reason, no PII retained beyond the encrypted values.
+Gaps I will close in this work:
+- Store the payment method and the Razorpay order/payment pair (currently only one reference field is used consistently).
+- Store a human-readable invoice number per purchase for accounting.
+- Payout records will carry the manual UTR/reference so a payout can be traced to purchases.
 
-## 4. Frontend
+No UIN is needed for course sales — courses are educational content, not SEBI advisory, so the advisor SEBI/UIN fields stay isolated from creator records.
 
-`src/pages/AdvisorRegister.tsx`
-- Remove the Aadhaar field and the whole KYC step; the form becomes SEBI details + contact + bio + review/consent.
-- Submits with `status: 'pending_offline_review'`; status screens updated for the new states.
+## 5. Creator public profile (post-verification)
 
-`src/components/admin/OfflineReviewQueue.tsx` (new, mounted in `AdminDashboard.tsx`)
-- Lists `pending_offline_review` applications with SEBI number, a link to the SEBI intermediary lookup, and **Pre-Approve** / **Reject** actions.
-- Second section lists `pre_approved` advisors still awaiting KYC, read-only, so admin can see who is stuck.
+Creators get a profile section in Studio: profile photo, banner, short bio, and one short intro video (separate from paid course content).
+- Editable any time, but only shown publicly after KYC is approved.
+- Public creator page shows photo, banner, bio, intro video, socials, and their live courses.
 
-`src/pages/AdvisorDashboard.tsx`
-- New gate: when `kyc_status !== 'approved'`, group/signal creation controls are disabled behind the banner *"Your profile is pre-approved! Complete PAN & Bank verification to unlock Group Creation."*
-- New **Verification** tab with the PAN + account number + IFSC + holder name form calling `advisor-kyc-verify`, showing pending/rejected state and the rejection reason.
+## 6. Homepage: advisors + courses mix
 
-## 5. Privacy / DPDP
+Homepage keeps advisors first, then adds — below the existing advisor/feed sections:
+- A **Learn from creators** strip: horizontally scrollable course cards (cover, title, creator, price) with a "View all courses" link.
+- A **Featured creators** strip: avatar, name, course count, link to their creator page.
+- A compact shortcut row (Advisors / Courses / Public feed / Creators) so both sides of the marketplace are reachable in one tap.
 
-- Purpose notice component rendered above all three KYC forms (advisor verification, creator identity tab, subscriber subscribe flow): *"Why we need this: Verified for identity match, SEBI compliance, and payout processing via Digio. Retained as encrypted data."*
-- `src/pages/Privacy.tsx`: add a data-processors section naming Digio (identity & bank verification), Razorpay (payments), SendGrid (email), with the data categories shared and the 60-day scrub policy for failed/abandoned verification.
+Same strips appear on the signed-in trader home, after their groups and signals.
 
-## Secrets needed from you
+## 7. Headline update
 
-Add before flipping `KYC_PROVIDER` to `digio` — sandbox credentials are fine now:
-- `DIGIO_CLIENT_ID`
-- `DIGIO_CLIENT_SECRET`
-- `DIGIO_BASE_URL`
-- `KYC_PROVIDER` (defaults to `sandbox` if unset, so nothing breaks meanwhile)
+Current positioning is advisor-only. Options for the new mixed marketplace:
 
-Course buyers stay untouched — no PAN, no KYC, direct checkout.
+1. "India's trusted circle for SEBI advisors and market educators" — sub: "Verified research analysts for live calls. Trusted creators for structured learning. One secure platform."
+2. "Follow verified analysts. Learn from proven educators." — sub: "SEBI-registered advisory groups and expert-built courses, in one place."
+3. "Where verified advice meets real market education" — sub: "SEBI-verified analysts and vetted finfluencer courses, all under one compliant roof."
+
+I will use option 1 unless you pick another.
+
+## Technical notes
+
+- New table `creator_payout_requests` (creator, period start/end, amount, status, requested_at, paid_at, admin reference, admin id) with RLS: creators read/insert their own, admins read/update all.
+- New admin-only SECURITY DEFINER RPCs: `admin_list_creator_earnings()`, `admin_list_course_purchases(_creator_id)`, `admin_mark_payout_paid(_request_id, _reference)`.
+- New creator RPC `creator_payout_summary()` for settled/unsettled balances derived from `creator_payout_ledger`.
+- Course delete guarded server-side: reject when a captured purchase exists; unlist sets `is_visible = false`.
+- Creator profile media (photo, banner, intro video) uploaded through the existing `uploadGuard` MIME/size checks; intro video goes to a public creator bucket, course content stays in the private signed-URL bucket.
+- Homepage strips reuse `list_public_courses()`; no new client-side table reads.
