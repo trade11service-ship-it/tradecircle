@@ -1010,8 +1010,122 @@ export default function CreatorStudio() {
               </ul>
             )}
           </div>
+
+          {/* Weekly payout request */}
+          {(() => {
+            const dow = new Date().getDay(); // 0 Sun, 6 Sat
+            const windowOpen = dow === 0 || dow === 6;
+            const available = Number(payout?.available ?? 0);
+            const kycOk = creator.kyc_status === 'approved';
+            const canRequest = windowOpen && kycOk && available >= 500;
+            return (
+              <div className="rounded-2xl border border-border bg-card p-5">
+                <h2 className="flex items-center gap-2 text-[15px] font-extrabold text-foreground">
+                  <Banknote className="h-4 w-4" /> Request a payout
+                </h2>
+                <p className="mt-1.5 text-[12.5px] text-muted-foreground">
+                  Settlement week runs Sunday to Saturday. Requests open every <b>Saturday and Sunday</b> and
+                  are paid manually by our finance team. Minimum balance {formatINR(500)}.
+                </p>
+                <div className="mt-3 grid gap-3 sm:grid-cols-3">
+                  {[
+                    { l: 'Available now', v: formatINR(available) },
+                    { l: 'Already requested', v: formatINR(Number(payout?.pending_requests ?? 0)) },
+                    { l: 'Paid to date', v: formatINR(Number(payout?.settled ?? 0)) },
+                  ].map((x) => (
+                    <div key={x.l} className="rounded-xl border border-border bg-muted/20 p-3">
+                      <p className="text-[10.5px] font-bold uppercase tracking-wide text-muted-foreground">{x.l}</p>
+                      <p className="mt-0.5 text-[16px] font-extrabold text-foreground">{x.v}</p>
+                    </div>
+                  ))}
+                </div>
+                <Button className="mt-4 h-11 w-full rounded-xl" disabled={!canRequest || requesting} onClick={requestPayout}>
+                  {requesting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Request payout
+                </Button>
+                {!kycOk && <p className="mt-2 text-[12px] text-amber-700">Verify your PAN and bank details above to enable payouts.</p>}
+                {kycOk && !windowOpen && <p className="mt-2 text-[12px] text-muted-foreground">The request window opens on Saturday.</p>}
+                {kycOk && windowOpen && available < 500 && <p className="mt-2 text-[12px] text-muted-foreground">You need at least {formatINR(500)} available.</p>}
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* Public profile */}
+      {tab === 'profile' && (
+        <div className="mt-4 space-y-4">
+          {creator.kyc_status !== 'approved' && (
+            <p className="flex gap-2 rounded-2xl border border-amber-500/30 bg-amber-500/5 p-3.5 text-[12.5px] text-amber-700">
+              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
+              Your public creator page goes live on the marketplace once verification is approved. You can prepare it now.
+            </p>
+          )}
+
+          <div className="overflow-hidden rounded-2xl border border-border bg-card">
+            <div className="relative h-28 bg-muted">
+              {creator.banner_url && <img src={creator.banner_url} alt="" className="h-full w-full object-cover" />}
+            </div>
+            <div className="px-4 pb-4">
+              <div className="-mt-8 flex items-end gap-3">
+                <div className="h-16 w-16 overflow-hidden rounded-full border-4 border-card bg-muted">
+                  {creator.avatar_url
+                    ? <img src={creator.avatar_url} alt="" className="h-full w-full object-cover" />
+                    : <div className="flex h-full w-full items-center justify-center text-[20px] font-extrabold text-muted-foreground">{creator.full_legal_name[0]}</div>}
+                </div>
+                <p className="pb-1 text-[15px] font-extrabold text-foreground">{creator.full_legal_name}</p>
+              </div>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div>
+                  <Label className="text-[12.5px] font-semibold">Profile photo</Label>
+                  <Input type="file" accept={acceptFor('image')} disabled={avatarBusy !== null}
+                    onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) uploadPublicAsset('avatar', f); }}
+                    className="mt-1.5 h-11 rounded-xl" />
+                </div>
+                <div>
+                  <Label className="text-[12.5px] font-semibold">Banner image</Label>
+                  <Input type="file" accept={acceptFor('image')} disabled={avatarBusy !== null}
+                    onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) uploadPublicAsset('banner', f); }}
+                    className="mt-1.5 h-11 rounded-xl" />
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <Label className="text-[12.5px] font-semibold">Short intro video (optional)</Label>
+                <Input type="file" accept={acceptFor('course-media')} disabled={avatarBusy !== null}
+                  onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ''; if (f) uploadPublicAsset('intro', f); }}
+                  className="mt-1.5 h-11 rounded-xl" />
+                {creator.intro_video_url && (
+                  <video src={creator.intro_video_url} controls className="mt-3 w-full rounded-xl border border-border" />
+                )}
+              </div>
+
+              <div className="mt-4">
+                <Label className="text-[12.5px] font-semibold">Bio</Label>
+                <Textarea value={bio} onChange={(e) => setBio(e.target.value)} rows={4} maxLength={600}
+                  className="mt-1.5 rounded-xl" placeholder="Tell learners who you are and what you teach. Education only — no calls or return claims." />
+                <p className="mt-1 text-[11px] text-muted-foreground">{bio.length}/600</p>
+              </div>
+
+              <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                <div>
+                  <Label className="text-[12.5px] font-semibold">Instagram</Label>
+                  <Input value={instagram || creator.instagram_handle || ''} onChange={(e) => setInstagram(e.target.value)} className="mt-1.5 h-11 rounded-xl" placeholder="@handle" />
+                </div>
+                <div>
+                  <Label className="text-[12.5px] font-semibold">YouTube</Label>
+                  <Input value={youtube || creator.youtube_channel || ''} onChange={(e) => setYoutube(e.target.value)} className="mt-1.5 h-11 rounded-xl" placeholder="Channel URL" />
+                </div>
+              </div>
+
+              <Button className="mt-4 h-11 w-full rounded-xl" disabled={savingPublic || avatarBusy !== null} onClick={savePublicProfile}>
+                {(savingPublic || avatarBusy) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />} Save public profile
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </div>
   );
 }
+
