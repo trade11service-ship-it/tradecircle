@@ -489,11 +489,14 @@ export type Database = {
           creator_id: string | null
           creator_payout_amount: number
           id: string
+          invoice_number: string | null
+          payment_method: string | null
           payment_reference_id: string | null
           payment_status: string
           platform_fee_amount: number
           purchase_ip_address: string | null
           purchase_timestamp: string
+          razorpay_order_id: string | null
           split_transfer_id: string | null
           total_amount: number
           user_id: string
@@ -503,11 +506,14 @@ export type Database = {
           creator_id?: string | null
           creator_payout_amount: number
           id?: string
+          invoice_number?: string | null
+          payment_method?: string | null
           payment_reference_id?: string | null
           payment_status?: string
           platform_fee_amount: number
           purchase_ip_address?: string | null
           purchase_timestamp?: string
+          razorpay_order_id?: string | null
           split_transfer_id?: string | null
           total_amount: number
           user_id: string
@@ -517,11 +523,14 @@ export type Database = {
           creator_id?: string | null
           creator_payout_amount?: number
           id?: string
+          invoice_number?: string | null
+          payment_method?: string | null
           payment_reference_id?: string | null
           payment_status?: string
           platform_fee_amount?: number
           purchase_ip_address?: string | null
           purchase_timestamp?: string
+          razorpay_order_id?: string | null
           split_transfer_id?: string | null
           total_amount?: number
           user_id?: string
@@ -653,17 +662,77 @@ export type Database = {
           },
         ]
       }
+      creator_payout_requests: {
+        Row: {
+          admin_note: string | null
+          admin_reference: string | null
+          amount: number
+          created_at: string
+          creator_id: string
+          id: string
+          paid_at: string | null
+          period_end: string
+          period_start: string
+          processed_by: string | null
+          requested_at: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_note?: string | null
+          admin_reference?: string | null
+          amount: number
+          created_at?: string
+          creator_id: string
+          id?: string
+          paid_at?: string | null
+          period_end: string
+          period_start: string
+          processed_by?: string | null
+          requested_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_note?: string | null
+          admin_reference?: string | null
+          amount?: number
+          created_at?: string
+          creator_id?: string
+          id?: string
+          paid_at?: string | null
+          period_end?: string
+          period_start?: string
+          processed_by?: string | null
+          requested_at?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "creator_payout_requests_creator_id_fkey"
+            columns: ["creator_id"]
+            isOneToOne: false
+            referencedRelation: "creator_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       creator_profiles: {
         Row: {
+          avatar_url: string | null
           bank_account_holder_name: string | null
           bank_account_number: string | null
           bank_ifsc: string | null
+          banner_url: string | null
+          bio: string | null
           created_at: string
           email: string | null
           encrypted_pan: string | null
           full_legal_name: string
           id: string
           instagram_handle: string | null
+          intro_video_url: string | null
           kyc_status: Database["public"]["Enums"]["creator_kyc_status"]
           pan_masked: string | null
           payout_vendor_id: string | null
@@ -674,15 +743,19 @@ export type Database = {
           youtube_channel: string | null
         }
         Insert: {
+          avatar_url?: string | null
           bank_account_holder_name?: string | null
           bank_account_number?: string | null
           bank_ifsc?: string | null
+          banner_url?: string | null
+          bio?: string | null
           created_at?: string
           email?: string | null
           encrypted_pan?: string | null
           full_legal_name: string
           id?: string
           instagram_handle?: string | null
+          intro_video_url?: string | null
           kyc_status?: Database["public"]["Enums"]["creator_kyc_status"]
           pan_masked?: string | null
           payout_vendor_id?: string | null
@@ -693,15 +766,19 @@ export type Database = {
           youtube_channel?: string | null
         }
         Update: {
+          avatar_url?: string | null
           bank_account_holder_name?: string | null
           bank_account_number?: string | null
           bank_ifsc?: string | null
+          banner_url?: string | null
+          bio?: string | null
           created_at?: string
           email?: string | null
           encrypted_pan?: string | null
           full_legal_name?: string
           id?: string
           instagram_handle?: string | null
+          intro_video_url?: string | null
           kyc_status?: Database["public"]["Enums"]["creator_kyc_status"]
           pan_masked?: string | null
           payout_vendor_id?: string | null
@@ -1810,6 +1887,67 @@ export type Database = {
           sebi_reg_no: string
         }[]
       }
+      admin_list_course_purchases: {
+        Args: { _creator_id?: string }
+        Returns: {
+          buyer_email: string
+          buyer_name: string
+          course_id: string
+          course_title: string
+          creator_id: string
+          creator_name: string
+          creator_payout_amount: number
+          id: string
+          invoice_number: string
+          payment_method: string
+          payment_reference_id: string
+          payment_status: string
+          platform_fee_amount: number
+          purchase_timestamp: string
+          total_amount: number
+        }[]
+      }
+      admin_list_creator_earnings: {
+        Args: never
+        Returns: {
+          courses_draft: number
+          courses_live: number
+          courses_pending: number
+          created_at: string
+          creator_id: string
+          creator_net: number
+          email: string
+          full_legal_name: string
+          gross_revenue: number
+          instagram_handle: string
+          kyc_status: string
+          pending_requests: number
+          phone: string
+          platform_fee: number
+          sales_count: number
+          settled: number
+          unsettled: number
+          youtube_channel: string
+        }[]
+      }
+      admin_list_payout_requests: {
+        Args: never
+        Returns: {
+          admin_reference: string
+          amount: number
+          bank_masked: string
+          creator_email: string
+          creator_id: string
+          creator_name: string
+          id: string
+          kyc_status: string
+          paid_at: string
+          period_end: string
+          period_start: string
+          requested_at: string
+          status: string
+        }[]
+      }
       admin_list_pending_applications: {
         Args: never
         Returns: {
@@ -1889,6 +2027,10 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      admin_mark_payout_paid: {
+        Args: { _note?: string; _reference: string; _request_id: string }
+        Returns: undefined
+      }
       admin_pre_approve_application: {
         Args: { _app_id: string }
         Returns: string
@@ -1905,6 +2047,9 @@ export type Database = {
         Args: { _approve: boolean; _course_id: string; _reason?: string }
         Returns: undefined
       }
+      creator_delete_course: { Args: { _course_id: string }; Returns: string }
+      creator_payout_summary: { Args: never; Returns: Json }
+      creator_request_payout: { Args: never; Returns: string }
       current_creator_id: { Args: never; Returns: string }
       delete_email: {
         Args: { message_id: number; queue_name: string }
@@ -2069,6 +2214,20 @@ export type Database = {
           youtube_channel: string
         }[]
       }
+      get_public_creator: {
+        Args: { _creator_id: string }
+        Returns: {
+          avatar_url: string
+          banner_url: string
+          bio: string
+          course_count: number
+          full_legal_name: string
+          id: string
+          instagram_handle: string
+          intro_video_url: string
+          youtube_channel: string
+        }[]
+      }
       get_referral_link_by_code: {
         Args: { _code: string }
         Returns: {
@@ -2108,6 +2267,18 @@ export type Database = {
           price: number
           purchase_count: number
           title: string
+        }[]
+      }
+      list_public_creators: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          bio: string
+          course_count: number
+          full_legal_name: string
+          id: string
+          instagram_handle: string
+          youtube_channel: string
         }[]
       }
       move_to_dlq: {
