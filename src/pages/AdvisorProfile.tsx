@@ -9,6 +9,7 @@ import {
   ArrowLeft, Star, Clock, Target, Flame, BarChart3, AlertTriangle, Calendar, Lock
 } from 'lucide-react';
 import type { Tables } from '@/integrations/supabase/types';
+import { setMetaTags, setJsonLd } from '@/lib/seo';
 
 type Advisor = Tables<'advisors'>;
 type Signal = Tables<'signals'>;
