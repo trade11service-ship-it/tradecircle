@@ -9,6 +9,7 @@ import {
   ArrowLeft, Star, Clock, Target, Flame, BarChart3, AlertTriangle, Calendar, Lock
 } from 'lucide-react';
 import type { Tables } from '@/integrations/supabase/types';
+import { setMetaTags, setJsonLd } from '@/lib/seo';
 
 type Advisor = Tables<'advisors'>;
 type Signal = Tables<'signals'>;
@@ -164,6 +165,43 @@ export default function AdvisorProfile() {
       .subscribe();
     return () => { supabase.removeChannel(ch); };
   }, [id]);
+
+  // Per-page SEO metadata + social preview
+  useEffect(() => {
+    if (!advisor) return;
+    const a = advisor as any;
+    const name = a.full_name as string;
+    const title = `${name} — SEBI-Registered Advisor | RA Circle`.slice(0, 60);
+    const base =
+      (a.public_tagline as string) ||
+      (a.bio as string) ||
+      `${name} is a SEBI-registered research analyst${a.sebi_reg_no ? ` (${a.sebi_reg_no})` : ''} on RA Circle${a.strategy_type ? `, specialising in ${a.strategy_type}` : ''}.`;
+    const description = `${base} View verified track record, strategy and subscription plans.`.slice(0, 158);
+    const url = `https://racircle.in/advisor/${a.id}`;
+    setMetaTags({
+      title,
+      description,
+      canonicalUrl: url,
+      ogTitle: title,
+      ogDescription: description,
+      ogImage: a.profile_photo_url || a.cover_image_url || undefined,
+    });
+    setJsonLd('advisor-jsonld', {
+      '@context': 'https://schema.org',
+      '@type': 'ProfilePage',
+      mainEntity: {
+        '@type': 'Person',
+        name,
+        description: base,
+        url,
+        ...(a.profile_photo_url ? { image: a.profile_photo_url } : {}),
+        jobTitle: 'SEBI-Registered Research Analyst',
+        ...(a.sebi_reg_no ? { identifier: a.sebi_reg_no } : {}),
+        worksFor: { '@type': 'Organization', name: 'RA Circle', url: 'https://racircle.in/' },
+      },
+    });
+    return () => setJsonLd('advisor-jsonld', null);
+  }, [advisor]);
 
   const fetchData = async () => {
     setLoading(true);
